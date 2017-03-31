@@ -1,0 +1,201 @@
+This README file contains information on building the meta-hilscher-netx4000
+BSP layer, and booting / creating bootable images.
+
+
+Table of Contents
+=================
+
+1. Description
+2. Yocto BSP Layer - Hilscher netX4000 SoC
+  2.1 Included drivers
+  2.2 How to use it
+      2.2.1 Enabling verified boot
+  2.3 Creating own machines
+  2.4 Creating bootable images
+      2.4.1 SD/MMC card
+      2.4.2 NAND flash
+      2.4.3 USB stick
+
+
+1. Description
+==============
+This is the general hardware specific BSP overlay for the Hilscher netX4000
+SoC.
+
+The core BSP part of meta-hilscher-netx4000 was made and tested with Yocto/Poky
+distribution / layer.
+
+
+2. Yocto BSP Layer - Hilscher netX4000 SoC
+==========================================
+
+This layer depends on:
+
+URI: git://git.yoctoproject.org/poky
+branch: morty
+revision: HEAD
+
+Pre-Requisites for all boards:
+ * UART0 to interface with bootloader / kernel
+
+Preferred boot media for evaluation:
+ * SD/MMC card
+
+
+2.1 Included drivers
+====================
+
+mainline drivers:
+ * UART/RS232 - ARM PL011
+ * SPI - ARM PL022
+   * Limitations:
+     * DMA only working in transfer modes larger than 8 bits
+     * GPIO's must be used as chip select signals
+ * GMAC - Synopsis DWC_ETH_QOS
+ * DMAC (8ch) - NPFAXI + platform patches
+ * USB 2.0 Host - ehci, ohci + platform initialization patches
+
+non-mainline drivers:
+ * SDIO (including DMA support)
+ * NAND (PL353) - based on https://github.com/Xilinx/linux-xlnx/blob/master/drivers/mtd/nand/pl35x_nand.c
+ * SQI - 4-bit SPI unit
+ * GPIO
+ * USB 2.0 Device
+ * I2C
+ * RTC
+ * ADC/IIO
+   * Limitations:
+     * requires access to R7 peripherals which are usually denied by firewall.
+       Special initialization code needed on R7
+     * no sequencer support (just basic manual sampling)
+ * ECC (1 bit correction / 2 bit detection) for L1/L2 cache - EDAC modules
+ * ECC (1 bit correction / 2 bit detection) for DDR memory - EDAC modules
+
+
+2.2 How to use it
+=================
+
+1. Setup yocto build environment
+
+    source poky/oe-init-build-env build
+
+2. Add meta-hilscher-netx4000 layer to conf/bblayers.conf
+
+3. Setup machine in conf/local.conf
+    * MACHINE = "nxhx4000-jtag-plus_rev2"
+
+4. Build any default image "bitbake <image>"
+    * core-image-minimal
+    * core-image-minimal-dev
+    * core-image-sato
+
+5. optional configuration
+    Check "http://www.yoctoproject.org/docs/latest/ref-manual/ref-manual.html"
+    for options.
+
+
+2.2.1 Enabling verified boot
+============================
+1. Generate keys
+    * openssl genrsa -F4 -out <keyname>.key 2048|4096 (or see meta-hilscher-netx4000/files/keys/gen_key.sh)
+   NOTE: A sample key (RSA4096) which must not to be used in production environment is provided as 
+         meta-hilscher-netx4000/files/keys/debug-sample.key
+2. Setup environment to sign the kernel and initrd (check variable INITRAMFS_IMAGE)
+    * BAREBOX_SIGN_KEYDIR : must point to the directory containing your private key
+    * BAREBOX_SIGN_KEYNAME : must contain the name of your key (excluding the mandatory .key file extension)
+    * FITIMAGE_SIGN : Must be set to 1 to enable signing
+    * FITIMAGE_SIGN_ALGO : must be set according to your private key (rsa2048 or rsa4096) as one of the following:
+       - sha1,rsa2048
+       - sha256,rsa4096
+       - sha512,rsa4096
+    * FITIMAGE_HASH_ALGO : (optional) can be set to sha1/sha256/sha512
+3. To force only signed image can be booted you need to setup barebox to only accept signed images
+   See CONFIG_BOOTM_FORCE_SIGNED_IMAGES configuration option (bitbake barebox -c menuconfig)
+
+
+2.3 Creating own machines
+=========================
+
+see http://www.yoctoproject.org/docs/2.2/mega-manual/mega-manual.html#platdev-newmachine
+
+Additional parameters:
+ * BAREBOX_DEVICETREE
+   Set board specific hardware description
+ * ENABLE_DDR_ECC
+   Enable hardware error correction on DDR memory
+ * SERIAL_CONSOLE
+   Define the console port
+  
+Example machine:
+ * machine configuration:
+   meta-hilscher-netx4000/conf/nxhx4000-jtag-plus_rev2.conf
+ * hardware description (device tree):
+   https://github.com/Hilscher/netx4000-barebox/blob/v2016.07.0-netx4000/arch/arm/dts/nxhx4000-jtag-plus_rev2.dts
+
+
+2.4 Creating bootable images
+============================
+
+
+2.4.1 SD/MMC card
+=================
+
+Per default the board specific machine file nxhx4000-jtag-plus_rev2.conf includes
+IMAGE_CLASSES += "image-sdimg" and IMAGE_FSTYPES += "sdimg" lines.
+These are responsible for automatically building an SD card image file.
+
+To use it, change into the machine related deploy directory and copy the image
+file to SD card.
+
+EXAMPLE: (host command line)
+  cd tmp/deploy/images/nxhx4000-jtag-plus_rev2
+  dd if=core-image-minimal-nxhx4000-jtag-plus_rev2.sdimg of=/dev/sdb bs=4M && sync
+
+NOTE:
+ * /dev/sdb is the device file of SD card and must be adapted to your conditions!
+ * Perhaps sudo permissions are required
+
+
+2.4.2 NAND flash
+================
+NOTE: Building NAND images requires barebox bootloader to either be
+      started from a serial flash connected to the netX chip or
+      from an SD/MMC card.
+
+Pre-Requisites:
+ * Make sure that IMAGE_FSTYPES (local.conf or machine-configuration)
+   contains "ubi"
+
+Flash ubi image to rootfs partition of NAND flash (see device tree, default 128KiB).
+
+EXAMPLE: (barebox shell)
+  erase /dev/nand0.rootfs
+  cp /boot/core-image-minimal-nxhx4000-jtag-plus_rev2.ubi /dev/nand0.rootfs.bb
+
+NOTE:
+The ubi image is located on the boot partitiuon of SD card.
+
+
+2.4.3 USB stick
+================
+NOTE: Building USB sticks requires barebox bootloader to either be
+      started from a serial flash connected to the netX chip or
+      from an SD/MMC card.
+
+Pre-Requisites:
+ * Make sure that IMAGE_FSTYPES (local.conf or machine-configuration)
+   contains "tar.bz2"
+
+Format USB stick to ext4 and extract tarball.
+
+EXAMPLE: (host command line)
+  mkfs.ext4 /dev/sdb1
+  mount /dev/sdb1 /mnt
+  tar xf core-image-minimal-nxhx4000-jtag-plus_rev2.tar.bz2 -C /mnt
+  sync && umount /dev/sdb*
+
+NOTE:
+ * /dev/sdb is the device file of USB stick and must be adapted to your conditions!
+ * Perhaps sudo permissions are required
+
+

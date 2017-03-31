@@ -1,0 +1,619 @@
+From 5c224a7e5c2192da321bf5b4df179840f5e2b22c Mon Sep 17 00:00:00 2001
+From: quarkdev <quark@nxsysquarkdev>
+Date: Wed, 21 Dec 2016 11:10:09 +0100
+Subject: [PATCH] Implement SHA512 hash and sha512,rsa4096 signature support
+
+---
+ common/hash.c                 |  40 +++++++
+ common/image-fit.c            |   5 +
+ common/image-sig.c            |  17 +++
+ include/hash.h                |   2 +-
+ include/image.h               |  14 +++
+ include/u-boot/rsa-checksum.h |   2 +
+ include/u-boot/sha512.h       |  24 ++++
+ lib/Kconfig                   |   8 ++
+ lib/Makefile                  |   1 +
+ lib/rsa/rsa-checksum.c        |  38 ++++++
+ lib/sha512.c                  | 260 ++++++++++++++++++++++++++++++++++++++++++
+ tools/Makefile                |   2 +
+ 12 files changed, 412 insertions(+), 1 deletion(-)
+ create mode 100644 include/u-boot/sha512.h
+ create mode 100644 lib/sha512.c
+
+diff --git a/common/hash.c b/common/hash.c
+index 41de4df..9a31b26 100644
+--- a/common/hash.c
++++ b/common/hash.c
+@@ -28,6 +28,7 @@
+ #include <u-boot/crc.h>
+ #include <u-boot/sha1.h>
+ #include <u-boot/sha256.h>
++#include <u-boot/sha512.h>
+ #include <u-boot/md5.h>
+ 
+ #ifdef CONFIG_SHA1
+@@ -86,6 +87,34 @@ static int hash_finish_sha256(struct hash_algo *algo, void *ctx, void
+ }
+ #endif
+ 
++#ifdef CONFIG_SHA512
++static int hash_init_sha512(struct hash_algo *algo, void **ctxp)
++{
++	sha512_context *ctx = malloc(sizeof(sha512_context));
++	sha512_starts(ctx);
++	*ctxp = ctx;
++	return 0;
++}
++
++static int hash_update_sha512(struct hash_algo *algo, void *ctx,
++			      const void *buf, unsigned int size, int is_last)
++{
++	sha512_update((sha512_context *)ctx, buf, size);
++	return 0;
++}
++
++static int hash_finish_sha512(struct hash_algo *algo, void *ctx, void
++			      *dest_buf, int size)
++{
++	if (size < algo->digest_size)
++		return -1;
++
++	sha512_finish((sha512_context *)ctx, dest_buf);
++	free(ctx);
++	return 0;
++}
++#endif
++
+ static int hash_init_crc32(struct hash_algo *algo, void **ctxp)
+ {
+ 	uint32_t *ctx = malloc(sizeof(uint32_t));
+@@ -167,6 +196,17 @@ static struct hash_algo hash_algo[] = {
+ 		hash_finish_sha256,
+ 	},
+ #endif
++#ifdef CONFIG_SHA512
++	{
++		"sha512",
++		SHA512_SUM_LEN,
++		sha512_csum_wd,
++		CHUNKSZ_SHA512,
++		hash_init_sha512,
++		hash_update_sha512,
++		hash_finish_sha512,
++	},
++#endif
+ 	{
+ 		"crc32",
+ 		4,
+diff --git a/common/image-fit.c b/common/image-fit.c
+index fbd9e0d..de41d47 100644
+--- a/common/image-fit.c
++++ b/common/image-fit.c
+@@ -26,6 +26,7 @@ DECLARE_GLOBAL_DATA_PTR;
+ #include <u-boot/md5.h>
+ #include <u-boot/sha1.h>
+ #include <u-boot/sha256.h>
++#include <u-boot/sha512.h>
+ 
+ /*****************************************************************************/
+ /* New uImage format routines */
+@@ -921,6 +922,10 @@ int calculate_hash(const void *data, int data_len, const char *algo,
+ 		sha256_csum_wd((unsigned char *)data, data_len,
+ 			       (unsigned char *)value, CHUNKSZ_SHA256);
+ 		*value_len = SHA256_SUM_LEN;
++	} else if (IMAGE_ENABLE_SHA512 && strcmp(algo, "sha512") == 0) {
++		sha512_csum_wd((unsigned char *)data, data_len,
++			       (unsigned char *)value, CHUNKSZ_SHA512);
++		*value_len = SHA512_SUM_LEN;
+ 	} else if (IMAGE_ENABLE_MD5 && strcmp(algo, "md5") == 0) {
+ 		md5_wd((unsigned char *)data, data_len, value, CHUNKSZ_MD5);
+ 		*value_len = 16;
+diff --git a/common/image-sig.c b/common/image-sig.c
+index eda5e13..5bc8589 100644
+--- a/common/image-sig.c
++++ b/common/image-sig.c
+@@ -60,6 +60,16 @@ struct checksum_algo checksum_algos[] = {
+ #endif
+ 		hash_calculate,
+ 		padding_sha256_rsa4096,
++	},
++	{
++		"sha512",
++		SHA512_SUM_LEN,
++		RSA4096_BYTES,
++#if IMAGE_ENABLE_SIGN
++		EVP_sha512,
++#endif
++		hash_calculate,
++		padding_sha512_rsa4096,
+ 	}
+ 
+ };
+@@ -85,6 +95,13 @@ struct image_sig_algo image_sig_algos[] = {
+ 		rsa_add_verify_data,
+ 		rsa_verify,
+ 		&checksum_algos[2],
++	},
++	{
++		"sha512,rsa4096",
++		rsa_sign,
++		rsa_add_verify_data,
++		rsa_verify,
++		&checksum_algos[3],
+ 	}
+ 
+ };
+diff --git a/include/hash.h b/include/hash.h
+index d814337..59ba707 100644
+--- a/include/hash.h
++++ b/include/hash.h
+@@ -10,7 +10,7 @@
+  * Maximum digest size for all algorithms we support. Having this value
+  * avoids a malloc() or C99 local declaration in common/cmd_hash.c.
+  */
+-#define HASH_MAX_DIGEST_SIZE	32
++#define HASH_MAX_DIGEST_SIZE	64
+ 
+ enum {
+ 	HASH_FLAG_VERIFY	= 1 << 0,	/* Enable verify mode */
+diff --git a/include/image.h b/include/image.h
+index 518a4f5..06b9a96 100644
+--- a/include/image.h
++++ b/include/image.h
+@@ -62,15 +62,20 @@ struct lmb;
+ #  ifdef CONFIG_SPL_SHA256_SUPPORT
+ #   define IMAGE_ENABLE_SHA256	1
+ #  endif
++#  ifdef CONFIG_SPL_SHA512_SUPPORT
++#   define IMAGE_ENABLE_SHA512	1
++#  endif
+ # else
+ #  define CONFIG_CRC32		/* FIT images need CRC32 support */
+ #  define CONFIG_MD5		/* and MD5 */
+ #  define CONFIG_SHA1		/* and SHA1 */
+ #  define CONFIG_SHA256		/* and SHA256 */
++#  define CONFIG_SHA512		/* and SHA512 */
+ #  define IMAGE_ENABLE_CRC32	1
+ #  define IMAGE_ENABLE_MD5	1
+ #  define IMAGE_ENABLE_SHA1	1
+ #  define IMAGE_ENABLE_SHA256	1
++#  define IMAGE_ENABLE_SHA512	1
+ # endif
+ 
+ #ifdef CONFIG_FIT_DISABLE_SHA256
+@@ -78,6 +83,11 @@ struct lmb;
+ #undef IMAGE_ENABLE_SHA256
+ #endif
+ 
++#ifdef CONFIG_FIT_DISABLE_SHA512
++#undef CONFIG_SHA512
++#undef IMAGE_ENABLE_SHA512
++#endif
++
+ #ifndef IMAGE_ENABLE_CRC32
+ #define IMAGE_ENABLE_CRC32	0
+ #endif
+@@ -94,6 +104,10 @@ struct lmb;
+ #define IMAGE_ENABLE_SHA256	0
+ #endif
+ 
++#ifndef IMAGE_ENABLE_SHA512
++#define IMAGE_ENABLE_SHA512	0
++#endif
++
+ #endif /* CONFIG_FIT */
+ 
+ #ifdef CONFIG_SYS_BOOT_RAMDISK_HIGH
+diff --git a/include/u-boot/rsa-checksum.h b/include/u-boot/rsa-checksum.h
+index 3c69d85..c62d7d2 100644
+--- a/include/u-boot/rsa-checksum.h
++++ b/include/u-boot/rsa-checksum.h
+@@ -11,7 +11,9 @@
+ #include <image.h>
+ #include <u-boot/sha1.h>
+ #include <u-boot/sha256.h>
++#include <u-boot/sha512.h>
+ 
++extern const uint8_t padding_sha512_rsa4096[];
+ extern const uint8_t padding_sha256_rsa4096[];
+ extern const uint8_t padding_sha256_rsa2048[];
+ extern const uint8_t padding_sha1_rsa2048[];
+diff --git a/include/u-boot/sha512.h b/include/u-boot/sha512.h
+new file mode 100644
+index 0000000..c432267
+--- /dev/null
++++ b/include/u-boot/sha512.h
+@@ -0,0 +1,24 @@
++#ifndef _SHA512_H
++#define _SHA512_H
++
++#define SHA512_DIGEST_SIZE      64
++#define SHA512_BLOCK_SIZE       128
++#define SHA512_SUM_LEN		64
++
++/* Reset watchdog each time we process this many bytes */
++#define CHUNKSZ_SHA512	(64 * 1024)
++
++typedef struct {
++        uint64_t count[2];
++        uint64_t state[SHA512_DIGEST_SIZE / 8];
++        uint8_t  buf[SHA512_BLOCK_SIZE];
++} sha512_context;
++
++void sha512_starts(sha512_context * ctx);
++void sha512_update(sha512_context *ctx, const uint8_t *input, uint32_t length);
++void sha512_finish(sha512_context * ctx, uint8_t digest[SHA512_SUM_LEN]);
++
++void sha512_csum_wd(const unsigned char *input, unsigned int ilen,
++		unsigned char *output, unsigned int chunk_sz);
++
++#endif /* _SHA512_H */
+diff --git a/lib/Kconfig b/lib/Kconfig
+index c7eab46..e01985f 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -84,6 +84,14 @@ config SHA256
+ 	  The SHA256 algorithm produces a 256-bit (32-byte) hash value
+ 	  (digest).
+ 
++config SHA512
++	bool "Enable SHA512 support"
++	help
++	  This option enables support of hashing using SHA512 algorithm.
++	  The hash is calculated in software.
++	  The SHA512 algorithm produces a 512-bit (64-byte) hash value
++	  (digest).
++
+ config SHA_HW_ACCEL
+ 	bool "Enable hashing using hardware"
+ 	help
+diff --git a/lib/Makefile b/lib/Makefile
+index 1e21bcc..fee5216 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -43,6 +43,7 @@ obj-y += rc4.o
+ obj-$(CONFIG_SHA1) += sha1.o
+ obj-$(CONFIG_SUPPORT_EMMC_RPMB) += sha256.o
+ obj-$(CONFIG_SHA256) += sha256.o
++obj-$(CONFIG_SHA512) += sha512.o
+ obj-y	+= strmhz.o
+ obj-$(CONFIG_TPM) += tpm.o
+ obj-$(CONFIG_RBTREE)	+= rbtree.o
+diff --git a/lib/rsa/rsa-checksum.c b/lib/rsa/rsa-checksum.c
+index 68d9d65..18b9a64 100644
+--- a/lib/rsa/rsa-checksum.c
++++ b/lib/rsa/rsa-checksum.c
+@@ -20,6 +20,44 @@
+ 
+ /* PKCS 1.5 paddings as described in the RSA PKCS#1 v2.1 standard. */
+ 
++const uint8_t padding_sha512_rsa4096[RSA4096_BYTES - SHA512_SUM_LEN] = {
++0x00, 0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
++0x30, 0x51, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04,
++0x02, 0x03, 0x05, 0x00, 0x04, 0x40
++};
++
+ const uint8_t padding_sha256_rsa2048[RSA2048_BYTES - SHA256_SUM_LEN] = {
+ 0x00, 0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+diff --git a/lib/sha512.c b/lib/sha512.c
+new file mode 100644
+index 0000000..c8c4f05
+--- /dev/null
++++ b/lib/sha512.c
+@@ -0,0 +1,260 @@
++/*
++ * FIPS-180-2 compliant SHA-256 implementation
++ *
++ * Copyright (C) 2001-2003  Christophe Devine
++ *
++ * SPDX-License-Identifier:	GPL-2.0+
++ */
++
++#ifndef USE_HOSTCC
++#include <common.h>
++#include <linux/string.h>
++#else
++#include <string.h>
++#endif /* USE_HOSTCC */
++#include <watchdog.h>
++#include <u-boot/sha512.h>
++
++static inline uint32_t __get_unaligned_be32(const uint8_t *p)
++{
++        return p[0] << 24 | p[1] << 16 | p[2] << 8 | p[3];
++}
++
++static inline uint64_t __get_unaligned_be64(const uint8_t *p)
++{
++        return (uint64_t)__get_unaligned_be32(p) << 32 |
++               __get_unaligned_be32(p + 4);
++}
++
++static inline uint64_t get_unaligned_be64(const void *p)
++{
++        return __get_unaligned_be64((const uint8_t *)p);
++}
++
++static inline uint64_t ror64(uint64_t word, unsigned int shift)
++{
++        return (word >> shift) | (word << (64 - shift));
++}
++
++static inline uint64_t Ch(uint64_t x, uint64_t y, uint64_t z)
++{
++        return z ^ (x & (y ^ z));
++}
++
++static inline uint64_t Maj(uint64_t x, uint64_t y, uint64_t z)
++{
++        return (x & y) | (z & (x | y));
++}
++
++#define SHA512_H0       0x6a09e667f3bcc908ULL
++#define SHA512_H1       0xbb67ae8584caa73bULL
++#define SHA512_H2       0x3c6ef372fe94f82bULL
++#define SHA512_H3       0xa54ff53a5f1d36f1ULL
++#define SHA512_H4       0x510e527fade682d1ULL
++#define SHA512_H5       0x9b05688c2b3e6c1fULL
++#define SHA512_H6       0x1f83d9abfb41bd6bULL
++#define SHA512_H7       0x5be0cd19137e2179ULL
++
++static const uint64_t sha512_K[80] = {
++        0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL, 0xb5c0fbcfec4d3b2fULL,
++        0xe9b5dba58189dbbcULL, 0x3956c25bf348b538ULL, 0x59f111f1b605d019ULL,
++        0x923f82a4af194f9bULL, 0xab1c5ed5da6d8118ULL, 0xd807aa98a3030242ULL,
++        0x12835b0145706fbeULL, 0x243185be4ee4b28cULL, 0x550c7dc3d5ffb4e2ULL,
++        0x72be5d74f27b896fULL, 0x80deb1fe3b1696b1ULL, 0x9bdc06a725c71235ULL,
++        0xc19bf174cf692694ULL, 0xe49b69c19ef14ad2ULL, 0xefbe4786384f25e3ULL,
++        0x0fc19dc68b8cd5b5ULL, 0x240ca1cc77ac9c65ULL, 0x2de92c6f592b0275ULL,
++        0x4a7484aa6ea6e483ULL, 0x5cb0a9dcbd41fbd4ULL, 0x76f988da831153b5ULL,
++        0x983e5152ee66dfabULL, 0xa831c66d2db43210ULL, 0xb00327c898fb213fULL,
++        0xbf597fc7beef0ee4ULL, 0xc6e00bf33da88fc2ULL, 0xd5a79147930aa725ULL,
++        0x06ca6351e003826fULL, 0x142929670a0e6e70ULL, 0x27b70a8546d22ffcULL,
++        0x2e1b21385c26c926ULL, 0x4d2c6dfc5ac42aedULL, 0x53380d139d95b3dfULL,
++        0x650a73548baf63deULL, 0x766a0abb3c77b2a8ULL, 0x81c2c92e47edaee6ULL,
++        0x92722c851482353bULL, 0xa2bfe8a14cf10364ULL, 0xa81a664bbc423001ULL,
++        0xc24b8b70d0f89791ULL, 0xc76c51a30654be30ULL, 0xd192e819d6ef5218ULL,
++        0xd69906245565a910ULL, 0xf40e35855771202aULL, 0x106aa07032bbd1b8ULL,
++        0x19a4c116b8d2d0c8ULL, 0x1e376c085141ab53ULL, 0x2748774cdf8eeb99ULL,
++        0x34b0bcb5e19b48a8ULL, 0x391c0cb3c5c95a63ULL, 0x4ed8aa4ae3418acbULL,
++        0x5b9cca4f7763e373ULL, 0x682e6ff3d6b2b8a3ULL, 0x748f82ee5defb2fcULL,
++        0x78a5636f43172f60ULL, 0x84c87814a1f0ab72ULL, 0x8cc702081a6439ecULL,
++        0x90befffa23631e28ULL, 0xa4506cebde82bde9ULL, 0xbef9a3f7b2c67915ULL,
++        0xc67178f2e372532bULL, 0xca273eceea26619cULL, 0xd186b8c721c0c207ULL,
++        0xeada7dd6cde0eb1eULL, 0xf57d4f7fee6ed178ULL, 0x06f067aa72176fbaULL,
++        0x0a637dc5a2c898a6ULL, 0x113f9804bef90daeULL, 0x1b710b35131c471bULL,
++        0x28db77f523047d84ULL, 0x32caab7b40c72493ULL, 0x3c9ebe0a15c9bebcULL,
++        0x431d67c49c100d4cULL, 0x4cc5d4becb3e42b6ULL, 0x597f299cfc657e2aULL,
++        0x5fcb6fab3ad6faecULL, 0x6c44198c4a475817ULL,
++};
++
++#define e0(x)       (ror64(x,28) ^ ror64(x,34) ^ ror64(x,39))
++#define e1(x)       (ror64(x,14) ^ ror64(x,18) ^ ror64(x,41))
++#define s0(x)       (ror64(x, 1) ^ ror64(x, 8) ^ (x >> 7))
++#define s1(x)       (ror64(x,19) ^ ror64(x,61) ^ (x >> 6))
++
++static inline void LOAD_OP(int I, uint64_t *W, const uint8_t *input)
++{
++	W[I] = get_unaligned_be64((uint64_t *)input + I);
++}
++
++static inline void BLEND_OP(int I, uint64_t *W)
++{
++	W[I & 15] += s1(W[(I-2) & 15]) + W[(I-7) & 15] + s0(W[(I-15) & 15]);
++}
++
++
++void sha512_starts(sha512_context * ctx)
++{
++	ctx->state[0] = SHA512_H0;
++	ctx->state[1] = SHA512_H1;
++	ctx->state[2] = SHA512_H2;
++	ctx->state[3] = SHA512_H3;
++	ctx->state[4] = SHA512_H4;
++	ctx->state[5] = SHA512_H5;
++	ctx->state[6] = SHA512_H6;
++	ctx->state[7] = SHA512_H7;
++	ctx->count[0] = ctx->count[1] = 0;
++}
++
++static void sha512_transform(sha512_context *ctx, const uint8_t data[64])
++{
++	uint64_t a, b, c, d, e, f, g, h, t1, t2;
++
++	int i;
++	uint64_t W[16];
++
++	/* load the state into our registers */
++	a=ctx->state[0];   b=ctx->state[1];   c=ctx->state[2];   d=ctx->state[3];
++	e=ctx->state[4];   f=ctx->state[5];   g=ctx->state[6];   h=ctx->state[7];
++
++	/* now iterate */
++	for (i=0; i<80; i+=8) {
++		if (!(i & 8)) {
++			int j;
++
++			if (i < 16) {
++				/* load the input */
++				for (j = 0; j < 16; j++)
++					LOAD_OP(i + j, W, data);
++			} else {
++				for (j = 0; j < 16; j++) {
++					BLEND_OP(i + j, W);
++				}
++			}
++		}
++
++		t1 = h + e1(e) + Ch(e,f,g) + sha512_K[i  ] + W[(i & 15)];
++		t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
++		t1 = g + e1(d) + Ch(d,e,f) + sha512_K[i+1] + W[(i & 15) + 1];
++		t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
++		t1 = f + e1(c) + Ch(c,d,e) + sha512_K[i+2] + W[(i & 15) + 2];
++		t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
++		t1 = e + e1(b) + Ch(b,c,d) + sha512_K[i+3] + W[(i & 15) + 3];
++		t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
++		t1 = d + e1(a) + Ch(a,b,c) + sha512_K[i+4] + W[(i & 15) + 4];
++		t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
++		t1 = c + e1(h) + Ch(h,a,b) + sha512_K[i+5] + W[(i & 15) + 5];
++		t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
++		t1 = b + e1(g) + Ch(g,h,a) + sha512_K[i+6] + W[(i & 15) + 6];
++		t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
++		t1 = a + e1(f) + Ch(f,g,h) + sha512_K[i+7] + W[(i & 15) + 7];
++		t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
++	}
++
++	ctx->state[0] += a; ctx->state[1] += b; ctx->state[2] += c; ctx->state[3] += d;
++	ctx->state[4] += e; ctx->state[5] += f; ctx->state[6] += g; ctx->state[7] += h;
++
++	/* erase our data */
++	a = b = c = d = e = f = g = h = t1 = t2 = 0;
++}
++
++void sha512_update(sha512_context *ctx, const uint8_t *data, uint32_t len)
++{
++	unsigned int i, index, part_len;
++
++	/* Compute number of bytes mod 128 */
++	index = ctx->count[0] & 0x7f;
++
++	/* Update number of bytes */
++	if ((ctx->count[0] += len) < len)
++		ctx->count[1]++;
++
++	part_len = 128 - index;
++
++	/* Transform as many times as possible. */
++	if (len >= part_len) {
++		memcpy(&ctx->buf[index], data, part_len);
++
++		sha512_transform(ctx, ctx->buf);
++
++		for (i = part_len; i + 127 < len; i+=128)
++			sha512_transform(ctx, &data[i]);
++
++		index = 0;
++	} else {
++		i = 0;
++	}
++
++	/* Buffer remaining input */
++	memcpy(&ctx->buf[index], &data[i], len - i);
++}
++
++void sha512_finish(sha512_context * ctx, uint8_t digest[64])
++{
++	static uint8_t padding[128] = { 0x80, };
++	__be64 *dst = (__be64 *)digest;
++	__be64 bits[2];
++	unsigned int index, pad_len;
++	int i;
++
++	/* Save number of bits */
++	bits[1] = cpu_to_be64(ctx->count[0] << 3);
++	bits[0] = cpu_to_be64(ctx->count[1] << 3 | ctx->count[0] >> 61);
++
++	/* Pad out to 112 mod 128. */
++	index = ctx->count[0] & 0x7f;
++	pad_len = (index < 112) ? (112 - index) : ((128+112) - index);
++	sha512_update(ctx, padding, pad_len);
++
++	/* Append length (before padding) */
++	sha512_update(ctx, (const uint8_t *)bits, sizeof(bits));
++
++	/* Store state in digest */
++	for (i = 0; i < 8; i++)
++		dst[i] = cpu_to_be64(ctx->state[i]);
++
++	/* Zeroize sensitive information. */
++	memset(ctx, 0, sizeof(*ctx));
++}
++
++/*
++ * Output = SHA-512( input buffer ). Trigger the watchdog every 'chunk_sz'
++ * bytes of input processed.
++ */
++void sha512_csum_wd(const unsigned char *input, unsigned int ilen,
++		unsigned char *output, unsigned int chunk_sz)
++{
++	sha512_context ctx;
++#if defined(CONFIG_HW_WATCHDOG) || defined(CONFIG_WATCHDOG)
++	const unsigned char *end;
++	unsigned char *curr;
++	int chunk;
++#endif
++
++	sha512_starts(&ctx);
++
++#if defined(CONFIG_HW_WATCHDOG) || defined(CONFIG_WATCHDOG)
++	curr = (unsigned char *)input;
++	end = input + ilen;
++	while (curr < end) {
++		chunk = end - curr;
++		if (chunk > chunk_sz)
++			chunk = chunk_sz;
++		sha512_update(&ctx, curr, chunk);
++		curr += chunk;
++		WATCHDOG_RESET();
++	}
++#else
++	sha512_update(&ctx, input, ilen);
++#endif
++
++	sha512_finish(&ctx, output);
++}
+diff --git a/tools/Makefile b/tools/Makefile
+index 2881a7c..ab49105 100644
+--- a/tools/Makefile
++++ b/tools/Makefile
+@@ -96,6 +96,7 @@ dumpimage-mkimage-objs := aisimage.o \
+ 			socfpgaimage.o \
+ 			lib/sha1.o \
+ 			lib/sha256.o \
++			lib/sha512.o \
+ 			common/hash.o \
+ 			ublimage.o \
+ 			zynqimage.o \
+@@ -178,6 +179,7 @@ HOSTCFLAGS_crc32.o := -pedantic
+ HOSTCFLAGS_md5.o := -pedantic
+ HOSTCFLAGS_sha1.o := -pedantic
+ HOSTCFLAGS_sha256.o := -pedantic
++HOSTCFLAGS_sha512.o := -pedantic
+ 
+ quiet_cmd_wrap = WRAP    $@
+ cmd_wrap = echo "\#include <../$(patsubst $(obj)/%,%,$@)>" >$@
+-- 
+2.7.4
+

@@ -1,0 +1,61 @@
+CONF_VERSION = "1"
+PATCHRESOLVE = "noop"
+
+BB_NUMBER_THREADS ?= "${@oe.utils.cpu_count()*2}"
+PARALLEL_MAKE ?= "-j ${@oe.utils.cpu_count()*2}"
+
+# Following setting may be needed if running low on memory during
+# gcc build, which results in error : 
+#    /bin/sh: line 1: 15093 Killed build/genautomata ../../gcc/gcc/config/arm/arm.md insn-conditions.md > tmp-automata.c
+#    make[3]: *** [s-automata] Error 137
+#PARALLEL_MAKE_pn-gcc = "-j1"
+#PARALLEL_MAKE_pn-gcc-cross = "-j1"
+
+# DISTRO can be one of the following poky poky-lsb
+DISTRO ?= "poky"
+# TCLIBC can be one of the following glibc musl
+#TCLIBC ?= "musl"
+MACHINE ?= "nxhx4000-jtag-plus_rev2"
+
+# Setup preferred kernel
+# Possible values: linux-stable (default), linux-rt-stable
+#PREFERRED_PROVIDER_virtual/kernel = "linux-rt-stable"
+
+#DL_DIR ?= "${TOPDIR}/downloads"
+#SSTATE_DIR ?= "${TOPDIR}/sstate-cache"
+#TMPDIR = "${TOPDIR}/tmp"
+
+BB_DISKMON_DIRS = "\
+    STOPTASKS,${TMPDIR},1G,100K \
+    STOPTASKS,${DL_DIR},1G,100K \
+    STOPTASKS,${SSTATE_DIR},1G,100K \
+    ABORT,${TMPDIR},100M,1K \
+    ABORT,${DL_DIR},100M,1K \
+    ABORT,${SSTATE_DIR},100M,1K" 
+
+# PACKAGE_CLASSES can be one of the following package_deb package_rpm package_ipk
+PACKAGE_CLASSES ?= "package_ipk"
+
+# To enable verified boot the following lines are required and barebox configuration adjusted to your needs :
+#BAREBOX_SIGN_KEYDIR="${TOPDIR}/../meta-hilscher-netx4000/files/keys/"
+#BAREBOX_SIGN_KEYNAME="debug-sample"
+#FITIMAGE_SIGN="1"
+#FITIMAGE_HASH_ALGO = "sha512"
+# Following combinations for signing are supported: 
+# "sha1,rsa2048" "sha256,rsa4096" "sha512,rsa4096"
+#FITIMAGE_SIGN_ALGO = "${FITIMAGE_HASH_ALGO},rsa4096"
+
+# Defines the minimum size in KiB for the generated image (e.g. 8MiB).
+#IMAGE_ROOTFS_SIZE = "8192"
+
+# Defines a multiplier that the build system applies to the initial image size
+# for cases when the multiplier times the returned disk usage value for the
+# image is greater than IMAGE_ROOTFS_SIZE (default: 1.3).
+#IMAGE_OVERHEAD_FACTOR = "1.3"
+
+# Defines additional disk space in KiB for the generated image (default: 0).
+# This value is added at end of the image size recalculation.
+#IMAGE_ROOTFS_EXTRA_SPACE = "0"
+
+EXTRA_IMAGE_FEATURES += "empty-root-password allow-empty-password debug-tweaks"
+

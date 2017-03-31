@@ -1,0 +1,16 @@
+ROOTFS_BOOTSTRAP_INSTALL=""
+
+# Remove x86 specific stuff
+PACKAGE_INSTALL_remove += "initramfs-live-install \
+                           initramfs-live-install-efi \
+                           initramfs-live-boot"
+
+# Remove unneeded stuff
+PACKAGE_INSTALL_remove += "base-passwd \
+                           udev"
+
+# Add initrd framework
+PACKAGE_INSTALL_append += "initramfs-framework-base \
+                           initramfs-framework-rootfs-image-file"
+
+COMPATIBLE_HOST = "arm-.*-linux"
