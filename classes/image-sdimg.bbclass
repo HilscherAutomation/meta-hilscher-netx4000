@@ -99,5 +99,5 @@ IMAGE_CMD_sdimg () {
 	fi
 
 	# Create a symlink
-	ln -sf ${SDIMG} ${SDIMG_LINK_NAME}
+	ln -sf $(basename ${SDIMG}) ${SDIMG_LINK_NAME}
 }
