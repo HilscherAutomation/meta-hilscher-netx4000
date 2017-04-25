@@ -32,7 +32,6 @@ INITRAMFS_IMAGE_BUNDLE ?= ""
 INITRAMFS_FSTYPES ?= "cpio.gz"
 
 #############################################################################
-# RFS
+# Contents of boot partition (excluding rootfs)
 #############################################################################
-IMAGE_FSTYPES ??= "tar.bz2 ext4 ubi"
 IMAGE_BOOT_FILES ?= "netx.rom fitImage"
