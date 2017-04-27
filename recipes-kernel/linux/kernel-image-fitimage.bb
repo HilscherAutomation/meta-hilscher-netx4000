@@ -5,6 +5,8 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/LICENSE;md5=4d92cd373abda3937c2bc47fbc49d
 
 PROVIDES = "fitImage"
 
+inherit linux-kernel-base deploy
+
 python __anonymous () {
     depends = d.getVar("DEPENDS", True)
     depends = "%s u-boot-mkimage-native dtc-native virtual/kernel" % depends
@@ -166,7 +168,6 @@ EOF
   fit_write_section_end "${1}"
 }
 
-inherit linux-kernel-base
 KERNEL_VERSION="${@get_kernelversion_file("${STAGING_KERNEL_BUILDDIR}")}"
 
 do_install() {
@@ -242,8 +243,6 @@ do_install() {
 PACKAGES="${PN}"
 FILES_${PN}="/boot"
 
-addtask deploy after do_populate_sysroot
-
 do_deploy[vardepsexclude] = "DATETIME"
 do_deploy() {
   fit_its_file="${B}/fitImage.its"
@@ -253,16 +252,17 @@ do_deploy() {
   echo "Copying fit-image.its source file..."
   its_base_name="fitImage-${PV}-${PR}-${MACHINE}-${DATETIME}"
   its_symlink_name=fitImage.its
-  install -m 0644 ${fit_its_file} ${DEPLOY_DIR_IMAGE}/${its_base_name}.its
+  install -m 0644 ${fit_its_file} ${DEPLOYDIR}/${its_base_name}.its
 
   linux_bin_base_name="fitImage-${PV}-${PR}-${MACHINE}-${DATETIME}"
   linux_bin_symlink_name=fitImage
-  install -m 0644 ${fit_image} ${DEPLOY_DIR_IMAGE}/${linux_bin_base_name}.bin
+  install -m 0644 ${fit_image} ${DEPLOYDIR}/${linux_bin_base_name}.bin
 
-  cd ${DEPLOY_DIR_IMAGE}
+  cd ${DEPLOYDIR}
   ln -sf ${its_base_name}.its ${its_symlink_name}
   ln -sf ${linux_bin_base_name}.bin ${linux_bin_symlink_name}
 }
+addtask deploy after do_install
 
 PACKAGE_ARCH="${MACHINE_ARCH}"
 
