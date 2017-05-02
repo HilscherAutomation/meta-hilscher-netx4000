@@ -9,7 +9,7 @@ LINUX_VERSION_EXTENSION = "-netx4000"
 
 SRC_URI = "git://${GIT_KERNEL_REPO};branch=${BRANCH};name=machine;nocheckout=1"
 
-SRCREV_machine="ba62e1a75be4eeaff7d40ee233ffb7077944c825"
+SRCREV_machine="13cdab5c4af1150dfa84274c996891d7c2bd2763"
 #SRCREV_machine="${AUTOREV}"
 
 KBUILD_DEFCONFIG = "netx4000_defconfig"
