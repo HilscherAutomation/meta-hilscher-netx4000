@@ -32,7 +32,7 @@ distribution / layer.
 This layer depends on:
 
 URI: git://git.yoctoproject.org/poky
-branch: master
+branch: pyro
 revision: HEAD
 
 Pre-Requisites for all boards:
@@ -90,7 +90,7 @@ non-mainline drivers:
     * core-image-sato
 
 5. optional configuration
-    Check "http://www.yoctoproject.org/docs/latest/ref-manual/ref-manual.html"
+    Check "http://www.yoctoproject.org/docs/2.3/ref-manual/ref-manual.html"
     for options.
 
 
@@ -116,7 +116,7 @@ non-mainline drivers:
 2.3 Creating own machines
 =========================
 
-see http://www.yoctoproject.org/docs/latest/mega-manual/mega-manual.html#platdev-newmachine
+see http://www.yoctoproject.org/docs/2.3/mega-manual/mega-manual.html#platdev-newmachine
 
 Additional parameters:
  * BAREBOX_DEVICETREE
