@@ -37,6 +37,7 @@ IMAGE_DEPENDS_sdimg = " \
 	dosfstools-native \
 	parted-native \
 	mtools-native \
+	coreutils-native \
 	${IMAGE_BOOT_FILES} \
 "
 

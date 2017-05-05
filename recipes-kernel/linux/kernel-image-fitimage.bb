@@ -8,11 +8,11 @@ PROVIDES = "fitImage"
 inherit linux-kernel-base deploy
 
 python __anonymous () {
-    depends = d.getVar("DEPENDS", True)
+    depends = d.getVar("DEPENDS")
     depends = "%s u-boot-mkimage-native dtc-native virtual/kernel" % depends
     d.setVar("DEPENDS", depends)
 
-    image = d.getVar('INITRAMFS_IMAGE', True)
+    image = d.getVar('INITRAMFS_IMAGE')
     if image:
         d.appendVarFlag('do_install', 'depends', ' ${INITRAMFS_IMAGE}:do_image_complete')
 
@@ -270,6 +270,5 @@ do_fetch[noexec] = "1"
 do_unpack[depends] += "virtual/kernel:do_patch"
 do_unpack[noexec] = "1"
 do_patch[noexec] = "1"
-do_populate_sysroot[noexec] = "1"
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"

@@ -1,27 +1,27 @@
-From 5c224a7e5c2192da321bf5b4df179840f5e2b22c Mon Sep 17 00:00:00 2001
-From: quarkdev <quark@nxsysquarkdev>
-Date: Wed, 21 Dec 2016 11:10:09 +0100
-Subject: [PATCH] Implement SHA512 hash and sha512,rsa4096 signature support
+From 62ec50a037ca5e1821ebd268b53e1e1a9f7aa5d3 Mon Sep 17 00:00:00 2001
+From: Michael Trensch <hilscher@users.noreply.github.com>
+Date: Tue, 18 Apr 2017 08:43:55 +0200
+Subject: [PATCH] Implement SHA512 hash signature support (required for
+ sha512,rsa4096)
 
 ---
  common/hash.c                 |  40 +++++++
  common/image-fit.c            |   5 +
- common/image-sig.c            |  17 +++
+ common/image-sig.c            |  13 ++-
  include/hash.h                |   2 +-
  include/image.h               |  14 +++
- include/u-boot/rsa-checksum.h |   2 +
- include/u-boot/sha512.h       |  24 ++++
+ include/u-boot/rsa-checksum.h |   1 +
+ include/u-boot/sha512.h       |  27 +++++
  lib/Kconfig                   |   8 ++
  lib/Makefile                  |   1 +
- lib/rsa/rsa-checksum.c        |  38 ++++++
- lib/sha512.c                  | 260 ++++++++++++++++++++++++++++++++++++++++++
+ lib/sha512.c                  | 266 ++++++++++++++++++++++++++++++++++++++++++
  tools/Makefile                |   2 +
- 12 files changed, 412 insertions(+), 1 deletion(-)
+ 11 files changed, 376 insertions(+), 3 deletions(-)
  create mode 100644 include/u-boot/sha512.h
  create mode 100644 lib/sha512.c
 
 diff --git a/common/hash.c b/common/hash.c
-index 41de4df..9a31b26 100644
+index b645298..4cf87da 100644
 --- a/common/hash.c
 +++ b/common/hash.c
 @@ -28,6 +28,7 @@
@@ -86,10 +86,10 @@ index 41de4df..9a31b26 100644
  		"crc32",
  		4,
 diff --git a/common/image-fit.c b/common/image-fit.c
-index fbd9e0d..de41d47 100644
+index 95d8bf4..5e490825 100644
 --- a/common/image-fit.c
 +++ b/common/image-fit.c
-@@ -26,6 +26,7 @@ DECLARE_GLOBAL_DATA_PTR;
+@@ -28,6 +28,7 @@ DECLARE_GLOBAL_DATA_PTR;
  #include <u-boot/md5.h>
  #include <u-boot/sha1.h>
  #include <u-boot/sha256.h>
@@ -97,7 +97,7 @@ index fbd9e0d..de41d47 100644
  
  /*****************************************************************************/
  /* New uImage format routines */
-@@ -921,6 +922,10 @@ int calculate_hash(const void *data, int data_len, const char *algo,
+@@ -932,6 +933,10 @@ int calculate_hash(const void *data, int data_len, const char *algo,
  		sha256_csum_wd((unsigned char *)data, data_len,
  			       (unsigned char *)value, CHUNKSZ_SHA256);
  		*value_len = SHA256_SUM_LEN;
@@ -109,40 +109,29 @@ index fbd9e0d..de41d47 100644
  		md5_wd((unsigned char *)data, data_len, value, CHUNKSZ_MD5);
  		*value_len = 16;
 diff --git a/common/image-sig.c b/common/image-sig.c
-index eda5e13..5bc8589 100644
+index 455f2b9..1830a8e 100644
 --- a/common/image-sig.c
 +++ b/common/image-sig.c
-@@ -60,6 +60,16 @@ struct checksum_algo checksum_algos[] = {
+@@ -50,8 +50,17 @@ struct checksum_algo checksum_algos[] = {
+ 		EVP_sha256,
  #endif
  		hash_calculate,
- 		padding_sha256_rsa4096,
+-	}
+-
 +	},
-+	{
-+		"sha512",
-+		SHA512_SUM_LEN,
-+		RSA4096_BYTES,
++        {
++                "sha512",
++                SHA512_SUM_LEN,
++                SHA512_DER_LEN,
++                sha512_der_prefix,
 +#if IMAGE_ENABLE_SIGN
-+		EVP_sha512,
++                EVP_sha512,
 +#endif
-+		hash_calculate,
-+		padding_sha512_rsa4096,
- 	}
- 
++                hash_calculate,
++        }
  };
-@@ -85,6 +95,13 @@ struct image_sig_algo image_sig_algos[] = {
- 		rsa_add_verify_data,
- 		rsa_verify,
- 		&checksum_algos[2],
-+	},
-+	{
-+		"sha512,rsa4096",
-+		rsa_sign,
-+		rsa_add_verify_data,
-+		rsa_verify,
-+		&checksum_algos[3],
- 	}
  
- };
+ struct crypto_algo crypto_algos[] = {
 diff --git a/include/hash.h b/include/hash.h
 index d814337..59ba707 100644
 --- a/include/hash.h
@@ -157,10 +146,10 @@ index d814337..59ba707 100644
  enum {
  	HASH_FLAG_VERIFY	= 1 << 0,	/* Enable verify mode */
 diff --git a/include/image.h b/include/image.h
-index 518a4f5..06b9a96 100644
+index 0537678..5b79165 100644
 --- a/include/image.h
 +++ b/include/image.h
-@@ -62,15 +62,20 @@ struct lmb;
+@@ -65,15 +65,20 @@ struct lmb;
  #  ifdef CONFIG_SPL_SHA256_SUPPORT
  #   define IMAGE_ENABLE_SHA256	1
  #  endif
@@ -181,7 +170,7 @@ index 518a4f5..06b9a96 100644
  # endif
  
  #ifdef CONFIG_FIT_DISABLE_SHA256
-@@ -78,6 +83,11 @@ struct lmb;
+@@ -81,6 +86,11 @@ struct lmb;
  #undef IMAGE_ENABLE_SHA256
  #endif
  
@@ -193,7 +182,7 @@ index 518a4f5..06b9a96 100644
  #ifndef IMAGE_ENABLE_CRC32
  #define IMAGE_ENABLE_CRC32	0
  #endif
-@@ -94,6 +104,10 @@ struct lmb;
+@@ -97,6 +107,10 @@ struct lmb;
  #define IMAGE_ENABLE_SHA256	0
  #endif
  
@@ -201,35 +190,36 @@ index 518a4f5..06b9a96 100644
 +#define IMAGE_ENABLE_SHA512	0
 +#endif
 +
- #endif /* CONFIG_FIT */
+ #endif /* IMAGE_ENABLE_FIT */
  
  #ifdef CONFIG_SYS_BOOT_RAMDISK_HIGH
 diff --git a/include/u-boot/rsa-checksum.h b/include/u-boot/rsa-checksum.h
-index 3c69d85..c62d7d2 100644
+index c240720..85a5c1d 100644
 --- a/include/u-boot/rsa-checksum.h
 +++ b/include/u-boot/rsa-checksum.h
-@@ -11,7 +11,9 @@
+@@ -11,6 +11,7 @@
  #include <image.h>
  #include <u-boot/sha1.h>
  #include <u-boot/sha256.h>
 +#include <u-boot/sha512.h>
  
-+extern const uint8_t padding_sha512_rsa4096[];
- extern const uint8_t padding_sha256_rsa4096[];
- extern const uint8_t padding_sha256_rsa2048[];
- extern const uint8_t padding_sha1_rsa2048[];
+ /**
+  * hash_calculate() - Calculate hash over the data
 diff --git a/include/u-boot/sha512.h b/include/u-boot/sha512.h
 new file mode 100644
-index 0000000..c432267
+index 0000000..abdf245
 --- /dev/null
 +++ b/include/u-boot/sha512.h
-@@ -0,0 +1,24 @@
+@@ -0,0 +1,27 @@
 +#ifndef _SHA512_H
 +#define _SHA512_H
 +
 +#define SHA512_DIGEST_SIZE      64
 +#define SHA512_BLOCK_SIZE       128
 +#define SHA512_SUM_LEN		64
++#define SHA512_DER_LEN		19
++
++extern const uint8_t sha512_der_prefix[];
 +
 +/* Reset watchdog each time we process this many bytes */
 +#define CHUNKSZ_SHA512	(64 * 1024)
@@ -249,10 +239,10 @@ index 0000000..c432267
 +
 +#endif /* _SHA512_H */
 diff --git a/lib/Kconfig b/lib/Kconfig
-index c7eab46..e01985f 100644
+index b16062f..3a8b667 100644
 --- a/lib/Kconfig
 +++ b/lib/Kconfig
-@@ -84,6 +84,14 @@ config SHA256
+@@ -85,6 +85,14 @@ config SHA256
  	  The SHA256 algorithm produces a 256-bit (32-byte) hash value
  	  (digest).
  
@@ -268,72 +258,23 @@ index c7eab46..e01985f 100644
  	bool "Enable hashing using hardware"
  	help
 diff --git a/lib/Makefile b/lib/Makefile
-index 1e21bcc..fee5216 100644
+index 23e9f1e..2e4fb10 100644
 --- a/lib/Makefile
 +++ b/lib/Makefile
-@@ -43,6 +43,7 @@ obj-y += rc4.o
- obj-$(CONFIG_SHA1) += sha1.o
- obj-$(CONFIG_SUPPORT_EMMC_RPMB) += sha256.o
- obj-$(CONFIG_SHA256) += sha256.o
-+obj-$(CONFIG_SHA512) += sha512.o
- obj-y	+= strmhz.o
- obj-$(CONFIG_TPM) += tpm.o
- obj-$(CONFIG_RBTREE)	+= rbtree.o
-diff --git a/lib/rsa/rsa-checksum.c b/lib/rsa/rsa-checksum.c
-index 68d9d65..18b9a64 100644
---- a/lib/rsa/rsa-checksum.c
-+++ b/lib/rsa/rsa-checksum.c
-@@ -20,6 +20,44 @@
+@@ -47,6 +47,7 @@ endif
+ obj-$(CONFIG_$(SPL_)RSA) += rsa/
+ obj-$(CONFIG_$(SPL_)SHA1) += sha1.o
+ obj-$(CONFIG_$(SPL_)SHA256) += sha256.o
++obj-$(CONFIG_$(SPL_)SHA512) += sha512.o
  
- /* PKCS 1.5 paddings as described in the RSA PKCS#1 v2.1 standard. */
- 
-+const uint8_t padding_sha512_rsa4096[RSA4096_BYTES - SHA512_SUM_LEN] = {
-+0x00, 0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
-+0x30, 0x51, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04,
-+0x02, 0x03, 0x05, 0x00, 0x04, 0x40
-+};
-+
- const uint8_t padding_sha256_rsa2048[RSA2048_BYTES - SHA256_SUM_LEN] = {
- 0x00, 0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
- 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+ obj-$(CONFIG_SPL_SAVEENV) += qsort.o
+ obj-$(CONFIG_$(SPL_)OF_LIBFDT) += libfdt/
 diff --git a/lib/sha512.c b/lib/sha512.c
 new file mode 100644
-index 0000000..c8c4f05
+index 0000000..5a095ca
 --- /dev/null
 +++ b/lib/sha512.c
-@@ -0,0 +1,260 @@
+@@ -0,0 +1,266 @@
 +/*
 + * FIPS-180-2 compliant SHA-256 implementation
 + *
@@ -350,6 +291,12 @@ index 0000000..c8c4f05
 +#endif /* USE_HOSTCC */
 +#include <watchdog.h>
 +#include <u-boot/sha512.h>
++
++const uint8_t sha512_der_prefix[SHA512_DER_LEN] = {
++	0x30, 0x51, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86,
++	0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x05,
++	0x00, 0x04, 0x40
++};
 +
 +static inline uint32_t __get_unaligned_be32(const uint8_t *p)
 +{
@@ -595,10 +542,10 @@ index 0000000..c8c4f05
 +	sha512_finish(&ctx, output);
 +}
 diff --git a/tools/Makefile b/tools/Makefile
-index 2881a7c..ab49105 100644
+index 5b81dde..79f65ec 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
-@@ -96,6 +96,7 @@ dumpimage-mkimage-objs := aisimage.o \
+@@ -95,6 +95,7 @@ dumpimage-mkimage-objs := aisimage.o \
  			socfpgaimage.o \
  			lib/sha1.o \
  			lib/sha256.o \
@@ -606,7 +553,7 @@ index 2881a7c..ab49105 100644
  			common/hash.o \
  			ublimage.o \
  			zynqimage.o \
-@@ -178,6 +179,7 @@ HOSTCFLAGS_crc32.o := -pedantic
+@@ -194,6 +195,7 @@ HOSTCFLAGS_crc32.o := -pedantic
  HOSTCFLAGS_md5.o := -pedantic
  HOSTCFLAGS_sha1.o := -pedantic
  HOSTCFLAGS_sha256.o := -pedantic

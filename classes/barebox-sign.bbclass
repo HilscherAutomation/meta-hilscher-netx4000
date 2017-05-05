@@ -21,7 +21,7 @@ python do_apply_verification_keys() {
       else:
           return x % m
 
-  key_file=os.path.join(d.getVar("BAREBOX_SIGN_KEYDIR", True), d.getVar("BAREBOX_SIGN_KEYNAME", True) + ".key")
+  key_file=os.path.join(d.getVar("BAREBOX_SIGN_KEYDIR"), d.getVar("BAREBOX_SIGN_KEYNAME") + ".key")
 
   # Extract modulus and N0inv
   modulus = subprocess.check_output(["openssl", "rsa", "-in", key_file, "-modulus", "-noout"])
@@ -59,17 +59,17 @@ python do_apply_verification_keys() {
         };
     };
 };
-""" % ( d.getVar("BAREBOX_SIGN_KEYNAME", True),
+""" % ( d.getVar("BAREBOX_SIGN_KEYNAME"),
         dtc_modulus, int(exponent),
         N0inv, keylen, rr)
 
-  dts_path = os.path.join(d.getVar("B", True), 
-                         "arch", d.getVar("ARCH", True), "dts")
+  dts_path = os.path.join(d.getVar("B"), 
+                         "arch", d.getVar("ARCH"), "dts")
   with open(os.path.join(dts_path, "signature_check.dtsi"), 'w+') as sig_check:
     sig_check.write(signature_block)
 
   # Add include to main dts file
-  dts_file = os.path.join(dts_path, os.path.basename(d.getVar("BAREBOX_DEVICETREE", True)))
+  dts_file = os.path.join(dts_path, os.path.basename(d.getVar("BAREBOX_DEVICETREE")))
 
   with open(dts_file, 'r+') as dts:
     tmp=dts.read()
@@ -82,7 +82,7 @@ python do_apply_verification_keys() {
 }
 
 python() {
-  sign_image = d.getVar("FITIMAGE_SIGN", True) or "0"
+  sign_image = d.getVar("FITIMAGE_SIGN") or "0"
   if sign_image != "0":
     bb.build.addtask('do_apply_verification_keys', 'do_compile', 'do_configure', d)
 }

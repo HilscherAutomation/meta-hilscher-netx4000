@@ -32,7 +32,7 @@ distribution / layer.
 This layer depends on:
 
 URI: git://git.yoctoproject.org/poky
-branch: morty
+branch: master
 revision: HEAD
 
 Pre-Requisites for all boards:
@@ -116,7 +116,7 @@ non-mainline drivers:
 2.3 Creating own machines
 =========================
 
-see http://www.yoctoproject.org/docs/2.2/mega-manual/mega-manual.html#platdev-newmachine
+see http://www.yoctoproject.org/docs/latest/mega-manual/mega-manual.html#platdev-newmachine
 
 Additional parameters:
  * BAREBOX_DEVICETREE
