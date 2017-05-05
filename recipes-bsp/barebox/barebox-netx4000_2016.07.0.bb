@@ -1,6 +1,6 @@
 require barebox.inc
 
-SRCREV = "424ae7559871b1a38af4288b3f9a489ebda07291"
+SRCREV = "dce8ddb07cd54780a9b12006753383d9ea65476e"
 #SRCREV = "${AUTOREV}"
 
 SRC_URI += "file://${DTS_DIR}"

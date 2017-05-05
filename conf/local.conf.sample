@@ -21,6 +21,11 @@ MACHINE ?= "nxhx4000-jtag-plus_rev2"
 # Possible values: linux-stable (default), linux-rt-stable
 #PREFERRED_PROVIDER_virtual/kernel = "linux-rt-stable"
 
+# Setup preferred kernel version
+# Possible values: 4.4.%, 4.9.% (default
+#PREFERRED_VERSION_linux-stable ?= "4.9.%"
+#PREFERRED_VERSION_linux-rt-stable ?="4.9.%"
+
 #DL_DIR ?= "${TOPDIR}/downloads"
 #SSTATE_DIR ?= "${TOPDIR}/sstate-cache"
 #TMPDIR = "${TOPDIR}/tmp"

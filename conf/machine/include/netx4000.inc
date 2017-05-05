@@ -15,8 +15,8 @@ EXTRA_IMAGEDEPENDS += "barebox-netx4000"
 
 PREFERRED_PROVIDER_virtual/bootloader ?= "barebox-netx4000"
 PREFERRED_PROVIDER_virtual/kernel ?= "linux-stable"
-PREFERRED_VERSION_linux-stable ?= "4.4%"
-PREFERRED_VERSION_linux-rt-stable ?="4.4%"
+PREFERRED_VERSION_linux-stable ?= "4.9.%"
+PREFERRED_VERSION_linux-rt-stable ?="4.9.%"
 
 #############################################################################
 # Kernel
