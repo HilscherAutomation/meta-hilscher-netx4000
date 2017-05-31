@@ -2,7 +2,7 @@ SUMMARY = "Use an image file as rootfs"
 HOMEPAGE = "http://www.hilscher.com"
 
 LICENSE = "Hilscher-SLA"
-LIC_FILES_CHKSUM = "file://${HILSCHER_LICENSE_PATH}/Hilscher-SLA;md5=07eea1d7f15431bf435e8e9a83c21006"
+LIC_FILES_CHKSUM = "file://${HILSCHER_LICENSE_PATH}/Hilscher-SLA;md5=37f1a875d1f12ae4f3d9c5ef16ea4030"
 
 inherit allarch
 
