@@ -70,6 +70,8 @@ non-mainline drivers:
      * no sequencer support (just basic manual sampling)
  * ECC (1 bit correction / 2 bit detection) for L1/L2 cache - EDAC modules
  * ECC (1 bit correction / 2 bit detection) for DDR memory - EDAC modules
+ * LCD (framebuffer driver)
+ * CAN (kernel 4.9+)
 
 
 2.2 How to use it
@@ -173,7 +175,7 @@ EXAMPLE: (barebox shell)
   cp /boot/core-image-minimal-nxhx4000-jtag-plus_rev2.ubi /dev/nand0.rootfs.bb
 
 NOTE:
-The ubi image is located on the boot partitiuon of SD card.
+The ubi image is located on the boot partition of SD card.
 
 
 2.4.3 USB stick
