@@ -15,14 +15,14 @@ PARALLEL_MAKE ?= "-j ${@oe.utils.cpu_count()*2}"
 DISTRO ?= "poky"
 # TCLIBC can be one of the following glibc musl
 #TCLIBC ?= "musl"
-MACHINE ?= "nxhx4000-jtag-plus_rev2"
+MACHINE ?= "nxhx4000-jtag-plus-rev2"
 
 # Setup preferred kernel
 # Possible values: linux-stable (default), linux-rt-stable
 #PREFERRED_PROVIDER_virtual/kernel = "linux-rt-stable"
 
 # Setup preferred kernel version
-# Possible values: 4.4.%, 4.9.% (default
+# Possible values: 4.4.%, 4.9.% (default)
 #PREFERRED_VERSION_linux-stable ?= "4.9.%"
 #PREFERRED_VERSION_linux-rt-stable ?="4.9.%"
 
@@ -64,3 +64,7 @@ PACKAGE_CLASSES ?= "package_ipk"
 
 EXTRA_IMAGE_FEATURES += "empty-root-password allow-empty-password debug-tweaks"
 
+# core-image-minimal does not include package manager
+# per default. If required, it can be enabled for
+# *all* images
+#EXTRA_IMAGE_FEATURES += "package-management"
