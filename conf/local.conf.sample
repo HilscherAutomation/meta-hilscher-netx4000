@@ -25,6 +25,9 @@ MACHINE ?= "nxhx4000-jtag-plus-rev2"
 # Possible values: 4.4.%, 4.9.% (default)
 #PREFERRED_VERSION_linux-stable ?= "4.9.%"
 #PREFERRED_VERSION_linux-rt-stable ?="4.9.%"
+# To use latest (bleeding edge) netx4000 kernel commit of the selected major version
+#SRCREV_pn-linux-stable="${AUTOREV}"
+#SRCREV_pn-linux-rt-stable="${AUTOREV}"
 
 #DL_DIR ?= "${TOPDIR}/downloads"
 #SSTATE_DIR ?= "${TOPDIR}/sstate-cache"
