@@ -1,16 +1,15 @@
 inherit kernel
 require recipes-kernel/linux/linux-yocto.inc
+require fix_kbuild_defconfig.inc
 
 GIT_KERNEL_REPO ?= "github.com/hilscher/netx4000-linux.git;protocol=https"
-BRANCH = "v4.4-netx4000-stable"
+KBRANCH = "v4.4-netx4000-stable"
 
 LINUX_VERSION = "4.4.57"
 LINUX_VERSION_EXTENSION = "-netx4000"
 
-SRC_URI = "git://${GIT_KERNEL_REPO};branch=${BRANCH};name=machine;nocheckout=1"
-
-SRCREV_machine="d05f819c12b48e892812876c6bc899fbe5f9e1ce"
-#SRCREV_machine="${AUTOREV}"
+SRC_URI = "git://${GIT_KERNEL_REPO};branch=${KBRANCH};nocheckout=1"
+SRCREV="d05f819c12b48e892812876c6bc899fbe5f9e1ce"
 
 KBUILD_DEFCONFIG = "netx4000_defconfig"
 
@@ -21,4 +20,3 @@ COMPATIBLE_MACHINE = "netx4000"
 
 # Prevent automatically inclusion of kernel-image into rootfs/image
 RDEPENDS_kernel-base=""
-
