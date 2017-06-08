@@ -52,6 +52,8 @@ PACKAGE_CLASSES ?= "package_ipk"
 # Following combinations for signing are supported: 
 # "sha1,rsa2048" "sha256,rsa4096" "sha512,rsa4096"
 #FITIMAGE_SIGN_ALGO = "${FITIMAGE_HASH_ALGO},rsa4096"
+# Following line enforces signature verification (no unsigned images allowed)
+#BAREBOX_SIGN_ENFORCE="1"
 
 # Defines the minimum size in KiB for the generated image (e.g. 8MiB).
 #IMAGE_ROOTFS_SIZE = "8192"
