@@ -22,6 +22,18 @@ PACKAGES = "${PN}"
 
 EXTRA_OEMAKE = "CROSS_COMPILE=${TARGET_PREFIX}"
 
+DEPENDS += "kern-tools-native"
+
+# returns all the elements from the src uri that are .cfg files
+def find_cfgs(d):
+    sources=src_patches(d, True)
+    sources_list=[]
+    for s in sources:
+        if s.endswith('.cfg'):
+            sources_list.append(s)
+
+    return sources_list
+
 do_configure_prepend() {
 	[ -r ${WORKDIR}/defconfig ] && {
 		bbnote "Copying/Replacing the netx4000_defconfig"
@@ -45,6 +57,9 @@ do_configure_prepend() {
 
 	# Change used device tree in config
 	sed -i -e 's,\(CONFIG_BUILTIN_DTB_NAME=\).*,\1"${@os.path.splitext(os.path.basename("${BAREBOX_DEVICETREE}"))[0]}",g' ${S}/.config
+
+	# Apply possible configuration fragments
+	merge_config.sh -m .config ${@" ".join(find_cfgs(d))}
 }
 
 do_compile_prepend() {
