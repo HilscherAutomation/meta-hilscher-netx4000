@@ -84,7 +84,7 @@ non-mainline drivers:
 2. Add meta-hilscher-netx4000 layer to conf/bblayers.conf
 
 3. Setup machine in conf/local.conf
-    * MACHINE = "nxhx4000-jtag-plus_rev2"
+    * MACHINE = "nxhx4000-jtag-plus-rev2"
 
 4. Build any default image "bitbake <image>"
     * core-image-minimal
@@ -131,7 +131,7 @@ Additional parameters:
   
 Example machine:
  * machine configuration:
-   meta-hilscher-netx4000/conf/nxhx4000-jtag-plus_rev2.conf
+   meta-hilscher-netx4000/conf/nxhx4000-jtag-plus-rev2.conf
  * hardware description (device tree):
    https://github.com/Hilscher/netx4000-barebox/blob/v2016.07.0-netx4000/arch/arm/dts/nxhx4000-jtag-plus_rev2.dts
 
@@ -143,7 +143,7 @@ Example machine:
 2.4.1 SD/MMC card
 =================
 
-Per default the board specific machine file nxhx4000-jtag-plus_rev2.conf includes
+Per default the board specific machine file nxhx4000-jtag-plus-rev2.conf includes
 IMAGE_CLASSES += "image-sdimg" and IMAGE_FSTYPES += "sdimg" lines.
 These are responsible for automatically building an SD card image file.
 
@@ -151,8 +151,8 @@ To use it, change into the machine related deploy directory and copy the image
 file to SD card.
 
 EXAMPLE: (host command line)
-  cd tmp/deploy/images/nxhx4000-jtag-plus_rev2
-  dd if=core-image-minimal-nxhx4000-jtag-plus_rev2.sdimg of=/dev/sdb bs=4M && sync
+  cd tmp/deploy/images/nxhx4000-jtag-plus-rev2
+  dd if=core-image-minimal-nxhx4000-jtag-plus-rev2.sdimg of=/dev/sdb bs=4M && sync
 
 NOTE:
  * /dev/sdb is the device file of SD card and must be adapted to your conditions!
@@ -173,7 +173,7 @@ Flash ubi image to rootfs partition of NAND flash (see device tree, default 128K
 
 EXAMPLE: (barebox shell)
   erase /dev/nand0.rootfs
-  cp /boot/core-image-minimal-nxhx4000-jtag-plus_rev2.ubi /dev/nand0.rootfs.bb
+  cp /boot/core-image-minimal-nxhx4000-jtag-plus-rev2.ubi /dev/nand0.rootfs.bb
 
 NOTE:
 The ubi image is located on the boot partition of SD card.
@@ -194,7 +194,7 @@ Format USB stick to ext4 and extract tarball.
 EXAMPLE: (host command line)
   mkfs.ext4 /dev/sdb1
   mount /dev/sdb1 /mnt
-  tar xf core-image-minimal-nxhx4000-jtag-plus_rev2.tar.bz2 -C /mnt
+  tar xf core-image-minimal-nxhx4000-jtag-plus-rev2.tar.bz2 -C /mnt
   sync && umount /dev/sdb*
 
 NOTE:
