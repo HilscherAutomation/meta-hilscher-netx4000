@@ -13,7 +13,8 @@ COMPATIBLE_MACHINE = "netx4000"
 GIT_BAREBOX_REPO ?= "github.com/hilscher/netx4000-barebox.git;protocol=https"
 BRANCH = "v2016.07.0-netx4000"
 
-SRC_URI = "git://${GIT_BAREBOX_REPO};branch=${BRANCH}"
+SRC_URI = "git://${GIT_BAREBOX_REPO};branch=${BRANCH} \
+           ${@bb.utils.contains('BAREBOX_SIGN_ENFORCE', '1', 'file://enforce_signature_verification.cfg', '',d)}"
 
 S = "${WORKDIR}/git"
 

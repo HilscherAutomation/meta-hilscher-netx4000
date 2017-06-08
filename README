@@ -112,7 +112,8 @@ non-mainline drivers:
        - sha512,rsa4096
     * FITIMAGE_HASH_ALGO : (optional) can be set to sha1/sha256/sha512
 3. To force only signed image can be booted you need to setup barebox to only accept signed images
-   See CONFIG_BOOTM_FORCE_SIGNED_IMAGES configuration option (bitbake barebox -c menuconfig)
+   See CONFIG_BOOTM_FORCE_SIGNED_IMAGES configuration option (bitbake barebox -c menuconfig).
+   Alternatively BAREBOX_SIGN_ENFORCE can be set to 1
 
 
 2.3 Creating own machines
