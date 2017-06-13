@@ -1,6 +1,8 @@
 require barebox.inc
 
-SRCREV = "8e0ff887df059d89bc296ba133a6e20439a47690"
+BRANCH = "v2016.07.0-netx4000"
+
+SRCREV = "6298b3aae4ddfde53c643846fbcc5c304129db82"
 #SRCREV = "${AUTOREV}"
 
 SRC_URI += "file://${DTS_DIR}"
