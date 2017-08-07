@@ -20,3 +20,10 @@ COMPATIBLE_MACHINE = "netx4000"
 
 # Prevent automatically inclusion of kernel-image into rootfs/image
 RDEPENDS_kernel-base=""
+
+python () {
+    kernel_fdt = d.getVar('KERNEL_DEVICETREE') or ""
+
+    if kernel_fdt != "":
+        raise bb.parse.SkipPackage("Kernel 4.4 does not support KERNEL_DEVICETREE feature")
+}

@@ -77,12 +77,13 @@ EOF
 
 fit_write_fdt_image() {
   mkdir -p fdt
-  cp -L ${DEPLOY_DIR_IMAGE}/${KERNEL_DEVICETREE} fdt/.
+  DTB=$(basename ${KERNEL_DEVICETREE})
+  cp -L ${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGETYPE}-${DTB} fdt/.
 
   cat << EOF >> ${1}
                 fdt@1 {
                         description = "Flattened Device Tree blob";
-                        data = /incbin/("fdt/${KERNEL_DEVICETREE}");
+                        data = /incbin/("fdt/${KERNEL_IMAGETYPE}-${DTB}");
                         type = "flat_dt";
                         arch = "${ARCH}";
                         compression = "none";
