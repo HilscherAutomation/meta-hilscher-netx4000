@@ -9,7 +9,7 @@ LINUX_VERSION = "4.9.25"
 LINUX_VERSION_EXTENSION = "-netx4000"
 
 SRC_URI = "git://${GIT_KERNEL_REPO};branch=${KBRANCH};nocheckout=1"
-SRCREV="8502a0f6fb8f5291e5eba7633b38e4ce837284e3"
+SRCREV="0770556ed005d5a7d442e17958fd2d4a76aa1536"
 
 KBUILD_DEFCONFIG = "netx4000_defconfig"
 
@@ -20,3 +20,13 @@ COMPATIBLE_MACHINE = "netx4000"
 
 # Prevent automatically inclusion of kernel-image into rootfs/image
 RDEPENDS_kernel-base=""
+
+SRC_URI += "file://${DTS_DIR}"
+
+do_compile_prepend() {
+	[ -n "$(ls ${DTS_DIR})" ] && {
+		bbnote "Copying/Replacing device tree files"
+		mkdir -p ${S}/arch/arm/boot/dts/netx4000
+		cp -r ${WORKDIR}/${DTS_DIR}/* ${S}/arch/arm/boot/dts/netx4000/
+	}
+}

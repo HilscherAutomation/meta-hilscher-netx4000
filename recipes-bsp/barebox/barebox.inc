@@ -52,11 +52,12 @@ do_configure_prepend() {
 
 	[ -n "$(ls ${DTS_DIR})" ] && {
 		bbnote "Copying/Replacing device tree files"
-		cp -r ${WORKDIR}/${DTS_DIR}/* ${S}/arch/arm/dts
+		mkdir -p ${S}/arch/arm/dts/netx4000
+		cp -r ${WORKDIR}/${DTS_DIR}/* ${S}/arch/arm/dts/netx4000/
 	}
 
 	# Change used device tree in config
-	sed -i -e 's,\(CONFIG_BUILTIN_DTB_NAME=\).*,\1"${@os.path.splitext(os.path.basename("${BAREBOX_DEVICETREE}"))[0]}",g' ${S}/.config
+	sed -i -e 's,\(CONFIG_BUILTIN_DTB_NAME=\).*,\1"${@os.path.splitext("${BAREBOX_DEVICETREE}")[0]}",g' ${S}/.config
 
 	# Apply possible configuration fragments
 	merge_config.sh -m .config ${@" ".join(find_cfgs(d))}
