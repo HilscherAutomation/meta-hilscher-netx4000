@@ -1,6 +1,7 @@
 inherit kernel
 require recipes-kernel/linux/linux-yocto.inc
 require fix_kbuild_defconfig.inc
+require linux-dtb-overlays.inc
 
 GIT_KERNEL_REPO ?= "github.com/hilscher/netx4000-linux.git;protocol=https"
 KBRANCH = "v4.9-netx4000-stable"
@@ -9,7 +10,7 @@ LINUX_VERSION = "4.9.25"
 LINUX_VERSION_EXTENSION = "-netx4000"
 
 SRC_URI = "git://${GIT_KERNEL_REPO};branch=${KBRANCH};nocheckout=1"
-SRCREV="0770556ed005d5a7d442e17958fd2d4a76aa1536"
+SRCREV="466cf89146f6c2435719de2cf27d968b09c50795"
 
 KBUILD_DEFCONFIG = "netx4000_defconfig"
 
