@@ -22,7 +22,8 @@ PREFERRED_VERSION_linux-rt-stable ?="4.9.%"
 # Kernel
 #############################################################################
 KERNEL_IMAGETYPE ?= "zImage"
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append +="kernel-modules kernel-image-fitimage"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append +="kernel-modules kernel-image-fitimage \
+    ${@oe.utils.ifelse(d.getVar('KERNEL_DEVICETREE_OVERLAYS'), 'kernel-devicetree-overlays' ,'')}"
 
 #############################################################################
 # Initramfs
