@@ -1,0 +1,266 @@
+#!/bin/sh
+
+#
+# Utility to handle device tree overlays.
+#
+# dto
+#
+# (C) Copyright 2017 Hilscher Gesellschaft fuer Systemautomation mbH
+# http://www.hilscher.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; version 2 of
+# the License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+
+DTBO_ORIGIN_PATH="/boot/dt-overlays"
+DTBO_TMP_PATH="/tmp/dt-overlays"
+DTBO_PATH=${DTBO_TMP_PATH}
+VERBOSE=0
+_VERBOSE=0
+
+verbose() {
+	[ "${1}" == "off" ] && { _VERBOSE=${VERBOSE}; VERBOSE=0; }
+	[ "${1}" == "restore" ] && { VERBOSE=${_VERBOSE}; }
+}
+
+list_dtbos() {
+	if [ -n "${1}" ]; then 
+		dtbos=${1}
+	else
+		dtbos="*.dtbo"
+	fi
+
+	find ${DTBO_PATH} -name "${dtbos}" 2>/dev/null
+}
+
+list_params() {
+	if [ -n "${1}" ]; then
+		dtbos=${1}
+		echo ${dtbos} | grep -q ^/ || dtbos=${DTBO_PATH}/${1}
+	else
+		dtbos=$(list_dtbos)
+	fi
+
+	for dtbo in ${dtbos}; do
+		for node in $(fdtget -l ${dtbo} /__parameters__ 2>/dev/null); do
+			desc=$(fdtget ${dtbo} /__parameters__/${node} desc 2>/dev/null)
+			[ ${VERBOSE} -gt 0 ] && vmesg1="${dtbo}:"
+			[ ${VERBOSE} -gt 0 ] && vmesg2=" (${desc})"
+			echo ${vmesg1}${node}${vmesg2}
+		done
+	done
+}
+
+list_props() {
+	if [ -n "${1}" ]; then 
+		nodes=${1}
+	else
+		verbose off
+		nodes=$(list_params)
+		verbose restore
+	fi
+
+	nodes=$(echo "${nodes}" | sort -u)
+	for node in ${nodes}; do
+		get_node_prop ${node}
+	done
+}
+
+search_dtbo() {
+	_node=${1}
+
+	dtbos=$(list_dtbos)
+	for dtbo in ${dtbos}; do
+		verbose off
+		nodes=$(list_params ${dtbo})
+		verbose restore
+		for node in ${nodes}; do
+			echo ${node} | grep -q ${_node} && echo ${dtbo}
+		done
+	done
+}
+
+get_node_prop() {
+	_node=${1}
+        
+	dtbos=$(search_dtbo ${_node})
+	for dtbo in ${dtbos}; do
+		node=$(fdtget ${dtbo} /__parameters__/${_node} node)
+		prop=$(fdtget ${dtbo} /__parameters__/${_node} prop)
+		val=$(fdtget ${dtbo} ${node} ${prop})
+		[ ${VERBOSE} -gt 0 ] && vmesg1="${dtbo}:"
+		echo ${vmesg1}${_node}=${val}
+	done
+}
+
+set_node_prop() {
+	_node=${1}
+	_val=${2}
+	
+	dtbos=$(search_dtbo ${_node})
+	[ $(echo ${dtbos} | wc -w) -gt 1 ] && {
+		echo "Error: Multiple dtbo files found!"
+		exit 1
+	}
+	dtbo=${dtbos}
+	node=$(fdtget ${dtbo} /__parameters__/${_node} node)
+	prop=$(fdtget ${dtbo} /__parameters__/${_node} prop)
+	type=$(fdtget ${dtbo} /__parameters__/${_node} type 2>/dev/null)
+	
+	case ${type} in
+		"")
+			type="";;
+		"string")
+			type="-t s";;
+		"int")
+			type="-t i";;
+		"unsigned")
+			type="-t u";;
+		"hex")
+			type="-t x";;
+		*)
+			type="-t ${type}";;
+	esac
+
+	fdtput ${type} ${dtbo} ${node} ${prop} ${_val}
+}
+
+apply_dtbo() {
+	dtbo=${1}
+	echo ${dtbo} | grep -q ^/ || dtbo=${DTBO_PATH}/${1}
+
+	[ -f "${dtbo}" ] || {
+		echo "Error: No such file or directory (${dtbo})!"
+		exit 1
+	}
+
+	mp=$(grep configfs /proc/mounts | cut -d' ' -f2)
+	[ -z "${mp}" ] && {
+		mp=/config
+		mkdir -p ${mp}
+		mount -t configfs none ${mp}
+	}
+
+	dtbo_dir=${mp}/device-tree/overlays/$(basename ${dtbo})
+	[ -d "${dtbo_dir}" ] && {
+		echo "Error: ${dtbo_dir} already exists!"
+		exit 1
+	}
+	mkdir -p ${dtbo_dir}
+	cat ${dtbo} > ${dtbo_dir}/dtbo
+}
+
+remove_dtbo() {
+	dtbo=${1}
+	echo ${dtbo} | grep -q ^/ || dtbo=${DTBO_PATH}/${1}
+
+	mp=$(grep configfs /proc/mounts | cut -d' ' -f2)
+	[ -z "${mp}" ] && {
+		echo "Error: ConfigFS not mounted!"
+		exit 1
+	}
+	
+	dtbo_dir=${mp}/device-tree/overlays/$(basename ${dtbo})
+	[ -d "${dtbo_dir}" ] || {
+		echo "Error: ${dtbo_dir} does not exists!"
+		exit 1
+	}
+	rmdir ${dtbo_dir}
+}
+
+copy_dtbo() {
+	dtbo=${1}
+	echo ${dtbo} | grep -q ^/ || dtbo=${DTBO_ORIGIN_PATH}/${1}
+
+	[ -f "${dtbo}" ] || {
+		echo "Error: No such file or directory (${dtbo})!"
+		exit 1
+	}
+
+	mkdir -p ${DTBO_PATH}
+	cp ${dtbo} ${DTBO_PATH}/$(basename ${dtbo})
+}
+
+cleanup() {
+	rm -rf ${DTBO_TMP_PATH}
+}
+
+help() {
+cat <<EOF
+
+Usage: $(basename ${0}) [opt] cmd
+
+Options are:
+  -o             use path of origin dtbo files as work directory (${DTBO_ORIGIN_PATH})
+  -p path        work directory (default: ${DTBO_TMP_PATH})
+  -v             enable verbose output
+
+Commands are:
+  dtbo [dtbo]    lists dtbo files
+  param [dtbo]   lists configurable parameters
+  get [param]    show parameter value from dtbo file
+  set param val  set parameter value in dtbo file
+  apply dtbo     install dtbo file
+  remove dtbo    remove dtbo file
+  copy dtbo      copy dtbo file to work directory
+  cleanup        delete temporary work directory
+  
+EOF
+}
+
+# Main function
+
+while getopts op:v opt
+do
+	case ${opt} in
+		o) DTBO_PATH=${DTBO_ORIGIN_PATH};;
+		p) DTBO_PATH=${OPTARG};;
+		v) VERBOSE=1;;
+	esac
+done
+shift $((OPTIND - 1))
+
+cmd=${1}
+shift 1
+
+case ${cmd} in
+	"dtbo") list_dtbos $@;;
+	"param") list_params $@;;
+	"get") list_props $@;;
+	"set")
+		[ $# -lt 2 ] && {
+			echo "Error: Invalid or missing argument!"
+			exit 1
+		}
+		set_node_prop $@
+		;;
+	"apply")
+		[ $# -lt 1 ] && {
+			echo "Error: Invalid or missing argument!"
+			exit 1
+		}
+		apply_dtbo $@
+		;;
+	"remove")
+		[ $# -lt 1 ] && {
+			echo "Error: Invalid or missing argument!"
+			exit 1
+		}
+		remove_dtbo $@
+		;;
+	"copy") copy_dtbo $@;;
+	"cleanup") cleanup;;
+	*)
+		help
+		exit 1
+		;;
+esac
+
+exit 0
