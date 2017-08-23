@@ -1,0 +1,55 @@
+#!/bin/sh
+
+CONFIG_FILE="/etc/default/dto"
+RUNTIME_CONFIG_FILE="/var/run/dto.cfg"
+
+do_copy() {
+	eval "$(sed -n 's/^dtbo/dto copy/p' ${CONFIG_FILE})"
+}
+
+do_patch() {
+	eval "$(sed -n 's/^set/dto set/p' ${CONFIG_FILE})"
+}
+
+do_apply() {
+	eval "$(sed -n 's/^dtbo/dto apply/p' ${CONFIG_FILE})"
+}
+
+do_remove() {
+	eval "$(sed -n 's/^dtbo/dto remove/p' ${RUNTIME_CONFIG_FILE})"
+}
+
+do_cleanup() {
+	dto cleanup
+}
+
+do_start() {
+	do_copy
+	do_patch
+	do_apply
+	do_cleanup
+	cp ${CONFIG_FILE} ${RUNTIME_CONFIG_FILE}
+}
+
+do_stop() {
+	do_remove
+	rm ${RUNTIME_CONFIG_FILE}
+}
+
+case "$1" in
+	start)
+		do_start
+		;;
+	stop)
+		do_stop
+		;;
+	restart)
+		do_stop
+		do_start
+		;;
+	*)
+		echo "Usage: /etc/init.d/dtbo {start|stop|restart}"
+		exit 1
+esac
+
+exit 0

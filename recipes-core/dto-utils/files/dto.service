@@ -1,0 +1,11 @@
+[Unit]
+Description=DT-Overlay support
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/dto-start-stop start
+ExecStop=/usr/sbin/dto-start-stop stop
+
+[Install]
+WantedBy=multi-user.target
