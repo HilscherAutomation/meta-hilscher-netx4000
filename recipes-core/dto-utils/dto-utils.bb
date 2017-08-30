@@ -8,28 +8,27 @@ inherit allarch
 
 SRC_URI = " \
 	file://dto \
-	file://dto.cfg \
 	file://dto-start-stop \
 	file://dto.service \
 "
-
-SRC_URI_append_nxhx4000-jtag-plus-rev3 += "file://nxhx4000-jtag-plus-rev3/dto.cfg"
 
 RDEPENDS_${PN} = "dtc"
 
 S = "${WORKDIR}"
 
 do_install () {
-	install -d ${D}/usr/sbin
-	install -m 755 ${S}/dto ${D}/usr/sbin/dto
-	
-	install -d ${D}${sysconfdir}/default
-	install -m 755 ${S}/dto.cfg ${D}${sysconfdir}/default/dto
+	install -d ${D}${sbindir}
+	install -m 755 ${S}/dto ${D}${sbindir}/dto
+
+	if [ -f ${S}/dto.cfg ]; then
+		install -d ${D}${sysconfdir}/default
+		install -m 755 ${S}/dto.cfg ${D}${sysconfdir}/default/dto
+	fi
 
 	if ${@bb.utils.contains('DISTRO_FEATURES','systemd','true','false',d)}; then
-		install -m 755 ${S}/dto-start-stop ${D}/usr/sbin
+		install -m 755 ${S}/dto-start-stop ${D}${sbindir}
 		install -d ${D}${systemd_unitdir}/system
-		install -m 755 ${S}/dto.service ${D}${systemd_unitdir}/system/dto.service
+		install -m 644 ${S}/dto.service ${D}${systemd_unitdir}/system/dto.service
 	else
 		install -d ${D}${sysconfdir}/init.d
 		install -m 755 ${S}/dto-start-stop ${D}${sysconfdir}/init.d/dto
@@ -39,7 +38,7 @@ do_install () {
 CONFFILES_${PN} += "${sysconfdir}/default/dto"
 
 FILES_${PN} = "\
-	/usr/sbin \
+	${sbindir} \
 	${sysconfdir} \
 	${systemd_unitdir} \
 "
@@ -53,3 +52,6 @@ INITSCRIPT_NAME   = "dto"
 INITSCRIPT_PARAMS = "defaults 0 99"
 
 SYSTEMD_SERVICE_${PN} = "dto.service"
+
+BBCLASSEXTEND = "native"
+DEPENDS_class-native = "dtc-native"
