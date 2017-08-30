@@ -19,6 +19,7 @@
 # GNU General Public License for more details.
 #
 
+DEFAULT_CONFIG_FILE="/etc/default/dto"
 DTBO_ORIGIN_PATH="/boot/dt-overlays"
 DTBO_TMP_PATH="/tmp/dt-overlays"
 DTBO_PATH=${DTBO_TMP_PATH}
@@ -37,7 +38,7 @@ list_dtbos() {
 		dtbos="*.dtbo"
 	fi
 
-	find ${DTBO_PATH} -name "${dtbos}" 2>/dev/null
+	find ${DTBO_PATH} -name "${dtbos}" | sort 2>/dev/null
 }
 
 list_params() {
@@ -62,9 +63,9 @@ list_props() {
 	if [ -n "${1}" ]; then 
 		nodes=${1}
 	else
-		verbose off
+		verbose "off"
 		nodes=$(list_params)
-		verbose restore
+		verbose "restore"
 	fi
 
 	nodes=$(echo "${nodes}" | sort -u)
@@ -78,9 +79,9 @@ search_dtbo() {
 
 	dtbos=$(list_dtbos)
 	for dtbo in ${dtbos}; do
-		verbose off
+		verbose "off"
 		nodes=$(list_params ${dtbo})
-		verbose restore
+		verbose "restore"
 		for node in ${nodes}; do
 			echo ${node} | grep -q ${_node} && echo ${dtbo}
 		done
@@ -192,25 +193,48 @@ cleanup() {
 	rm -rf ${DTBO_TMP_PATH}
 }
 
+defconfig() {
+	confFile=${1:-${DEFAULT_CONFIG_FILE}}
+
+	[ -f ${confFile} ] && {
+		echo "Error: ${confFile} already exists!"
+		exit 1
+	}
+
+	echo "# Automatically generated DT-Overlay configuration file" > ${confFile}
+	echo "" >> ${confFile}
+
+	dtbos=$(list_dtbos)
+	for dtbo in ${dtbos}; do
+		echo "#dtbo $(basename ${dtbo})" >> ${confFile}
+		params=$(list_params $dtbo)
+		for param in ${params}; do
+			echo "#set ${param} $(get_node_prop ${param} | cut -d'=' -f2)" >> ${confFile}
+		done
+		echo "" >> ${confFile}
+	done
+}
+
 help() {
 cat <<EOF
 
 Usage: $(basename ${0}) [opt] cmd
 
 Options are:
-  -o             use path of origin dtbo files as work directory (${DTBO_ORIGIN_PATH})
-  -p path        work directory (default: ${DTBO_TMP_PATH})
-  -v             enable verbose output
+  -o                use path of origin dtbo files as work directory (${DTBO_ORIGIN_PATH})
+  -p path           work directory (default: ${DTBO_TMP_PATH})
+  -v                enable verbose output
 
 Commands are:
-  dtbo [dtbo]    lists dtbo files
-  param [dtbo]   lists configurable parameters
-  get [param]    show parameter value from dtbo file
-  set param val  set parameter value in dtbo file
-  apply dtbo     install dtbo file
-  remove dtbo    remove dtbo file
-  copy dtbo      copy dtbo file to work directory
-  cleanup        delete temporary work directory
+  dtbo [dtbo]       lists dtbo files
+  param [dtbo]      lists configurable parameters
+  get [param]       show parameter value from dtbo file
+  set param val     set parameter value in dtbo file
+  apply dtbo        install dtbo file
+  remove dtbo       remove dtbo file
+  copy dtbo         copy dtbo file to work directory
+  cleanup           delete temporary work directory
+  defconfig [file]  creates default config file (default: ${DEFAULT_CONFIG_FILE})
   
 EOF
 }
@@ -227,8 +251,7 @@ do
 done
 shift $((OPTIND - 1))
 
-cmd=${1}
-shift 1
+cmd=${1} && shift 1
 
 case ${cmd} in
 	"dtbo") list_dtbos $@;;
@@ -257,6 +280,7 @@ case ${cmd} in
 		;;
 	"copy") copy_dtbo $@;;
 	"cleanup") cleanup;;
+	"defconfig") defconfig $@;;
 	*)
 		help
 		exit 1
