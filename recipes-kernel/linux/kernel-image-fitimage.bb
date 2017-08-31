@@ -249,6 +249,8 @@ do_deploy() {
   fit_its_file="${B}/fitImage.its"
   fit_image="${B}/fitImage.bin"
 
+  rm -f ${DEPLOYDIR}/*
+
   # Update deploy directory
   echo "Copying fit-image.its source file..."
   its_base_name="fitImage-${PV}-${PR}-${MACHINE}-${DATETIME}"
