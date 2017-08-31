@@ -6,6 +6,10 @@ rootfs_image_file_enabled() {
 
 rootfs_image_file_run() {
 	if (echo $bootparam_root | grep -q "rootfs.img"); then
+		if [ ! -b /dev/loop0 ]; then
+			modprobe loop
+		fi
+
 		image=$(basename $bootparam_root)
 		dev=$(dirname $bootparam_root)
 		part=$(basename $dev)

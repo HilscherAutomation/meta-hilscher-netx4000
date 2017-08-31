@@ -6,6 +6,8 @@ LIC_FILES_CHKSUM = "file://${HILSCHER_LICENSE_PATH}/Hilscher-SLA;md5=37f1a875d1f
 
 inherit allarch
 
+RRECOMMENDS_${PN} = "kernel-module-loop"
+
 SRC_URI = "file://rootfs_image_file"
 
 S = "${WORKDIR}"
