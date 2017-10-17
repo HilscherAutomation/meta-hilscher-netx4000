@@ -36,4 +36,4 @@ INITRAMFS_FSTYPES ?= "cpio.gz"
 #############################################################################
 # Contents of boot partition (excluding rootfs)
 #############################################################################
-IMAGE_BOOT_FILES ?= "netx.rom fitImage"
+IMAGE_BOOT_FILES ?= "netx.rom"
