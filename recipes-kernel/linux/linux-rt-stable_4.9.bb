@@ -6,11 +6,11 @@ require linux-dtb-overlays.inc
 GIT_KERNEL_REPO ?= "github.com/hilscher/netx4000-linux.git;protocol=https"
 KBRANCH = "v4.9-netx4000-rt"
 
-LINUX_VERSION = "4.9.20-rt16"
+LINUX_VERSION = "4.9.47-rt37"
 LINUX_VERSION_EXTENSION = "-netx4000"
 
 SRC_URI = "git://${GIT_KERNEL_REPO};branch=${KBRANCH};nocheckout=1"
-SRCREV="7adff024d327b7d618798fb2eae7d82101cafdba"
+SRCREV="d18a82cc9e0efa16c33ced585fca00be7c10e998"
 
 KBUILD_DEFCONFIG = "netx4000_defconfig"
 
