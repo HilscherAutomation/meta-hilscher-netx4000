@@ -11,6 +11,7 @@ PACKAGE_INSTALL_remove += "base-passwd \
 
 # Add initrd framework
 PACKAGE_INSTALL_append += "initramfs-framework-base \
-                           initramfs-framework-rootfs-image-file"
+                           initramfs-framework-rootfs-image-file \
+                           ${@ 'initramfs-framework-resize-rootfs' if '${ROOTFS_PART_AUTORESIZE}' == '1' else '' }"
 
 COMPATIBLE_HOST = "arm-.*-linux"

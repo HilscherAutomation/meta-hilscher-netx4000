@@ -1,0 +1,59 @@
+#!/bin/sh
+
+resize_rootfs_enabled() {
+	return 0
+}
+
+resize_rootfs_run() {
+	if [ ! -b $bootparam_root ]; then
+		info "root parameter is no block device, skipping resize"
+		return
+	fi
+
+	# Extract partition details
+	ROOTFS_DEV=$(basename $bootparam_root)
+	ROOT_DEV_NAME=$(echo /sys/block/*/"${ROOTFS_DEV}" | cut -d "/" -f 4)
+	ROOT_DEV="/dev/${ROOT_DEV_NAME}"
+	ROOT_DEV_SIZE=$(cat "/sys/block/${ROOT_DEV_NAME}/size")
+	ROOTFS_PART_NUM=$(cat "/sys/block/${ROOT_DEV_NAME}/${ROOTFS_DEV}/partition")
+
+	PARTITION_TABLE=$(parted -m "$ROOT_DEV" unit s print | tr -d 's')
+	LAST_PART_NUM=$(echo "$PARTITION_TABLE" | tail -n 1 | cut -d ":" -f 1)
+
+	if [ $LAST_PART_NUM -gt $ROOTFS_PART_NUM ]; then
+		error "Unable to resize root filesystem partition, as there is a partition following rootfs"
+		return
+	fi
+
+	TARGET_END=$((ROOT_DEV_SIZE - 1))
+	ROOTFS_PART_LINE=$(echo "$PARTITION_TABLE" | grep -e "^${ROOTFS_PART_NUM}:")
+	ROOTFS_PART_START=$(echo "$ROOTFS_PART_LINE" | cut -d ":" -f 2)
+	ROOTFS_PART_END=$(echo "$ROOTFS_PART_LINE" | cut -d ":" -f 3)
+	ROOTFS_PART_TYPE=$(echo "$ROOTFS_PART_LINE" | cut -d ":" -f 5)
+
+	case "${ROOTFS_PART_TYPE}" in
+		ext*) ;;
+		*) error "Unable to resize non ext2/3/4 fs root filesystem"
+		   return
+		   ;;
+	esac
+
+	if [ $ROOTFS_PART_END -eq $TARGET_END ]; then
+		info "Root filesystem partition is already resized"
+		return
+	fi
+
+	if [ ! -e /etc/mtab ]; then
+		ln -s /proc/mounts /etc/mtab
+	fi
+
+	e2fsck $bootparam_root
+
+	# Resize partition if whole disk is no used
+	if ! parted -m "$ROOT_DEV" u s resizepart "$ROOTFS_PART_NUM" "$TARGET_END"; then
+		error "Failed to resize root filesystem"
+		return
+	fi
+	partprobe "$ROOT_DEV"
+	resize2fs $bootparam_root
+}
