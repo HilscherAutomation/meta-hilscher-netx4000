@@ -23,6 +23,7 @@ PREFERRED_VERSION_linux-rt-stable ?="4.9.%"
 #############################################################################
 KERNEL_IMAGETYPE ?= "zImage"
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append +="kernel-modules kernel-image-fitimage \
+    libcifx cifxsample \
     ${@oe.utils.ifelse(d.getVar('KERNEL_DEVICETREE_OVERLAYS'), 'kernel-devicetree-overlays' ,'')} \
     ${@oe.utils.ifelse(d.getVar('KERNEL_DEVICETREE_OVERLAYS'), 'dto-utils' ,'')}"
 

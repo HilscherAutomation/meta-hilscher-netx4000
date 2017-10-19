@@ -10,7 +10,7 @@ LINUX_VERSION = "4.9.47-rt37"
 LINUX_VERSION_EXTENSION = "-netx4000"
 
 SRC_URI = "git://${GIT_KERNEL_REPO};branch=${KBRANCH};nocheckout=1"
-SRCREV="d18a82cc9e0efa16c33ced585fca00be7c10e998"
+SRCREV="a1974734758c67c9dcae30c2ccfe417d1dc8104f"
 
 KBUILD_DEFCONFIG = "netx4000_defconfig"
 
