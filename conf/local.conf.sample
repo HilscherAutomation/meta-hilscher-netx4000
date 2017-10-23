@@ -73,3 +73,6 @@ EXTRA_IMAGE_FEATURES += "empty-root-password allow-empty-password debug-tweaks"
 # per default. If required, it can be enabled for
 # *all* images
 #EXTRA_IMAGE_FEATURES += "package-management"
+
+# Allow to include ipkg feeds in image
+# IPK_INCLUDE_FEEDS="<name>,<url>"
