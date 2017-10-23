@@ -8,4 +8,15 @@ do_kernel_metadata_prepend() {
       rm -f ${WORKDIR}/defconfig
     fi
   fi
+
+  # Using yocto kernel-cache requires a bsp to be present, otherwise 
+  # a fall back to arm-versatile is used, which does not work for us
+  mkdir -p ${WORKDIR}/${KMETA}/bsp/netx4000
+  cat <<EOF>${WORKDIR}/${KMETA}/bsp/netx4000/netx4000.scc
+define KMACHINE ${KMACHINE}
+define KTYPE ${KTYPE}
+define KARCH arm
+
+include ktypes/${KTYPE}/${KTYPE}.scc
+EOF
 }
