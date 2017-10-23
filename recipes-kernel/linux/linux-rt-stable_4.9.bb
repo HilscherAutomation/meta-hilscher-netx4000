@@ -9,10 +9,15 @@ KBRANCH = "v4.9-netx4000-rt"
 LINUX_VERSION = "4.9.47-rt37"
 LINUX_VERSION_EXTENSION = "-netx4000"
 
-SRC_URI = "git://${GIT_KERNEL_REPO};branch=${KBRANCH};nocheckout=1"
-SRCREV="a1974734758c67c9dcae30c2ccfe417d1dc8104f"
+SRC_URI = "git://${GIT_KERNEL_REPO};name=machine;branch=${KBRANCH};nocheckout=1 \
+           git://git.yoctoproject.org/yocto-kernel-cache;type=kmeta;name=meta;branch=yocto-4.9;destsuffix=${KMETA}"
+SRCREV_machine="a1974734758c67c9dcae30c2ccfe417d1dc8104f"
+SRCREV_meta="cdbd35c54b6a62e4fd543164f1dcdf92c85cff2d"
 
 KBUILD_DEFCONFIG = "netx4000_defconfig"
+KMETA = "kernel-meta"
+KTYPE = "preempt-rt"
+KCONF_BSP_AUDIT_LEVEL = "2"
 
 PR = "r0"
 PV = "${LINUX_VERSION}+git${SRCPV}"
@@ -31,3 +36,6 @@ do_compile_prepend() {
 		cp -r ${WORKDIR}/${DTS_DIR}/* ${S}/arch/arm/boot/dts/netx4000/
 	}
 }
+
+KERNEL_EXTRA_FEATURES ?= "features/netfilter/netfilter.scc"
+KERNEL_FEATURES_append = " ${KERNEL_EXTRA_FEATURES}"

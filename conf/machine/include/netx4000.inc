@@ -27,6 +27,13 @@ MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append +="kernel-modules kernel-image-fitimage 
     ${@oe.utils.ifelse(d.getVar('KERNEL_DEVICETREE_OVERLAYS'), 'kernel-devicetree-overlays' ,'')} \
     ${@oe.utils.ifelse(d.getVar('KERNEL_DEVICETREE_OVERLAYS'), 'dto-utils' ,'')}"
 
+# Kernel default config does not set default parameters and yocto uses allnoconfig
+# per default, thus we need to override it to use alldefconfig
+KCONFIG_MODE ?= "--alldefconfig"
+
+# poky-lsb requires nfsd in kernel
+KERNEL_EXTRA_FEATURES_append += "${@ 'features/nfsd/nfsd-enable.scc' if '${DISTRO}' == 'poky-lsb' else '' }"
+
 #############################################################################
 # Initramfs
 #############################################################################
