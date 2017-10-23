@@ -73,6 +73,7 @@ non-mainline drivers:
  * ECC (1 bit correction / 2 bit detection) for DDR memory - EDAC modules
  * LCD (framebuffer driver)
  * CAN (kernel 4.9+)
+ * PCIe root-complex
 
 
 2.2 How to use it

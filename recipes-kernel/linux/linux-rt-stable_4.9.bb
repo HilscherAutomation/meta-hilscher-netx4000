@@ -11,7 +11,7 @@ LINUX_VERSION_EXTENSION = "-netx4000"
 
 SRC_URI = "git://${GIT_KERNEL_REPO};name=machine;branch=${KBRANCH};nocheckout=1 \
            git://git.yoctoproject.org/yocto-kernel-cache;type=kmeta;name=meta;branch=yocto-4.9;destsuffix=${KMETA}"
-SRCREV_machine="a1974734758c67c9dcae30c2ccfe417d1dc8104f"
+SRCREV_machine="c68309017755d6fe3d8152705bf7b98c64d4a06d"
 SRCREV_meta="cdbd35c54b6a62e4fd543164f1dcdf92c85cff2d"
 
 KBUILD_DEFCONFIG = "netx4000_defconfig"
