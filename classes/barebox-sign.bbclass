@@ -64,12 +64,12 @@ python do_apply_verification_keys() {
         N0inv, keylen, rr)
 
   dts_path = os.path.join(d.getVar("B"), 
-                         "arch", d.getVar("ARCH"), "dts")
+                         "arch", d.getVar("ARCH"), "dts", "netx4000")
   with open(os.path.join(dts_path, "signature_check.dtsi"), 'w+') as sig_check:
     sig_check.write(signature_block)
 
   # Add include to main dts file
-  dts_file = os.path.join(dts_path, os.path.basename(d.getVar("BAREBOX_DEVICETREE")))
+  dts_file = os.path.join(dts_path, os.path.basename(d.getVar("BAREBOX_DEVICETREE").replace('.dtb', '.dts')))
 
   with open(dts_file, 'r+') as dts:
     tmp=dts.read()
