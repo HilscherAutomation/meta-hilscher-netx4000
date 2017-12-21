@@ -15,7 +15,7 @@ PARALLEL_MAKE ?= "-j ${@oe.utils.cpu_count()*2}"
 DISTRO ?= "poky"
 # TCLIBC can be one of the following glibc musl
 #TCLIBC ?= "musl"
-MACHINE ?= "nxhx4000-jtag-plus-rev3"
+MACHINE ?= "nxhx4000-jtag-plus-rev3-1"
 
 # Setup preferred kernel
 # Possible values: linux-stable (default), linux-rt-stable
