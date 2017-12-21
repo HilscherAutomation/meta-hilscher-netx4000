@@ -20,7 +20,7 @@ Table of Contents
 1. Description
 ==============
 This is the general hardware specific BSP overlay for the Hilscher netX4000
-SoC.
+relaxed and full SoC.
 
 The core BSP part of meta-hilscher-netx4000 was made and tested with Yocto/Poky
 distribution / layer.
