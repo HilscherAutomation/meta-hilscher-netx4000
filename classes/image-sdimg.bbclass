@@ -33,12 +33,11 @@ SDIMG_PARTITION_ALIGNMENT = "4096"
 # Boot partition size [in KiB]
 SDIMG_BOOT_SIZE ?= "65536"
 
-IMAGE_DEPENDS_sdimg = " \
-	dosfstools-native \
-	parted-native \
-	mtools-native \
-	coreutils-native \
-	${IMAGE_BOOT_FILES} \
+do_image_sdimg[depends] += " \
+	dosfstools-native:do_populate_sysroot \
+	parted-native:do_populate_sysroot \
+	mtools-native:do_populate_sysroot \
+	coreutils-native:do_populate_sysroot \
 "
 
 IMAGE_CMD_sdimg () {
