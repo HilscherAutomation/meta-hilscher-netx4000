@@ -6,6 +6,9 @@ LIC_FILES_CHKSUM ?= "file://COPYING;md5=057bf9e50e1ca857d0eb97bfe4ba8e5d"
 
 inherit kernel-arch deploy cml1 barebox-sign
 
+export KBUILD_BUILD_USER = "oe-user"
+export KBUILD_BUILD_HOST = "oe-host"
+
 PROVIDES = "virtual/bootloader barebox netx.rom u-boot"
 
 COMPATIBLE_MACHINE = "netx4000"
