@@ -12,8 +12,8 @@ SRC_URI = "git://${GIT_KERNEL_REPO};name=machine;branch=${KBRANCH};nocheckout=1 
            git://git.yoctoproject.org/yocto-kernel-cache;type=kmeta;name=meta;branch=yocto-4.9;destsuffix=${KMETA}"
 
 # netX4000
-LINUX_VERSION = "4.9.47-rt37"
-SRCREV_machine="ec40d8960fa14fb91dfa845af052a9035a5ac29a"
+LINUX_VERSION = "4.9.68-rt60"
+SRCREV_machine="3fe0bf408500065df3040739c0203c43dbea255c"
 
 # netX4000 RLXD (relaxed)
 LINUX_VERSION_netx4000-rlxd = "4.9.47-rt37"
