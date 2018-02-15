@@ -253,11 +253,11 @@ do_deploy() {
   # Update deploy directory
   echo "Copying fit-image.its source file..."
   its_base_name="fitImage-${PV}-${PR}-${MACHINE}-${DATETIME}"
-  its_symlink_name=fitImage.its
+  its_symlink_name=fitImage-${MACHINE}.its
   install -m 0644 ${fit_its_file} ${DEPLOYDIR}/${its_base_name}.its
 
   linux_bin_base_name="fitImage-${PV}-${PR}-${MACHINE}-${DATETIME}"
-  linux_bin_symlink_name=fitImage
+  linux_bin_symlink_name=fitImage-${MACHINE}.bin
   install -m 0644 ${fit_image} ${DEPLOYDIR}/${linux_bin_base_name}.bin
 
   cd ${DEPLOYDIR}
