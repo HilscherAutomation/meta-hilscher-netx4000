@@ -59,6 +59,12 @@ do_configure_prepend() {
 		cp -r ${WORKDIR}/${DTS_DIR}/* ${S}/arch/arm/dts/netx4000/
 	}
 
+	[ -d ${WORKDIR}/env ] && {
+		bbnote "Copying/Replacing env directory"
+		rm -rf ${S}/arch/arm/boards/netx4000/env
+		cp -r ${WORKDIR}/env ${S}/arch/arm/boards/netx4000
+	}
+
 	# Change used device tree in config
 	sed -i -e 's,\(CONFIG_BUILTIN_DTB_NAME=\).*,\1"${@os.path.splitext("${BAREBOX_DEVICETREE}")[0]}",g' ${S}/.config
 
