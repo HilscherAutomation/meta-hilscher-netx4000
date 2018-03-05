@@ -14,9 +14,9 @@ require conf/machine/include/soc-family.inc
 EXTRA_IMAGEDEPENDS += "barebox-netx4000"
 
 PREFERRED_PROVIDER_virtual/bootloader ?= "barebox-netx4000"
-PREFERRED_PROVIDER_virtual/kernel ?= "linux-stable"
-PREFERRED_VERSION_linux-stable ?= "4.9.%"
-PREFERRED_VERSION_linux-rt-stable ?="4.9.%"
+PREFERRED_PROVIDER_virtual/kernel ??= "linux-stable"
+PREFERRED_VERSION_linux-stable ??= "4.9.%"
+PREFERRED_VERSION_linux-rt-stable ??="4.9.%"
 
 #############################################################################
 # Kernel
