@@ -3,17 +3,20 @@ require recipes-kernel/linux/linux-yocto.inc
 require fix_kbuild_defconfig.inc
 require linux-dtb-overlays.inc
 
+FILESEXTRAPATHS_prepend := "${THISDIR}/files/linux-4.9:"
+
 GIT_KERNEL_REPO ?= "github.com/hilscher/netx4000-linux.git;protocol=https"
 KBRANCH = "v4.9-netx4000-stable"
 
 LINUX_VERSION_EXTENSION = "-netx4000"
 
 SRC_URI = "git://${GIT_KERNEL_REPO};name=machine;branch=${KBRANCH};nocheckout=1 \
-           git://git.yoctoproject.org/yocto-kernel-cache;type=kmeta;name=meta;branch=yocto-4.9;destsuffix=${KMETA}"
+           git://git.yoctoproject.org/yocto-kernel-cache;type=kmeta;name=meta;branch=yocto-4.9;destsuffix=${KMETA} \
+           ${@bb.utils.contains('KERNEL_ENABLE_NAND',  '1', 'file://enable_nand.cfg', '',d)}"
 
 # netX4000
 LINUX_VERSION = "4.9.76"
-SRCREV_machine="8003aae70f71245e2265a1ab268692ba1adc377e"
+SRCREV_machine="f7da2b259b71439a0c6662af8697292fe2c3afda"
 
 # netX4000 RLXD (relaxed)
 LINUX_VERSION_netx4000-rlxd = "4.9.56"
