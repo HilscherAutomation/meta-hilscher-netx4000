@@ -22,7 +22,7 @@ PR = "r0"
 PV = "${LINUX_VERSION}+git${SRCPV}"
 
 # Prevent automatically inclusion of kernel-image into rootfs/image
-RDEPENDS_kernel-base=""
+RDEPENDS_${KERNEL_PACKAGE_NAME}-base=""
 
 SRC_URI += "file://${DTS_DIR}"
 
