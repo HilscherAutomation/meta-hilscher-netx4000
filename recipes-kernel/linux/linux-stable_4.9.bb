@@ -3,7 +3,7 @@ KTYPE = "standard"
 
 # netX4000
 LINUX_VERSION = "4.9.86"
-SRCREV_machine="ed05643ce5a05033058b9f34f34ed6e54c7acb34"
+SRCREV_machine="f5ab31e1159ba6f76de9bb5e3bc83f81bb648955"
 
 # netX4000 RLXD (relaxed)
 LINUX_VERSION_netx4000-rlxd = "4.9.56"
