@@ -2,8 +2,8 @@ KBRANCH = "v4.4-netx4000-stable"
 KTYPE = "standard"
 
 # netX4000
-LINUX_VERSION = "4.4.120"
-SRCREV_machine="d8374aba6c91ab88d8d56abd4982852d3b077cc3"
+LINUX_VERSION = "4.4.138"
+SRCREV_machine="9e14382f71365f5d78e7ae9832d5aff75a26775a"
 
 # netX4000 RLXD (relaxed)
 LINUX_VERSION_netx4000-rlxd = "4.4.57"
