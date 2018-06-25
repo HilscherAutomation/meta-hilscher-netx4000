@@ -10,6 +10,7 @@ SRC_URI = " \
 	file://dto \
 	file://dto-start-stop \
 	file://dto.service \
+	file://etc-default-dto \
 "
 
 RDEPENDS_${PN} = "dtc"
@@ -20,9 +21,9 @@ do_install () {
 	install -d ${D}${sbindir}
 	install -m 755 ${S}/dto ${D}${sbindir}/dto
 
-	if [ -f ${S}/dto.cfg ]; then
+	if [ -s ${S}/etc-default-dto ]; then
 		install -d ${D}${sysconfdir}/default
-		install -m 755 ${S}/dto.cfg ${D}${sysconfdir}/default/dto
+		install -m 644 ${S}/etc-default-dto ${D}${sysconfdir}/default/dto
 	fi
 
 	if ${@bb.utils.contains('DISTRO_FEATURES','systemd','true','false',d)}; then

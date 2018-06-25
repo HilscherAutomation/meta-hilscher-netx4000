@@ -1,0 +1,17 @@
+# Predefined DT-Overlay configuration file
+
+#dtbo adc0.dtbo
+#set adc0.vref 3300
+
+#dtbo adc1.dtbo
+#set adc1.vref 3300
+
+#dtbo can0.dtbo
+
+dtbo gmac0.dtbo
+
+dtbo gmac1.dtbo
+
+#dtbo pcie-rc.dtbo
+
+#dtbo uart1.dtbo
