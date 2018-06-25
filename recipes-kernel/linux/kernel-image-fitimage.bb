@@ -16,6 +16,11 @@ python __anonymous () {
         d.appendVarFlag('do_install', 'depends', ' ${INITRAMFS_IMAGE}:do_image_complete')
 
     d.appendVarFlag('do_install', 'depends', ' virtual/kernel:do_deploy')
+
+    FULL_FW_VERSION = d.getVar('FIRMWARE_VERSION')
+    if FULL_FW_VERSION:
+        FULL_FW_VERSION += bb.utils.contains('IMAGE_FEATURES', 'debug-tweaks', '.debug', '', d)
+        d.setVar('PV', FULL_FW_VERSION)
 }
 
 FITIMAGE_DESCR ??= "U-Boot fitImage for ${DISTRO_NAME}/${PV}/${MACHINE}"
@@ -146,7 +151,7 @@ fit_write_configs_section() {
 EOF
 
   if [ "x${KERNEL_DEVICETREE}" != "x" ]; then
-    echo '                        fdt = "fdt@1";' >> ${1} 
+    echo '                        fdt = "fdt@1";' >> ${1}
   fi
 
   # Add optional initramfs
@@ -207,7 +212,7 @@ do_install() {
 
   # Add optional FDT
   if [ "x${KERNEL_DEVICETREE}" != "x" ]; then
-    fit_write_fdt_image "${fit_its_file}" 
+    fit_write_fdt_image "${fit_its_file}"
   fi
 
   # Add optional initramfs
@@ -252,12 +257,12 @@ do_deploy() {
 
   # Update deploy directory
   echo "Copying fit-image.its source file..."
-  its_base_name="fitImage-${PV}-${PR}-${MACHINE}-${DATETIME}"
-  its_symlink_name=fitImage-${MACHINE}.its
+  its_base_name="${MACHINE}_fitImage_${PV}_${DATETIME}"
+  its_symlink_name=${MACHINE}_fitImage.its
   install -m 0644 ${fit_its_file} ${DEPLOYDIR}/${its_base_name}.its
 
-  linux_bin_base_name="fitImage-${PV}-${PR}-${MACHINE}-${DATETIME}"
-  linux_bin_symlink_name=fitImage-${MACHINE}.bin
+  linux_bin_base_name="${MACHINE}_fitImage_${PV}_${DATETIME}"
+  linux_bin_symlink_name=${MACHINE}_fitImage.bin
   install -m 0644 ${fit_image} ${DEPLOYDIR}/${linux_bin_base_name}.bin
 
   cd ${DEPLOYDIR}
