@@ -1,11 +1,15 @@
 ROOTFS_BOOTSTRAP_INSTALL=""
 
+# Required since yocto 'sumo'
+INITRAMFS_SCRIPTS = " \
+	initramfs-framework-base \
+"
+
 # Remove x86 specific stuff
 PACKAGE_INSTALL_remove += " \
 	initramfs-live-install \
 	initramfs-live-install-efi \
 	initramfs-live-boot \
-	initramfs-module-install \
 "
 
 # Remove unneeded stuff
