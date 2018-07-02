@@ -16,7 +16,7 @@ do_apply() {
 }
 
 do_remove() {
-	eval "$(sed -n 's/^dtbo/dto remove/p' ${RUNTIME_CONFIG_FILE})"
+	eval "$(tac ${RUNTIME_CONFIG_FILE} | sed -n 's/^dtbo/dto remove/p')"
 }
 
 do_cleanup() {
