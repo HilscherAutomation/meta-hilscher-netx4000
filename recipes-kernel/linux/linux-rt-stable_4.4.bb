@@ -3,7 +3,7 @@ KTYPE = "preempt-rt"
 
 # netX4000
 LINUX_VERSION = "4.4.138-rt155"
-SRCREV_machine="496c444ff1d12e62095e2f23feb6062e7fcf06a1"
+SRCREV_machine="efcfba66afcfc0fa16c4278ff43ba49fa5313a3f"
 
 # netX4000 RLXD (relaxed)
 LINUX_VERSION_netx4000-rlxd = "4.4.53-rt66"
