@@ -242,7 +242,7 @@ do_install() {
 
   install -d ${D}/boot
   install -m 0644 ${fit_image} ${D}/boot/fitImage-${KERNEL_VERSION}
-  ln -sf /boot/fitImage-${KERNEL_VERSION} ${D}/boot/fitImage
+  ln -sf fitImage-${KERNEL_VERSION} ${D}/boot/fitImage
 }
 
 PACKAGES="${PN}"
