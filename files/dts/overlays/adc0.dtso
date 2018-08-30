@@ -1,0 +1,20 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target = <&adc0>;
+		__overlay__ {
+			status = "ok";
+			vref = <3300>;
+		};
+	};
+	__parameters__ {
+		adc0.vref {
+		      desc = "Reference voltage of ADC0 in mV";
+		      node = "/fragment@0/__overlay__";
+		      prop = "vref";
+		      type = "unsigned";
+		};
+	};
+};

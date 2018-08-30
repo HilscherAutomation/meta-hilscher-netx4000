@@ -1,0 +1,109 @@
+/*
+* Device tree for Hilscher netX4000 based ndeb4000 rev-1 modules
+*
+* arch/arm/boot/dts/netx4000/ndeb4000-rev1.dtsi
+*
+* (C) Copyright 2015 Hilscher Gesellschaft fuer Systemautomation mbH
+* http://www.hilscher.com
+*
+* This program is free software; you can redistribute it and/or
+* modify it under the terms of the GNU General Public License as
+* published by the Free Software Foundation; version 2 of
+* the License.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+*/
+
+/dts-v1/;
+
+#include "ndcm4000-rev1.dts"
+
+/ {
+	model = "Hilscher NDEB4000 rev1";
+
+	leds {
+		compatible = "gpio-leds";
+
+		p300_green {
+			gpios = <&gpio0 2 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "none";
+			default-state = "off";
+		};
+		p301_green {
+			gpios = <&gpio0 3 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "none";
+			default-state = "off";
+		};
+		p302_green {
+			gpios = <&gpio0 4 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "none";
+			default-state = "off";
+		};
+		p303_green {
+			gpios = <&gpio0 5 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "heartbeat";
+			default-state = "off";
+		};
+	};
+};
+
+/* Static platform gpio pins */
+&pinctrl {
+	pinctrl-single,gpio-range0 = <
+		/* LEDs */
+		&range (MUX_PIN(3,2)/4) 4 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)         // gpio0[2..5] / mmio[2..5] / led p[300..303]
+
+		/* DIP-Switches */
+		&range (MUX_PIN(3,6)/4) 4 (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_PULLDOWN50K)  // gpio0[6..9] / mmio[6..9] / s300-[a..d]
+
+		/* PCIe RC */
+		&range (MUX_PIN(6,2)/4)  1 (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_PULLDOWN50K) // gpio2[18] / mmio50 / reset-gpio
+		&range (MUX_PIN(6,14)/4) 1 (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_PULLDOWN50K) // gpio2[30] / mmio62 / wake-gpio
+
+		/* x1600 (RAP-UART0), x1604 */
+		&range (MUX_PIN(4,0)/4) 4 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)         // gpio1[0..3] / mmio[16..19]
+// 		&range (MUX_PIN(4,10)/4) 4 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)        // gpio1[10..13] / mmio[26..29] / uart0 (enabled by ndcm4000-rev1.dts)
+
+		/* x1601 (RAP-UART1) */
+		&range (MUX_PIN(5,0)/4) 2 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)         // gpio2[0..1] / mmio[32..33] / uart1
+		&range (MUX_PIN(4,4)/4) 2 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)         // gpio1[4..7] / mmio[20..23]
+		&range (MUX_PIN(4,14)/4) 2 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)        // gpio1[14..15] / mmio[30..31] / uart1
+
+		/* x1602 (RAP-CAN), x1603 */
+		&range (MUX_PIN(3,14)/4) 1 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)        // gpio0[14] / mmio14
+		&range (MUX_PIN(5,11)/4) 2 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)        // gpio2[11..12] / mmio[43..44] / can0
+		&range (MUX_PIN(6,9)/4) 5 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)         // gpio2[25..29] / mmio[57..61]
+
+		/* x1800 (Display) */
+		&range (MUX_PIN(4,8)/4) 2 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)         // gpio1[8..9] / mmio[24..25]
+		&range (MUX_PIN(5,6)/4) 5 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)         // gpio2[6..10] / mmio[38..42]
+
+		/* E107 */
+		&range (MUX_PIN(3,15)/4) 1 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)        // gpio0[15] / mmio15
+		&range (MUX_PIN(5,2)/4) 4 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)         // gpio2[2..5] / mmio[34..37]
+		&range (MUX_PIN(6,15)/4) 1 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)        // gpio2[31] / mmio63
+		&range (MUX_PIN(2,0)/4) 2 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)         // gpio4[26..27] / i2c
+	>;
+};
+
+&hcd0 {
+	status = "ok";
+	num-ports = <1>; /* 1 or 2 */
+	pinctrl-names = "default";
+	pinctrl-0 = <&hcd0_0_pins>;
+};
+
+&udc0 {
+	status = "ok";
+	pinctrl-names = "default";
+	pinctrl-0 = <&hcd0_1_pins>;
+};
+
+&pcie_rc {
+	reset-gpio = <&gpio2 18 GPIO_ACTIVE_LOW>;
+	wake-gpio = <&gpio2 30 GPIO_ACTIVE_LOW>;
+};
