@@ -1,0 +1,14 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target = <&can0>;
+		__overlay__ {
+			status = "ok";
+			channels = <0>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&can0_0_pins>;
+		};
+	};
+};

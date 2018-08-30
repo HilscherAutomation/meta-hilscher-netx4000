@@ -1,0 +1,1074 @@
+/*
+* Common device tree for Hilscher netX4000 based platforms
+*
+* arch/arm/boot/dts/netx4000-common.dtsi
+*
+* (C) Copyright 2017 Hilscher Gesellschaft fuer Systemautomation mbH
+* http://www.hilscher.com
+*
+* This program is free software; you can redistribute it and/or
+* modify it under the terms of the GNU General Public License as
+* published by the Free Software Foundation; version 2 of
+* the License.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+*/
+
+#include "dt-bindings/pinctrl/netx4000.h"
+#include "dt-bindings/video/netx4000.h"
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/dma/nbpfaxi.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	aliases {
+		serial0 = &uart0;
+		serial1 = &uart1;
+		serial2 = &uart2;
+		serial3 = &uart3;
+		spi0 = &spi0;
+		spi1 = &spi1;
+		mdio-gpio0 = &mdio0;
+	};
+
+	environment {
+		compatible = "barebox,environment";
+		device-path = &sdmmc0, "partname:0";
+		file-path = "bareboxenv";
+	};
+
+	/* CPU */
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@0 {
+			compatible = "arm,cortex-a9";
+			device_type = "cpu";
+			reg = <0>;
+			clocks = <&arm_clk>;
+			next-level-cache = <&l2>;
+		};
+		cpu@1 {
+			compatible = "arm,cortex-a9";
+			device_type = "cpu";
+			reg = <1>;
+			clocks = <&arm_clk>;
+			next-level-cache = <&l2>;
+		};
+	};
+
+	/* Snoop Control Unit */
+
+	scu@faf00000 {
+		compatible = "arm,cortex-a9-scu";
+		reg = <0xfaf00000 0x100>;
+	};
+
+	/* Cache */
+
+	l2: l2-cache@faf10000 {
+		compatible = "arm,pl310-cache";
+		reg = <0xfaf10000 0x1000>;
+		cache-unified;
+		cache-level = <2>;
+		cache-size = <524288>;
+		cache-sets = <1024>;
+		cache-line-size = <32>;
+	};
+
+	/* Global Interrupt Controller */
+
+	gic: interrupt-controller@faf10000 {
+		compatible = "arm,cortex-a9-gic";
+		reg = <0xfaf01000 0x1000>, /* gic-distributor */
+		      <0xfaf00100 0x0100>; /* cpu interface   */
+		interrupt-controller;
+		#interrupt-cells = <3>;
+	};
+
+	/* Timer */
+
+	timer@faf00200 {
+		compatible = "arm,cortex-a9-global-timer";
+		reg = <0xfaf00200 0x20>;
+		interrupt-parent = <&gic>;
+		interrupts = <GIC_PPI (27-16) (GIC_CPU_MASK_RAW(0x1)|IRQ_TYPE_LEVEL_HIGH)>;
+		clocks = <&arm_periph_clk>;
+	};
+
+	local-timer@faf00600 {
+		status = "disabled";
+		compatible = "arm,cortex-a9-twd-timer";
+		reg = <0xfaf00600 0x20>;
+		interrupt-parent = <&gic>;
+		interrupts = <GIC_PPI (29-16) IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&arm_periph_clk>;
+	};
+
+	/* Clock */
+
+	clocks {
+		arm_clk: arm_clk {
+			compatible = "hilscher,netx4000-cpu-clock";
+			#clock-cells = <0>;
+			clock-names = "arm_clk";
+		};
+		arm_periph_clk: arm_periph_clk {
+			compatible = "fixed-factor-clock";
+			#clock-cells = <0>;
+			clocks = <&arm_clk>;
+			clock-names = "arm_periph_clk";
+			clock-mult = <1>;
+			clock-div = <2>;
+		};
+		periph_clk: periph_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-output-names = "periph_clk","apb_pclk";
+			clock-frequency = <(100 * 1000 * 1000)>;
+		};
+
+		/* Gated clocks */
+		/* NOTE: This gated clock comprises clk100_usb and clk33_usb */
+		usb_clk: usb_clk {
+			compatible = "hilscher,netx4000-periph-clock";
+			#clock-cells = <0>;
+			clock-output-names = "usb_clk";
+			clock-frequency = <(100 * 1000 * 1000)>;
+			clock-mask = <0x01>;
+		};
+		/* NOTE: This gated clock comprises clk133_pcie_aclk and clk133_pcie_clk_pmu */
+		pcie_clk: pcie_clk {
+			compatible = "hilscher,netx4000-periph-clock";
+			#clock-cells = <0>;
+			clock-output-names = "pcie_clk";
+			clock-frequency = <(133 * 1000 * 1000)>;
+			clock-mask = <0x02>;
+		};
+		/* NOTE: This gated clock comprises clk100_r7_sdio */
+		sdio_clk: sdio_clk {
+			compatible = "hilscher,netx4000-periph-clock";
+			#clock-cells = <0>;
+			clock-output-names = "sdio_clk";
+			clock-frequency = <(100 * 1000 * 1000)>;
+			clock-mask = <0x04>;
+		};
+		/* NOTE: This gated clock comprises clk150_a9_gmac, clk125_eth_gmac, clk25_eth_gmac and clk2_5_eth_gmac */
+		gmac_clk: gmac_clk {
+			compatible = "hilscher,netx4000-periph-clock";
+			#clock-cells = <0>;
+			clock-output-names = "gmac_clk";
+			clock-frequency = <(150 * 1000 * 1000)>;
+			clock-mask = <0x08>;
+		};
+		/* NOTE: This gated clock comprises clk200_r7_eswitch, clk100_r7_eswitch, clk125_eth_eswitch, clk25_eth_eswitch and clk2_5_eth_eswitch */
+		switch_clk: switch_clk {
+			compatible = "hilscher,netx4000-periph-clock";
+			#clock-cells = <0>;
+			clock-output-names = "switch_clk";
+			clock-frequency = <(200 * 1000 * 1000)>;
+			clock-mask = <0x10>;
+		};
+		/* NOTE: This gated clock comprises clk_pixclk(1000) and clk150_a9_tes */
+		gfx_clk: gfx_clk {
+			compatible = "hilscher,netx4000-periph-clock";
+			#clock-cells = <0>;
+			clock-output-names = "gfx_clk";
+			clock-frequency = <(1*1000*1000*1000)>;
+			clock-mask = <0x20>;
+		};
+		/* NOTE: This gated clock comprises clk600_a9_ddr, clk300_a9_ddr and clk150_a9_ddr */
+// 		ddr_clk: ddr_clk {
+// 			compatible = "hilscher,netx4000-periph-clock";
+// 			#clock-cells = <0>;
+// 			clock-output-names = "ddr_clk";
+// 			clock-frequency = <(600 * 1000 * 1000)>;
+// 			clock-mask = <0x40>;
+// 		};
+	};
+
+	/* Bitbang MDIO device */
+	mdio0: mdio0 {
+		status = "disabled";
+		compatible = "virtual,mdio-gpio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		gpios = <&gpio4 1 GPIO_ACTIVE_HIGH &gpio4 0 GPIO_ACTIVE_HIGH>; /* MDC, MDIO */
+
+		phy0: phy0 {
+			reg = <0>;
+		};
+		phy1: phy1 {
+			reg = <1>;
+		};
+	};
+
+	/* AMBA devices */
+
+	amba {
+		compatible = "arm,amba-bus","simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		interrupt-parent = <&gic>;
+		ranges;
+
+		/* DMA */
+
+		dmac0: dma-controller@f8019000 {
+			compatible = "renesas,nbpfaxi64dmac8b16";
+			reg = <0xf8019000 0x400>;
+			interrupts = <GIC_SPI (80-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (64-32) IRQ_TYPE_LEVEL_HIGH>,<0 (65-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (66-32) IRQ_TYPE_LEVEL_HIGH>,<0 (67-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (68-32) IRQ_TYPE_LEVEL_HIGH>,<0 (69-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (70-32) IRQ_TYPE_LEVEL_HIGH>,<0 (71-32) IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "error",
+			                  "chan0","chan1",
+			                  "chan2","chan3",
+			                  "chan4","chan5",
+			                  "chan6","chan7";
+			#dma-cells = <2>;
+			dma-channels = <8>;
+			dma-requests = <8>;
+			clocks = <&periph_clk>;
+		};
+
+		dmac1: dma-controller@f8019400 {
+			compatible = "renesas,nbpfaxi64dmac8b16";
+			reg = <0xf8019400 0x400>;
+			interrupts = <GIC_SPI (80-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (72-32) IRQ_TYPE_LEVEL_HIGH>,<0 (73-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (74-32) IRQ_TYPE_LEVEL_HIGH>,<0 (75-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (76-32) IRQ_TYPE_LEVEL_HIGH>,<0 (77-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (78-32) IRQ_TYPE_LEVEL_HIGH>,<0 (79-32) IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "error",
+			                  "chan8","chan9",
+			                  "chan10","chan11",
+			                  "chan12","chan13",
+			                  "chan14","chan15";
+			#dma-cells = <2>;
+			dma-channels = <8>;
+			dma-requests = <8>;
+			clocks = <&periph_clk>;
+		};
+
+		/* ECC */
+
+		edac_ddr_mc: edac-ddr-mc@f8001000 {
+			compatible = "hilscher,edac-ddr-mc-netx4000";
+			reg = <0xf8001000 0x400>;
+			interrupts = <GIC_SPI (43-32) IRQ_TYPE_LEVEL_HIGH>;
+		};
+
+		edac_cache_dc: edac-cache-dc@0xf0200000 {
+			compatible = "hilscher,edac-cache-dc-netx4000";
+			reg = <0xf0200000 0x90>;
+			interrupts = <GIC_SPI (36-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (37-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (38-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (39-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (40-32) IRQ_TYPE_EDGE_RISING>,
+			             <GIC_SPI (41-32) IRQ_TYPE_EDGE_RISING>;
+			interrupt-names = "sbe-core0",
+			                  "sbe-core1",
+			                  "dbe-core0",
+			                  "dbe-core1",
+			                  "sbe-pl310",
+			                  "dbe-pl310";
+		};
+
+		/* PINCTRL */
+
+		pinctrl: pinctrl@fb100000 {
+			compatible = "pinctrl-single-netx4000";
+			reg = <0xfb100000 0x800>;
+			pinctrl-single,register-width = <32>;
+			pinctrl-single,function-mask = <0xffff>;
+		};
+
+		/* cifX */
+
+		idpm0: idpm0@05210000 {
+			status = "disabled";
+			compatible = "hilscher,uio-netx";
+			reg = <0x05210000 0x10000>;
+			interrupt-names = "card";
+			interrupts = <GIC_SPI (253-32) IRQ_TYPE_LEVEL_HIGH>;
+			dma = <0>;
+			startuptype = "flash";
+			alias = "idpm0";
+		};
+
+		idpm1: idpm1@05250000 {
+			status = "disabled";
+			compatible = "hilscher,uio-netx";
+			reg = <0x05250000 0x10000>;
+			interrupt-names = "card";
+			interrupts = <GIC_SPI (254-32) IRQ_TYPE_LEVEL_HIGH>;
+			dma = <0>;
+			startuptype = "flash";
+			alias = "idpm1";
+		};
+
+		/* RTC */
+
+		rtc0: rtc@f801ce00 {
+			status = "disabled";
+			compatible = "hilscher,rtc-netx4000";
+			reg = <0xf801ce00 0x100>;
+		};
+
+		/* UART */
+
+		uart0: serial@f8036000 {
+			status = "disabled";
+			compatible = "arm,pl011", "arm,primecell";
+			device_type = "serial";
+			reg = <0xf8036000 0x1000>;
+			interrupts = <GIC_SPI (138-32) IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&periph_clk>;
+			clock-names = "apb_pclk";
+		};
+
+		uart1: serial@f8037000 {
+			status = "disabled";
+			compatible = "arm,pl011", "arm,primecell";
+			device_type = "serial";
+			reg = <0xf8037000 0x1000>;
+			interrupts = <GIC_SPI (139-32) IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&periph_clk>;
+			clock-names = "apb_pclk";
+		};
+
+		uart2: serial@f8038000 {
+			status = "disabled";
+			compatible = "arm,pl011", "arm,primecell";
+			device_type = "serial";
+			reg = <0xf8038000 0x1000>;
+			interrupts = <GIC_SPI (140-32) IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&periph_clk>;
+			clock-names = "apb_pclk";
+		};
+
+		uart3: serial@f8039000 {
+			status = "disabled";
+			compatible = "arm,pl011", "arm,primecell";
+			device_type = "serial";
+			reg = <0xf8039000 0x1000>;
+			interrupts = <GIC_SPI (141-32) IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&periph_clk>;
+			clock-names = "apb_pclk";
+		};
+
+		/* GPIO */
+
+		gpio0: gpio@f801f000 {
+			status = "ok";
+			compatible = "hilscher,netx4000-gpio";
+			reg = <0xf801f000 0x100>;
+			interrupts = <GIC_SPI (123-32) IRQ_TYPE_LEVEL_HIGH>;
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			gpio-ranges = <&pinctrl 0 (MUX_PIN(10,10)/4) 1>,
+			              <&pinctrl 1 (MUX_PIN(3,1)/4) 15>,
+			              <&pinctrl 16 (MUX_PIN(7,1)/4) 8>;
+		};
+
+		gpio1: gpio@f801f100 {
+			status = "ok";
+			compatible = "hilscher,netx4000-gpio";
+			reg = <0xf801f100 0x100>;
+			interrupts = <GIC_SPI (124-32) IRQ_TYPE_LEVEL_HIGH>;
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			gpio-ranges = <&pinctrl 0 (MUX_PIN(4,0)/4) 16>,
+			              <&pinctrl 16 (MUX_PIN(11,0)/4) 8>,
+			              <&pinctrl 24 (MUX_PIN(14,0)/4) 2>;
+		};
+
+		gpio2: gpio@f801f200 {
+			status = "ok";
+			compatible = "hilscher,netx4000-gpio";
+			reg = <0xf801f200 0x100>;
+			interrupts = <GIC_SPI (125-32) IRQ_TYPE_LEVEL_HIGH>;
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			gpio-ranges = <&pinctrl 0 (MUX_PIN(5,0)/4) 16>,
+			              <&pinctrl 16 (MUX_PIN(6,0)/4) 16>;
+		};
+
+		gpio3: gpio@f801f300 {
+			status = "ok";
+			compatible = "hilscher,netx4000-gpio";
+			reg = <0xf801f300 0x100>;
+			interrupts = <GIC_SPI (126-32) IRQ_TYPE_LEVEL_HIGH>;
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			gpio-ranges = <&pinctrl 0 (MUX_PIN(12,0)/4) 16>,
+			              <&pinctrl 14 (MUX_PIN(13,0)/4) 12>,
+			              <&pinctrl 28 (MUX_PIN(8,15)/4) 1>,
+			              <&pinctrl 29 (MUX_PIN(10,2)/4) 1>,
+			              <&pinctrl 30 (MUX_PIN(9,0)/4) 1>;
+		};
+
+		gpio4: gpio@f801f400 {
+			status = "ok";
+			compatible = "hilscher,netx4000-gpio";
+			reg = <0xf801f400 0x100>;
+			interrupts = <GIC_SPI (127-32) IRQ_TYPE_LEVEL_HIGH>;
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			gpio-ranges = <&pinctrl 0 (MUX_PIN(15,0)/4) 14>,
+			              <&pinctrl 14 (MUX_PIN(16,0)/4) 12>,
+			              <&pinctrl 26 (MUX_PIN(2,0)/4) 2>;
+		};
+
+		/* I2C */
+
+		i2c0: i2c@f801b800 {
+			status = "disabled";
+			compatible = "hilscher,netx4000-i2c";
+			reg = <0xf801b800 0x100>;
+			interrupts = <GIC_SPI (130-32) IRQ_TYPE_LEVEL_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&i2c0_pins>;
+		};
+
+		i2c1: i2c@f801b900 {
+			status = "disabled";
+			compatible = "hilscher,netx4000-i2c";
+			reg = <0xf801b900 0x100>;
+			interrupts = <GIC_SPI (131-32) IRQ_TYPE_LEVEL_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&i2c1_pins>;
+		};
+
+		i2c2: i2c@f801ba00 {
+			status = "disabled";
+			compatible = "hilscher,netx4000-i2c";
+			reg = <0xf801ba00 0x100>;
+			interrupts = <GIC_SPI (132-32) IRQ_TYPE_LEVEL_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&i2c2_pins>;
+		};
+
+		i2c3: i2c@f801bb00 {
+			status = "disabled";
+			compatible = "hilscher,netx4000-i2c";
+			reg = <0xf801bb00 0x100>;
+			interrupts = <GIC_SPI (133-32) IRQ_TYPE_LEVEL_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&i2c3_pins>;
+		};
+
+		i2c4: i2c@f801bc00 {
+			status = "disabled";
+			compatible = "hilscher,netx4000-i2c";
+			reg = <0xf801bc00 0x100>;
+			interrupts = <GIC_SPI (134-32) IRQ_TYPE_LEVEL_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&i2c4_pins>;
+		};
+
+		i2c5: i2c@f801bd00 {
+			status = "disabled";
+			compatible = "hilscher,netx4000-i2c";
+			reg = <0xf801bd00 0x100>;
+			interrupts = <GIC_SPI (135-32) IRQ_TYPE_LEVEL_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&i2c5_pins>;
+		};
+
+		/* ADC */
+
+		adc0: adc@f409ca00 {
+			status = "disabled";
+			compatible = "hilscher,iio-adc-netx4000";
+			reg = <0xf409ca00 100>;
+			vref = <3300>;
+		};
+
+		adc1: adc@f409cb00 {
+			status = "disabled";
+			compatible = "hilscher,iio-adc-netx4000";
+			reg = <0xf409cb00 100>;
+			vref = <3300>;
+		};
+
+		/* SPI */
+
+		spi0: pl022@f8034000 {
+			status = "disabled";
+			compatible = "arm,pl022", "arm,primecell";
+			reg = <0xf8034000 0x1000>;
+			interrupts = <GIC_SPI (136-32) IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&periph_clk>;
+			clock-names = "apb_pclk"; /* required for 'arm,primecell' devices */
+			dmas = <
+				&dmac0 0 (NBPF_SLAVE_RQ_HIGH | NBPF_SLAVE_RQ_LEVEL)  /* read channel */
+				&dmac0 1 (NBPF_SLAVE_RQ_HIGH | NBPF_SLAVE_RQ_LEVEL)  /* write channel */
+			>;
+			dma-names = "rx", "tx";
+			pinctrl-names = "default";
+			pinctrl-0 = <&spi0_pins>;
+//			num-cs = <1>;
+//			cs-gpios = <&gpio2 9 GPIO_ACTIVE_LOW>;
+		};
+
+		spi1: pl022@f8035000 {
+			status = "disabled";
+			compatible = "arm,pl022", "arm,primecell";
+			reg = <0xf8035000 0x1000>;
+			interrupts = <GIC_SPI (137-32) IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&periph_clk>;
+			clock-names = "apb_pclk"; /* required for 'arm,primecell' devices */
+			dmas = <
+				&dmac0 2 (NBPF_SLAVE_RQ_HIGH | NBPF_SLAVE_RQ_LEVEL)  /* read channel */
+				&dmac0 3 (NBPF_SLAVE_RQ_HIGH | NBPF_SLAVE_RQ_LEVEL)  /* write channel */
+			>;
+			dma-names = "rx", "tx";
+			pinctrl-names = "default";
+			pinctrl-0 = <&spi1_pins>;
+//			num-cs = <1>;
+//			cs-gpios = <&gpio2 23 GPIO_ACTIVE_LOW>;
+		};
+
+		/* Quad SPI */
+
+		qspi0: qspi@f801d300 {
+			status = "disabled";
+			compatible = "hilscher,qspi-netx4000";
+			reg = <0xf801d300 0x100>;
+			interrupts = <GIC_SPI (85-32) IRQ_TYPE_LEVEL_HIGH>;
+			dmas = <
+				&dmac0 4 (NBPF_SLAVE_RQ_HIGH | NBPF_SLAVE_RQ_LEVEL) /* rx channel */
+				&dmac0 5 (NBPF_SLAVE_RQ_HIGH | NBPF_SLAVE_RQ_LEVEL) /* tx channel */
+			>;
+			dma-names = "rx", "tx";
+			pinctrl-names = "default";
+			pinctrl-0 = <&qspi0_pins>;
+		};
+
+		qspi1: qspi@f801d400 {
+			status = "disabled";
+			compatible = "hilscher,qspi-netx4000";
+			reg = <0xf801d400 0x100>;
+			interrupts = <GIC_SPI (86-32) IRQ_TYPE_LEVEL_HIGH>;
+			dmas = <
+				&dmac0 6 (NBPF_SLAVE_RQ_HIGH | NBPF_SLAVE_RQ_LEVEL) /* rx channel */
+				&dmac0 7 (NBPF_SLAVE_RQ_HIGH | NBPF_SLAVE_RQ_LEVEL) /* tx channel */
+			>;
+			dma-names = "rx", "tx";
+			pinctrl-names = "default";
+			pinctrl-0 = <&qspi1_pins>;
+		};
+
+		/* USB */
+
+		hcd0: usb-host@f9000000 {
+			status = "disabled";
+			compatible = "hilscher,netx4000-hcd";
+			reg = <0xf9000000 0x20000>;
+			interrupts = <GIC_SPI (177-32) IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&usb_clk>;
+		};
+
+		udc0: usb-device@f8004000 {
+			status = "disabled";
+			compatible = "hilscher,udc-netx4000";
+			reg = <0xf8004000 0x2000>;
+			interrupts = <GIC_SPI (178-32) IRQ_TYPE_LEVEL_HIGH>, <GIC_SPI (179-32) IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "irq_u2f", "irq_u2fepc";
+
+			clocks = <&usb_clk>;
+		};
+
+		/* CAN */
+
+		can0: can@f8030000 {
+			status = "disabled";
+			compatible = "hilscher,netx4000-can";
+			reg = <0xf8030000 0x4000>;
+			interrupts = <GIC_SPI (110-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (111-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (112-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (113-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (114-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (115-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (116-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (117-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (118-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (119-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (120-32) IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "cherrint0",
+			                  "cherrint1",
+			                  "cherrint2",
+			                  "rxfint",
+			                  "comfrxint0",
+			                  "comfrxint1",
+			                  "comfrxint2",
+			                  "glerrint",
+			                  "txint0",
+			                  "txint1",
+			                  "txint2";
+			clocks = <&periph_clk>;
+			clock_select = <0>; /* CLKR_CLKC */
+
+//			channels = <0 1 2>; /* list of enabled channels */
+		};
+
+		/* GMAC */
+
+		gmac0: gmac@f8010000 {
+			status = "disabled";
+			pinctrl-names = "default";
+			pinctrl-0 = <&rgmii0_pins>;
+			compatible = "snps,dwc-qos-ethernet-4.10", "hilscher,netx4000-gmac";
+			reg = <0xf8010000 0x4000>;
+			clocks = <&gmac_clk>, <&gmac_clk>;
+			clock-names = "apb_pclk", "phy_ref_clk"; /* phy_ref_clk is unused/unsupported at 'nxhx4000 jtag plus' board */
+			interrupts = <GIC_SPI (106-32) IRQ_TYPE_LEVEL_HIGH>, <GIC_SPI (107-32) IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "macirq", "eth_wake_irq";
+
+			phy-handle = <&phy0>;
+			phy-mode = "rgmii-id";
+			mac-address = [00 00 00 00 00 00]; /* will be filled by bootloader */
+		};
+
+		gmac1: gmac@f8014000 {
+			status = "disabled";
+			pinctrl-names = "default";
+			pinctrl-0 = <&rgmii1_pins>;
+			compatible = "snps,dwc-qos-ethernet-4.10", "hilscher,netx4000-gmac";
+			reg = <0xf8014000 0x4000>;
+			clocks = <&gmac_clk>, <&gmac_clk>;
+			clock-names = "apb_pclk", "phy_ref_clk"; /* phy_ref_clk is unused/unsupported at 'nxhx4000 jtag plus' board */
+			interrupts = <GIC_SPI (108-32) IRQ_TYPE_LEVEL_HIGH>, <GIC_SPI (109-32) IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "macirq", "eth_wake_irq";
+
+			phy-handle = <&phy1>;
+			phy-mode = "rgmii-id";
+			mac-address = [00 00 00 00 00 00]; /* will be filled by bootloader */
+		};
+
+		/* Display */
+
+		display0: pvo@f803c000 {
+			status = "disabled";
+			compatible = "hilscher,fb-netx4000";
+			reg = <0xf803c000 0x400>;
+			clocks = <&gfx_clk>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pvo_rgb888_pins>;
+			interrupts = <GIC_SPI (90-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (91-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (92-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (93-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (94-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (95-32) IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "bus_error",
+			                  "fifo_underrun",
+			                  "reg_reload",
+			                  "scanline",
+			                  "video_no_start",
+			                  "video_not_in_sync";
+		};
+
+		/* Memory Controller */
+
+		smc353: smc353@f8003000 {
+			status = "disabled";
+			compatible = "arm,smc-35x","arm,primecell";
+			reg = <0xf8003000 0x1000>;
+			clocks = <&periph_clk>;
+			clock-names = "apb_pclk";
+			ranges;
+		};
+
+		/* SD/MMC */
+
+		sdmmc0: sdmmc@f803a000 {
+			status = "disabled";
+			compatible = "hilscher,netx4000-sdio";
+			reg = <0xf803a000 0x1000>;
+			interrupts = <GIC_SPI (81-32) IRQ_TYPE_LEVEL_HIGH>, <GIC_SPI (82-32) IRQ_TYPE_LEVEL_HIGH>, <GIC_SPI (83-32) IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "sdio", "card", "access";
+			card-detect-delay = <100>;
+			voltage-ranges = <3300 3300>;
+			bus-width = <4>;
+			clocks = <&sdio_clk>;
+			dmas = <
+				&dmac1 0 (NBPF_SLAVE_RQ_HIGH | NBPF_SLAVE_RQ_LEVEL)  /* read channel */
+				&dmac1 1 (NBPF_SLAVE_RQ_HIGH | NBPF_SLAVE_RQ_LEVEL)  /* write channel */
+			>;
+			dma-names = "rx", "tx";
+		};
+
+		/* PCIe root complex */
+
+		pcie_rc: pci_rc@f8050000 {
+			status = "disabled";
+			compatible = "hilscher,netx4000-pcie-rc";
+			reg = <0xf8050000 0x4000>;
+
+			device_type = "pci";
+			linux,pci-domain = <1>;
+			max-link-speed = <2>;
+
+			interrupts = <GIC_SPI (97-32)  IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (98-32)  IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (99-32)  IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (100-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (101-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (102-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (103-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (104-32) IRQ_TYPE_LEVEL_HIGH>,
+			             <GIC_SPI (105-32) IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "all",
+			                  "dma",
+			                  "msi_rc",
+			                  "serr",
+			                  "err_cor",
+			                  "err_fatal",
+			                  "err_nonfatal",
+			                  "msg",
+			                  "pcie_evt";
+
+			clocks = <&pcie_clk>;
+
+			bus-range = <0 0xff>;
+
+			#address-cells = <3>;
+			#size-cells = <2>;
+
+			// pci_space
+			//        0x01: IO   pci_addr     cpu_addr     size
+			//        0x02: Mem  (64bit)      (64bit)
+			//        0x40: pref
+			ranges = <0x02000000 0 0xC0000000 0xC0000000 0 0x10000000   /* non-prefetchable memory (256M) */
+			          0x42000000 0 0xD0000000 0xD0000000 0 0x10000000>; /* prefetchable memory (256M) */
+
+			#interrupt-cells = <1>;
+			interrupt-map-mask = <0 0 0 0x7>;
+			interrupt-map = <0 0 0 1 &pcie_intc 1>, /* inta */
+			                <0 0 0 2 &pcie_intc 2>, /* intb */
+			                <0 0 0 3 &pcie_intc 3>, /* intc */
+			                <0 0 0 4 &pcie_intc 4>; /* intd */
+
+			pcie_intc: irq-controller@pcie {
+				interrupt-controller;
+				#address-cells = <0>;
+				#interrupt-cells = <1>;
+			};
+		};
+	};
+};
+
+&pinctrl {
+	/* Default pin control used by GPIO requests ---> */
+	pinctrl-single,gpio-range = <
+		&range (MUX_PIN(15,0)/4) 1 (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_PULLUP50K | REEMUX_CTL(0x8)) // gpio4[0] / mdio (gpio-bitbang)
+		&range (MUX_PIN(15,1)/4) 1 (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))      // gpio4[1] / mdc (gpio-bitbang)
+	>;
+
+	range: gpio-range {
+		#pinctrl-single,gpio-range-cells = <3>;
+	};
+	/* <--- */
+
+	uart0_pins_noflow: uart0_pins_noflow {
+		pinctrl-single,pins = <
+			MUX_PIN(4,10)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)  // RXD
+			MUX_PIN(4,11)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)  // TXD
+		>;
+	};
+
+	uart0_pins: uart0_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(4,10)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)  // RXD
+			MUX_PIN(4,11)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)  // TXD
+			MUX_PIN(4,12)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)  // CTS
+			MUX_PIN(4,13)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)  // RTS
+		>;
+	};
+
+	uart1_pins_noflow: uart1_pins_noflow {
+		pinctrl-single,pins = <
+			MUX_PIN(4,14)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)  // RXD
+			MUX_PIN(4,15)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)  // TXD
+		>;
+	};
+
+	uart1_pins: uart1_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(4,14)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)  // RXD
+			MUX_PIN(4,15)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)  // TXD
+			MUX_PIN(5,0)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)  // CTS
+			MUX_PIN(5,1)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)  // RTS
+		>;
+	};
+
+	uart2_pins_noflow: uart2_pins_noflow {
+		pinctrl-single,pins = <
+			MUX_PIN(5,2)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // RXD
+			MUX_PIN(5,3)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // TXD
+		>;
+	};
+
+	uart3_pins_noflow: uart3_pins_noflow {
+		pinctrl-single,pins = <
+			MUX_PIN(5,4)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // RXD
+			MUX_PIN(5,5)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // TXD
+		>;
+	};
+
+	i2c0_pins: i2c0_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(2,0)  (REEMUX_0 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // scl / gpio4_26
+			MUX_PIN(2,1)  (REEMUX_0 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // sda / gpio4_27
+		>;
+	};
+
+	i2c1_pins: i2c1_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(4,8)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // scl / gpio1_8
+			MUX_PIN(4,9)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // sda / gpio1_9
+		>;
+	};
+
+	i2c2_pins: i2c2_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(16,8)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)  // scl / gpio4_22
+			MUX_PIN(16,9)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)  // sda / gpio4_23
+		>;
+	};
+
+	i2c3_pins: i2c3_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(16,10)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K) // scl / gpio4_24
+			MUX_PIN(16,11)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K) // sda / gpio4_25
+		>;
+	};
+
+	i2c4_pins: i2c4_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(6,0)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // scl / gpio2_16
+			MUX_PIN(6,1)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // sda / gpio2_17
+		>;
+	};
+
+	i2c5_pins: i2c5_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(6,2)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // scl / gpio2_18
+			MUX_PIN(6,3)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // sda / gpio2_19
+		>;
+	};
+
+	spi0_pins: spi0_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(5,6)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)        // PL022_CLK
+			MUX_PIN(5,7)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)        // PL022_MOSI
+			MUX_PIN(5,8)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // PL022_MISO
+		>;
+	};
+
+	spi1_pins: spi1_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(6,4)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)        // PL022_CLK
+			MUX_PIN(6,5)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)        // PL022_MOSI
+			MUX_PIN(6,6)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // PL022_MISO
+		>;
+	};
+
+	qspi0_pins: qspi0_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(1,0)  (REEMUX_0 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)        // sqi0_clk
+			MUX_PIN(1,1)  (REEMUX_0 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)        // sqi0_mosi
+			MUX_PIN(1,2)  (REEMUX_0 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)        // sqi0_miso
+			MUX_PIN(1,3)  (REEMUX_0 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)        // sqi0_sio2
+			MUX_PIN(1,4)  (REEMUX_0 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)        // sqi0_sio3
+			MUX_PIN(1,5)  (REEMUX_0 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // sqi0_cs0n
+		>;
+	};
+
+	qspi1_pins: qspi1_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(10,3)  (REEMUX_3 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)       // sqi1_clk
+			MUX_PIN(10,4)  (REEMUX_3 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)       // sqi1_mosi
+			MUX_PIN(10,5)  (REEMUX_3 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)       // sqi1_miso
+			MUX_PIN(10,6)  (REEMUX_3 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)       // sqi1_sio2
+			MUX_PIN(10,7)  (REEMUX_3 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)       // sqi1_sio3
+			MUX_PIN(10,8)  (REEMUX_3 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)  // sqi1_cs0n
+		>;
+	};
+
+	hcd0_0_pins: hcd0_0_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(14,0)  (REEMUX_0 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)       // OCI1
+			MUX_PIN(14,1)  (REEMUX_0 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)       // PPON1
+		>;
+	};
+
+	hcd0_1_pins: hcd0_1_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(5,4)  (REEMUX_3 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)        // OCI2
+			MUX_PIN(5,5)  (REEMUX_3 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)        // PPON2
+		>;
+	};
+
+	can0_0_pins: can0_0_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(5,11)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // MMIO43 => GPIO2_11 => rx
+			MUX_PIN(5,12)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)        // MMIO44 => GPIO2_12 => tx
+		>;
+	};
+
+	can0_1_pins: can0_1_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(5,13)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // MMIO45 => GPIO2_13 => rx
+			MUX_PIN(5,14)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)        // MMIO46 => GPIO2_14 => tx
+		>;
+	};
+
+	can0_2_pins: can0_2_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(6,14)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)   // MMIO62 => GPIO2_30 => rx
+			MUX_PIN(6,15)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)        // MMIO63 => GPIO2_31 => rx
+		>;
+	};
+
+	gmac0_mdio_pins: gmac0_mdio_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(15,0)  (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))   // MDIO
+			MUX_PIN(15,1)  (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))   // MDC
+		>;
+	};
+
+	rgmii0_pins: rgmii0_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(15,2)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // TXD0
+			MUX_PIN(15,3)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // TXD1
+			MUX_PIN(15,4)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // TXD2
+			MUX_PIN(15,5)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // TXD3
+			MUX_PIN(15,6)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // RXD0
+			MUX_PIN(15,7)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // RXD1
+			MUX_PIN(15,8)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // RXD2
+			MUX_PIN(15,9)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // RXD3
+			MUX_PIN(15,10)  (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // TXCLK
+			MUX_PIN(15,11)  (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // TXCTL
+			MUX_PIN(15,12)  (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // RXCLK
+			MUX_PIN(15,13)  (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // RXCTL
+		>;
+	};
+
+	rgmii1_pins: rgmii1_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(16,0)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // TXD0
+			MUX_PIN(16,1)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // TXD1
+			MUX_PIN(16,2)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // TXD2
+			MUX_PIN(16,3)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // TXD3
+			MUX_PIN(16,4)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // RXD0
+			MUX_PIN(16,5)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // RXD1
+			MUX_PIN(16,6)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // RXD2
+			MUX_PIN(16,7)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // RXD3
+			MUX_PIN(16,8)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // TXCLK
+			MUX_PIN(16,9)   (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // TXCTL
+			MUX_PIN(16,10)  (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // RXCLK
+			MUX_PIN(16,11)  (REEMUX_3 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // RXCTL
+		>;
+	};
+
+	pvo_rgb888_pins: pvo_rgb888_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(12,0)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // R0
+			MUX_PIN(12,1)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // R1
+			MUX_PIN(12,2)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // R2
+			MUX_PIN(12,3)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // R3
+			MUX_PIN(12,4)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // R4
+			MUX_PIN(12,5)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // R5
+			MUX_PIN(12,6)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // R6
+			MUX_PIN(12,7)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // R7
+			MUX_PIN(12,8)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // G0
+			MUX_PIN(12,9)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // G1
+			MUX_PIN(12,10)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // G2
+			MUX_PIN(12,11)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // G3
+			MUX_PIN(12,12)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // G4
+			MUX_PIN(12,13)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // G5
+			MUX_PIN(12,14)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // G6
+			MUX_PIN(12,15)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // G7
+			MUX_PIN(13,0)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // B0
+			MUX_PIN(13,1)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // B1
+			MUX_PIN(13,2)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // B2
+			MUX_PIN(13,3)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // B3
+			MUX_PIN(13,4)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // B4
+			MUX_PIN(13,5)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // B5
+			MUX_PIN(13,6)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // B6
+			MUX_PIN(13,7)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // B7
+			MUX_PIN(13,8)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // PCLK
+			MUX_PIN(13,9)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // BLANK
+			MUX_PIN(13,10)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // HSYNC
+			MUX_PIN(13,11)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_NONE)      // VSYNC
+		>;
+	};
+
+	nand8_pins: nand8_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(8,1)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)   // PL353_DATA0
+			MUX_PIN(8,2)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)   // PL353_DATA1
+			MUX_PIN(8,3)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)   // PL353_DATA2
+			MUX_PIN(8,4)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)   // PL353_DATA3
+			MUX_PIN(8,5)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)   // PL353_DATA4
+			MUX_PIN(8,6)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)   // PL353_DATA5
+			MUX_PIN(8,7)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)   // PL353_DATA6
+			MUX_PIN(8,8)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)   // PL353_DATA7
+			MUX_PIN(8,9)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)     // PL353_NAND_CLE
+			MUX_PIN(8,10)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)     // PL353_NAND_CS_N
+			MUX_PIN(8,11)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)     // PL353_NAND_OE_N
+			MUX_PIN(8,12)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)     // PL353_NAND_WE_N
+			MUX_PIN(8,13)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)     // PL353_NAND_BUSY
+			MUX_PIN(8,14)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)     // PL353_NAND_ALE
+		>;
+	};
+
+	nand16_pins: nand16_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(8,1)    (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA0
+			MUX_PIN(8,2)    (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA1
+			MUX_PIN(8,3)    (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA2
+			MUX_PIN(8,4)    (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA3
+			MUX_PIN(8,5)    (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA4
+			MUX_PIN(8,6)    (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA5
+			MUX_PIN(8,7)    (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA6
+			MUX_PIN(8,8)    (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA7
+			MUX_PIN(8,9)    (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)    // PL353_NAND_CLE
+			MUX_PIN(8,10)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)    // PL353_NAND_CS_N
+			MUX_PIN(8,11)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)    // PL353_NAND_OE_N
+			MUX_PIN(8,12)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)    // PL353_NAND_WE_N
+			MUX_PIN(8,13)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)    // PL353_NAND_BUSY
+			MUX_PIN(8,14)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLUP50K)    // PL353_NAND_ALE
+			MUX_PIN(10,3)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA8
+			MUX_PIN(10,4)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA9
+			MUX_PIN(10,5)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA10
+			MUX_PIN(10,6)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA11
+			MUX_PIN(10,7)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA12
+			MUX_PIN(10,8)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA13
+			MUX_PIN(10,9)   (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA14
+			MUX_PIN(10,10)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA15
+		>;
+	};
+};
+

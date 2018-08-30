@@ -1,0 +1,27 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target-path = <&idpm1>;
+		__overlay__ {
+			status = "ok";
+			startuptype = "flash";  /* "auto","ram","flash","donttouch" */
+			alias = "idpm1"; /* alias card name */
+		};
+	};
+	__parameters__ {
+		cifx1.alias {
+			desc = "Alias name to use";
+			node = "/fragment@0/__overlay__";
+			prop = "alias";
+			type = "string";
+		};
+		cifx1.startuptype {
+			desc = "Startup type of device (auto, ram, flash, donttouch)";
+			node = "/fragment@0/__overlay__";
+			prop = "startuptype";
+			type = "string";
+		};
+	};
+};
