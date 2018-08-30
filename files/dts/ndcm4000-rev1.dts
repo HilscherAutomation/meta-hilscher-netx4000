@@ -1,7 +1,7 @@
 /*
-* Device tree for Hilscher netX4000 based NXHX4000-JTAG+ rev4 boards
+* Device tree for Hilscher netX4000 based NDCM4000 rev1 modules
 *
-* arch/arm/boot/dts/netx4000/nxhx4000-jtag-plus-rev4.dts
+* arch/arm/boot/dts/netx4000/ndcm4000-rev1.dtsi
 *
 * (C) Copyright 2015 Hilscher Gesellschaft fuer Systemautomation mbH
 * http://www.hilscher.com
@@ -20,8 +20,32 @@
 
 /dts-v1/;
 
-#include "nxhx4000-jtag-plus-rev3_1.dts"
+#include "netx4000-common.dtsi"
 
 / {
-	model = "Hilscher NXHX4000-JTAG+ rev4";
+	model = "Hilscher NDCM4000 rev1";
+	compatible = "hilscher,netx4000";
+
+	chosen {
+		linux,stdout-path = &uart0;
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x0 0x0>; /* will be filled by bootloader */
+	};
+};
+
+&uart0 {
+	status = "ok";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_pins>;
+};
+
+&sdmmc0 {
+	status = "ok";
+};
+
+&rtc0 {
+	status = "ok";
 };

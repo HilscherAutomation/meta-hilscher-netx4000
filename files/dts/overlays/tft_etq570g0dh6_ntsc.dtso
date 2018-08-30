@@ -1,0 +1,36 @@
+/dts-v1/;
+/plugin/;
+
+#include "../dt-bindings/video/netx4000.h"
+
+/ {
+	fragment@0 {
+		target = <&display0>;
+		__overlay__ {
+			status = "ok";
+			pixel-format = <RGB565>;
+			display-timings {
+				native-mode = <&etq570g0dh6_ntsc>;
+				etq570g0dh6_ntsc: ntsc {
+					/* edt,etq570g0dh6 ntsc*/
+					clock-frequency = <6400000>;
+					hactive = <320>;
+					vactive = <240>;
+					hfront-porch = <20>;
+					hback-porch = <38>;
+					hsync-len = <30>;
+					vfront-porch = <5>; /* 4.5 */
+					vback-porch = <16>; /* 15 */
+					vsync-len = <3>;
+					hsync-active = <0>;
+					vsync-active = <0>;
+//					de-active = <1>;
+					pixelclk-active = <1>;
+//					interlaced = <1>;
+//					doublescan = <1>;
+//					doubleclk =<1>;
+				};
+			};
+		};
+	};
+};

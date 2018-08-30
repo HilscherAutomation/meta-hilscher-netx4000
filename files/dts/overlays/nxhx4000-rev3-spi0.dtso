@@ -1,0 +1,33 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	fragment@0 {
+		target = <&spi0>;
+		__overlay__ {
+			status = "ok";
+			num-cs = <2>;
+			cs-gpios = <&gpio2 9 GPIO_ACTIVE_LOW>, <&gpio2 10 GPIO_ACTIVE_LOW>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			spidev@0 {
+				compatible = "spidev";
+				reg = <0x0>;
+				spi-max-frequency = <25000000>;
+				/* Uncomment the line below to enable DMA.
+				* Note: DMA works only for transfer modes with 9bits and more */
+//				pl022,com-mode = <0x2>;
+			};
+			spidev@1 {
+				compatible = "spidev";
+				reg = <0x1>;
+				spi-max-frequency = <25000000>;
+				/* Uncomment the line below to enable DMA.
+				* Note: DMA works only for transfer modes with 9bits and more */
+//				pl022,com-mode = <0x2>;
+			};
+		};
+	};
+};
