@@ -639,8 +639,9 @@
 			pinctrl-0 = <&rgmii0_pins>;
 			compatible = "snps,dwc-qos-ethernet-4.10", "hilscher,netx4000-gmac";
 			reg = <0xf8010000 0x4000>;
-			clocks = <&gmac_clk>, <&gmac_clk>;
-			clock-names = "apb_pclk", "phy_ref_clk"; /* phy_ref_clk is unused/unsupported at 'nxhx4000 jtag plus' board */
+			clocks = <&gmac_clk>, <&gmac_clk>, <&gmac_clk>, <&gmac_clk>;
+			clock-names = "apb_pclk", "phy_ref_clk", /* phy_ref_clk is unused/unsupported at 'nxhx4000 jtag plus' board */
+						  "stmmaceth", "pclk"; /* clocks are renamed to 'stmmaceth' and 'pclk' since kernel 4.14 */
 			interrupts = <GIC_SPI (106-32) IRQ_TYPE_LEVEL_HIGH>, <GIC_SPI (107-32) IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "macirq", "eth_wake_irq";
 
@@ -655,8 +656,9 @@
 			pinctrl-0 = <&rgmii1_pins>;
 			compatible = "snps,dwc-qos-ethernet-4.10", "hilscher,netx4000-gmac";
 			reg = <0xf8014000 0x4000>;
-			clocks = <&gmac_clk>, <&gmac_clk>;
-			clock-names = "apb_pclk", "phy_ref_clk"; /* phy_ref_clk is unused/unsupported at 'nxhx4000 jtag plus' board */
+			clocks = <&gmac_clk>, <&gmac_clk>, <&gmac_clk>, <&gmac_clk>;
+			clock-names = "apb_pclk", "phy_ref_clk", /* phy_ref_clk is unused/unsupported at 'nxhx4000 jtag plus' board */
+						  "stmmaceth", "pclk"; /* clocks are renamed to 'stmmaceth' and 'pclk' since kernel 4.14 */
 			interrupts = <GIC_SPI (108-32) IRQ_TYPE_LEVEL_HIGH>, <GIC_SPI (109-32) IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "macirq", "eth_wake_irq";
 
