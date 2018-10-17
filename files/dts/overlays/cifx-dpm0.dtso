@@ -3,7 +3,7 @@
 
 / {
 	fragment@0 {
-		target-path = <&idpm0>;
+		target = <&idpm0>;
 		__overlay__ {
 			status = "ok";
 			startuptype = "flash";  /* "auto","ram","flash","donttouch" */
@@ -11,13 +11,13 @@
 		};
 	};
 	__parameters__ {
-		cifx0.alias {
+		idpm0.alias {
 			desc = "Alias name to use";
 			node = "/fragment@0/__overlay__";
 			prop = "alias";
 			type = "string";
 		};
-		cifx0.startuptype {
+		idpm0.startuptype {
 			desc = "Startup type of device (auto, ram, flash, donttouch)";
 			node = "/fragment@0/__overlay__";
 			prop = "startuptype";
