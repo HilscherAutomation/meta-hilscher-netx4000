@@ -27,6 +27,11 @@ MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append +="kernel-modules kernel-image-fitimage 
     ${@oe.utils.ifelse(d.getVar('KERNEL_DEVICETREE_OVERLAYS'), 'kernel-devicetree-overlays' ,'')} \
     ${@oe.utils.ifelse(d.getVar('KERNEL_DEVICETREE_OVERLAYS'), 'dto-utils' ,'')}"
 
+KERNEL_DEVICETREE_OVERLAYS_append += " \
+	netx4000/overlays/cifx-dpm0.dtbo \
+	netx4000/overlays/cifx-dpm1.dtbo \
+"
+
 # Kernel default config does not set default parameters and yocto uses allnoconfig
 # per default, thus we need to override it to use alldefconfig
 KCONFIG_MODE ?= "--alldefconfig"
