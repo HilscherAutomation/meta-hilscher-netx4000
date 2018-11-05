@@ -12,7 +12,8 @@ GIT_KERNEL_REPO ?= "github.com/hilscher/netx4000-linux.git;protocol=https"
 
 SRC_URI = "git://${GIT_KERNEL_REPO};name=machine;branch=${KBRANCH};nocheckout=1 \
            git://git.yoctoproject.org/yocto-kernel-cache;type=kmeta;name=meta;branch=yocto-${LINUX_BASEVERSION};destsuffix=${KMETA} \
-           ${@bb.utils.contains('KERNEL_ENABLE_NAND',  '1', 'file://enable_nand.cfg', '',d)}"
+           ${@bb.utils.contains('KERNEL_ENABLE_NAND',  '1', 'file://enable_nand.cfg', '',d)} \
+           ${@bb.utils.contains('MACHINE_FEATURES', 'tpm', 'file://enable_tpm.cfg', '', d)}"
 
 KBUILD_DEFCONFIG = "netx4000_defconfig"
 KMETA = "kernel-meta"
