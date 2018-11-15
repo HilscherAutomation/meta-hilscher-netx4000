@@ -21,6 +21,7 @@ SRC_URI = " \
 	${@bb.utils.contains('BAREBOX_ENABLE_NAND',  '1', 'file://enable_nand.cfg', '',d)} \
 	${@bb.utils.contains('DDR_RAM', 'IS43TR16256AL_1GIB', 'file://enable_is43tr16256a_1gib.cfg', '',d)} \
 	${@bb.utils.contains('DDR_RAM', 'AS4C512M16D3L_12_2GIB', 'file://enable_as4c512m16d3l_12_2gib.cfg', '',d)} \
+	file://cr7-wfe-loop.tar.gz \
 "
 
 S = "${WORKDIR}/git"
@@ -112,6 +113,12 @@ do_configure_prepend() {
 
 	# Apply possible configuration fragments
 	merge_config.sh -m .config ${@" ".join(find_cfgs(d))}
+
+	# Patch xml-file used by hboot-image-compiler
+	for xmlPatch in $(ls ${WORKDIR}/*.xmlpatch); do
+		bbwarn "hboot-image: Applying patch file '$(basename ${xmlPatch})'"
+		sed -n -i -e '/<\/Chunks>/r '${xmlPatch} -e 1x -e '2,${x;p}' -e '${x;p}' ${S}/scripts/netx4000/ca9_boot.xml && rm ${xmlPatch}
+	done
 }
 
 do_compile_prepend() {
