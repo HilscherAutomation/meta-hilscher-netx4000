@@ -418,7 +418,7 @@
 			#gpio-cells = <2>;
 
 			gpio-ranges = <&pinctrl 0 (MUX_PIN(12,0)/4) 16>,
-			              <&pinctrl 14 (MUX_PIN(13,0)/4) 12>,
+			              <&pinctrl 16 (MUX_PIN(13,0)/4) 12>,
 			              <&pinctrl 28 (MUX_PIN(8,15)/4) 1>,
 			              <&pinctrl 29 (MUX_PIN(10,2)/4) 1>,
 			              <&pinctrl 30 (MUX_PIN(9,0)/4) 1>;
