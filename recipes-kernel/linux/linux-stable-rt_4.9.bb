@@ -2,13 +2,9 @@ KBRANCH = "v4.9-netx4000-rt"
 KTYPE = "preempt-rt"
 
 # netX4000
-LINUX_VERSION = "4.9.98-rt76"
-SRCREV_machine="fa80cff5b581b827df5758f124b589894148243c"
+LINUX_VERSION = "4.9.115-rt93"
+SRCREV_machine="d81ad5a89a82772717016b2507816cf7b7be1610"
 
-# netX4000 RLXD (relaxed)
-LINUX_VERSION_netx4000-rlxd = "4.9.47-rt37"
-SRCREV_machine_netx4000-rlxd="c68309017755d6fe3d8152705bf7b98c64d4a06d"
-
-SRCREV_meta="0774eacea2a7d3a150594533b8c80d0c0bfdfded"
+SRCREV_meta="9aed9998adc8848b33ade296422f7df7642bbc04"
 
 require linux-hilscher-common.inc
