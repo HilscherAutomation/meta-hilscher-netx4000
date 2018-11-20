@@ -3,7 +3,7 @@
 *
 * arch/arm/boot/dts/netx4000/nxhx4000-jtag-plus-rev4.dts
 *
-* (C) Copyright 2015 Hilscher Gesellschaft fuer Systemautomation mbH
+* (C) Copyright 2018 Hilscher Gesellschaft fuer Systemautomation mbH
 * http://www.hilscher.com
 *
 * This program is free software; you can redistribute it and/or
@@ -20,8 +20,161 @@
 
 /dts-v1/;
 
-#include "nxhx4000-jtag-plus-rev3_1.dts"
+#include "netx4000-common.dtsi"
 
 / {
 	model = "Hilscher NXHX4000-JTAG+ rev4";
+	compatible = "hilscher,netx4000";
+
+	chosen {
+		linux,stdout-path = &uart0;
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x0 0x0>; /* will be filled by bootloader */
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		led0 {
+			gpios = <&gpio0 2 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "none";
+			default-state = "off";
+		};
+		led1 {
+			gpios = <&gpio0 3 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "none";
+			default-state = "off";
+		};
+		led2 {
+			gpios = <&gpio0 4 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "none";
+			default-state = "off";
+		};
+		led3 {
+			gpios = <&gpio0 5 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "none";
+			default-state = "off";
+		};
+	};
+};
+
+/* Static platform gpio pins */
+&pinctrl {
+	pinctrl-single,gpio-range0 = <
+// 		MUX_PIN(3,2)  (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)        // mmio2  / gpio0.2  / led p300
+// 		MUX_PIN(3,3)  (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)        // mmio3  / gpio0.3  / led p301
+// 		MUX_PIN(3,4)  (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)        // mmio4  / gpio0.4  / led p302
+// 		MUX_PIN(3,5)  (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)        // mmio5  / gpio0.5  / led p303
+// 		MUX_PIN(3,6)  (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_PULLDOWN50K) // mmio6  / gpio0.6  / s301-a
+// 		MUX_PIN(3,7)  (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_PULLDOWN50K) // mmio7  / gpio0.7  / s301-b
+// 		MUX_PIN(3,8)  (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_PULLDOWN50K) // mmio8  / gpio0.8  / s301-c
+// 		MUX_PIN(3,9)  (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_PULLDOWN50K) // mmio9  / gpio0.9  / s301-d
+// 		MUX_PIN(3,14) (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio14 / gpio0.14 / x1602.10
+		&range (MUX_PIN(3,2)/4) 4 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)
+		&range (MUX_PIN(3,6)/4) 4 (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_PULLDOWN50K)
+		&range (MUX_PIN(3,14)/4) 1 (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K)
+
+// 		MUX_PIN(4,4)  (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio20 / gpio1.4  / x1601.7
+// 		MUX_PIN(4,5)  (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio21 / gpio1.5  / x1601.8
+// 		MUX_PIN(4,6)  (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio22 / gpio1.6  / x1601.9
+// 		MUX_PIN(4,7)  (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio23 / gpio1.7  / x1601.10
+// 		MUX_PIN(4,8)  (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio24 / gpio1.8  / x1800.15
+// 		MUX_PIN(4,9)  (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio25 / gpio1.9  / x1800.17
+// 		MUX_PIN(4,14) (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio30 / gpio1.14 / x1601.2
+// 		MUX_PIN(4,15) (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio31 / gpio1.15 / x1601.1
+		&range (MUX_PIN(4,4)/4) 6 (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K)
+		&range (MUX_PIN(4,14)/4) 2 (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K)
+
+// 		MUX_PIN(5,0)  (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio32 / gpio2.0  / x1601.4
+// 		MUX_PIN(5,1)  (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio33 / gpio2.1  / x1601.3
+// 		MUX_PIN(5,6)  (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio38 / gpio2.6  / x1800.23
+// 		MUX_PIN(5,7)  (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio39 / gpio2.7  / x1800.25
+// 		MUX_PIN(5,8)  (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio40 / gpio2.8  / x1800.27
+// 		MUX_PIN(5,9)  (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio41 / gpio2.9  / x1800.28
+// 		MUX_PIN(5,10) (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio42 / gpio2.10 / x1800.29
+// 		MUX_PIN(5,11) (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio43 / gpio2.11 / x1602.2
+// 		MUX_PIN(5,12) (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio44 / gpio2.12 / x1602.1
+// 		MUX_PIN(6,9)  (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio57 / gpio2.25 / x1602.4
+// 		MUX_PIN(6,10) (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio58 / gpio2.26 / x1602.3
+// 		MUX_PIN(6,11) (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio59 / gpio2.27 / x1602.7
+// 		MUX_PIN(6,12) (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio60 / gpio2.28 / x1602.8
+// 		MUX_PIN(6,13) (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K) // mmio61 / gpio2.29 / x1602.9
+		&range (MUX_PIN(5,0)/4) 2 (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K)
+		&range (MUX_PIN(5,6)/4) 7 (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K)
+		&range (MUX_PIN(6,9)/4) 5 (REEMUX_1 | REEMUX_DRV_12MA | REEMUX_UDC_PULLDOWN50K)
+
+		/* pcie-rc */
+		&range (MUX_PIN(6,2)/4)  1 (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_PULLDOWN50K) // mmio50 / gpio2_18 / reset-gpio
+		&range (MUX_PIN(6,14)/4) 1 (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_PULLDOWN50K) // mmio62 / gpio2_30 / wake-gpio
+		&range (MUX_PIN(6,15)/4) 1 (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_PULLDOWN50K) // mmio63 / gpio2_31 / clkreq-gpio
+	>;
+};
+
+&sdmmc0 {
+	status = "ok";
+};
+
+&rtc0 {
+	status = "ok";
+};
+
+&uart0 {
+	status = "ok";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_pins>;
+};
+
+&i2c0 {
+	status = "ok";
+	clock-frequency = <800000>;
+	/* Uncomment the line below to enable the polling mode. */
+//	interrupts = <0>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	eeprom@50 {
+		/* The 'NXHX4000 JTAG+ rev3' board is populated with a 24FC1025.
+		 * We use the 24c32 only for testing (16bit access!). */
+		compatible = "24c32";
+		reg = <0x50>;
+		pagesize = <128>;
+	};
+};
+
+&hcd0 {
+	status = "ok";
+	num-ports = <1>; /* 1 or 2 */
+	pinctrl-names = "default";
+	pinctrl-0 = <&hcd0_0_pins>;
+};
+
+&udc0 {
+	status = "ok";
+	pinctrl-names = "default";
+	pinctrl-0 = <&hcd0_1_pins>;
+};
+
+&mdio0 {
+	status = "ok";
+};
+
+&gmac0 {
+	status = "ok";
+};
+
+&gmac1 {
+	status = "ok";
+};
+
+&idpm0 {
+	status = "ok";
+};
+
+&pcie_rc {
+	status = "ok";
+	reset-gpio   = <&gpio2 18 GPIO_ACTIVE_LOW>;
+	wake-gpio    = <&gpio2 30 GPIO_ACTIVE_LOW>;
+	clkreq-gpio  = <&gpio2 31 GPIO_ACTIVE_LOW>;
 };
