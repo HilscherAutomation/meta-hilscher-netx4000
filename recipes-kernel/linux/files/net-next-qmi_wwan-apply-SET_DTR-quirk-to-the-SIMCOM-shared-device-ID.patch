@@ -1,0 +1,60 @@
+From patchwork Fri May 25 13:00:20 2018
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Subject: [net-next] qmi_wwan: apply SET_DTR quirk to the SIMCOM shared device
+ ID
+X-Patchwork-Submitter: =?utf-8?q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+X-Patchwork-Id: 920501
+X-Patchwork-Delegate: davem@davemloft.net
+Message-Id: <20180525130020.28847-1-bjorn@mork.no>
+To: netdev@vger.kernel.org
+Cc: linux-usb@vger.kernel.org, =?utf-8?q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>,
+ Reinhard Speyerer <rspmn@arcor.de>
+Date: Fri, 25 May 2018 15:00:20 +0200
+From: =?utf-8?q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+List-Id: <netdev.vger.kernel.org>
+
+SIMCOM are reusing a single device ID for many (all of their?)
+different modems, based on different chipsets and firmwares. Newer
+Qualcomm chipset generations require setting DTR to wake the QMI
+function.  The SIM7600E modem is using such a chipset, making it
+fail to work with this driver despite the device ID match.
+
+Fix by unconditionally enabling the SET_DTR quirk for all SIMCOM
+modems using this specific device ID.  This is similar to what
+we already have done for another case of device IDs recycled over
+multiple chipset generations: 14cf4a771b30 ("drivers: net: usb:
+qmi_wwan: add QMI_QUIRK_SET_DTR for Telit PID 0x1201")
+
+Initial testing on an older SIM7100 modem shows no immediate side
+effects.
+
+Reported-by: Sebastian Sjoholm <sebastian.sjoholm@gmail.com>
+Cc: Reinhard Speyerer <rspmn@arcor.de>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+---
+I propose this for net-next for now to get some extra testing
+exposure before going into stable.  I'll send a separate request
+for stable backport as soon as I'm satisfied that there are no
+hidden issues with some specific modem.
+
+
+Bjørn 
+
+ drivers/net/usb/qmi_wwan.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index 42565dd33aa6..148e78f8b48c 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -1248,7 +1248,7 @@ static const struct usb_device_id products[] = {
+ 	{QMI_FIXED_INTF(0x03f0, 0x4e1d, 8)},	/* HP lt4111 LTE/EV-DO/HSPA+ Gobi 4G Module */
+ 	{QMI_FIXED_INTF(0x03f0, 0x9d1d, 1)},	/* HP lt4120 Snapdragon X5 LTE */
+ 	{QMI_FIXED_INTF(0x22de, 0x9061, 3)},	/* WeTelecom WPD-600N */
+-	{QMI_FIXED_INTF(0x1e0e, 0x9001, 5)},	/* SIMCom 7230E */
++	{QMI_QUIRK_SET_DTR(0x1e0e, 0x9001, 5)},	/* SIMCom 7100E, 7230E, 7600E ++ */
+ 	{QMI_QUIRK_SET_DTR(0x2c7c, 0x0125, 4)},	/* Quectel EC25, EC20 R2.0  Mini PCIe */
+ 	{QMI_QUIRK_SET_DTR(0x2c7c, 0x0121, 4)},	/* Quectel EC21 Mini PCIe */
+ 	{QMI_FIXED_INTF(0x2c7c, 0x0296, 4)},	/* Quectel BG96 */
