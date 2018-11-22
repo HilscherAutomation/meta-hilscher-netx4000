@@ -42,10 +42,9 @@ export DEBIAN_FRONTEND=noninteractive
 export LANG=en_US.UTF-8
 export TERM="xterm-color"
 
-DEFAULT_PACKAGES="ubuntu-standard,openssh-server,apt-utils"
-PACKAGE_LIST=${1:-"${DEFAULT_PACKAGES}"}
+source ../ubuntu.cfg
 
-debootstrap --foreign --include=${PACKAGE_LIST} --arch=armhf bionic rootfs http://ports.ubuntu.com
+debootstrap --foreign --include=${UBUNTU_PACKAGES} --arch=armhf bionic rootfs http://ports.ubuntu.com
 # Copy qemu binary required for debootstrap --second-stage
 cp /usr/bin/qemu-arm-static rootfs/usr/bin
 chroot rootfs /debootstrap/debootstrap --second-stage
@@ -64,21 +63,29 @@ chroot rootfs sh -c 'echo "root:root" | chpasswd'
 # Enable ssh root login by password
 sed -i 's/^PermitRootLogin.*/PermitRootLogin yes/g' rootfs/etc/ssh/sshd_config
 # Enable serial console (UART0) login
-ln -s /lib/systemd/system/serial-getty@.service /etc/systemd/system/getty.target.wants/serial-getty@ttyAMA0.service
+ln -s /lib/systemd/system/serial-getty@.service rootfs/etc/systemd/system/getty.target.wants/serial-getty@ttyAMA0.service
 
 # Setup default networking
 # configuration (eth0=dhcp, eth1=static 192.168.254.1)
-cat <<EOF > rootfs/etc/network/interfaces
-auto lo
+cat <<EOF > rootfs/etc/systemd/network/90-eth-default.network
+[Match]
+# Default ethernet and WiFi to DHCP
+Name=e* w*
 
-allow-hotplug eth0
-iface eth0 inet dhcp
-
-allow-hotplug eth1
-iface eth1 inet static
-        address 192.168.254.1
-        netmask 255.255.255.0
+[Network]
+DHCP=yes
 EOF
+
+cat <<EOF > rootfs/etc/systemd/network/10-eth1.network
+[Match]
+Name=eth1
+
+[Network]
+DHCP=no
+Address=192.168.254.1/24
+EOF
+
+chroot rootfs systemctl enable systemd-networkd
 
 # Update all installed packages
 chroot rootfs apt-get update
@@ -106,6 +113,6 @@ fi
 
 # Create manifest file
 rm -f netx4000-ubuntu-18.04-rootfs.manifest
-for package in $(echo $PACKAGE_LIST | sed 's/,/ /g'); do
+for package in $(echo $UBUNTU_PACKAGES | sed 's/,/ /g'); do
 	echo $package >> netx4000-ubuntu-18.04-rootfs.manifest
 done
