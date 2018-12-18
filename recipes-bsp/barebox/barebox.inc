@@ -61,8 +61,10 @@ python () {
     bb.debug(1, "DTS_DIRS (overall hash): %s" % dtsDirsHash)
 
     d.setVar('DTS_DIRS_HASH', dtsDirsHash)
-    d.appendVarFlag('do_unpack', 'vardeps', 'DTS_DIRS_HASH')
+    d.appendVarFlag('do_unpack', 'vardeps', ' DTS_DIRS_HASH')
 }
+
+do_unpack[vardeps] += "FITIMAGE_SIGN BAREBOX_SIGN_KEYDIR BAREBOX_SIGN_KEYNAME"
 
 # returns all the elements from the src uri that are .cfg files
 def find_cfgs(d):
@@ -107,6 +109,11 @@ do_configure_prepend() {
         rm -rf ${S}/arch/arm/boards/netx4000/env
         cp -r ${WORKDIR}/env ${S}/arch/arm/boards/netx4000
     }
+
+    if [ -n "${FITIMAGE_SIGN}" ]; then
+        bbnote "Add key-node to env directory"
+        echo "/signature/key-${BAREBOX_SIGN_KEYNAME}" > ${S}/arch/arm/boards/netx4000/env/key-node
+    fi
 
     # Change used device tree in config
     sed -i -e 's,\(CONFIG_BUILTIN_DTB_NAME=\).*,\1"${@os.path.splitext("${BAREBOX_DEVICETREE}")[0]}",g' ${S}/.config
