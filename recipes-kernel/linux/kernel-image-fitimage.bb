@@ -176,8 +176,8 @@ EOF
 KERNEL_VERSION="${@get_kernelversion_file("${STAGING_KERNEL_BUILDDIR}")}"
 
 do_install() {
-  fit_its_file="${B}/fitImage.its"
-  fit_image="${B}/fitImage.bin"
+  fit_its_file="fitImage.its"
+  fit_image="fitImage.bin"
 
   rm -f ${fit_its_file}
 
@@ -250,8 +250,8 @@ FILES_${PN}="/boot"
 
 do_deploy[vardepsexclude] = "DATETIME"
 do_deploy() {
-  fit_its_file="${B}/fitImage.its"
-  fit_image="${B}/fitImage.bin"
+  fit_its_file="fitImage.its"
+  fit_image="fitImage.bin"
 
   rm -f ${DEPLOYDIR}/*
 
