@@ -63,7 +63,7 @@ python do_apply_verification_keys() {
         dtc_modulus, int(exponent),
         N0inv, keylen, rr)
 
-  dts_path = os.path.join(d.getVar("B"), 
+  dts_path = os.path.join(d.getVar("B"),
                          "arch", d.getVar("ARCH"), "dts", "netx4000")
   with open(os.path.join(dts_path, "signature_check.dtsi"), 'w+') as sig_check:
     sig_check.write(signature_block)
@@ -71,14 +71,8 @@ python do_apply_verification_keys() {
   # Add include to main dts file
   dts_file = os.path.join(dts_path, os.path.basename(d.getVar("BAREBOX_DEVICETREE").replace('.dtb', '.dts')))
 
-  with open(dts_file, 'r+') as dts:
-    tmp=dts.read()
-    if "signature_check.dtsi" not in tmp:
-      dts.seek(0)
-      # We need to add the include
-      marker="/dts-v1/;\n"
-      idx=tmp.index(marker) + len(marker);
-      dts.write(tmp[:idx] + '#include "signature_check.dtsi"' + tmp[idx:])
+  with open(dts_file, 'a') as dts:
+    dts.write('\n#include "signature_check.dtsi"\n')
 }
 
 python() {
