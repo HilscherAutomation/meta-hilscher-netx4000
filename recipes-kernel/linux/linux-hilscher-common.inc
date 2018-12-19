@@ -27,45 +27,45 @@ PV = "${LINUX_VERSION}+git${SRCPV}"
 RDEPENDS_${KERNEL_PACKAGE_NAME}-base=""
 
 python () {
-	import os
-	import hashlib
+    import os
+    import hashlib
 
-	dtsDirsModTimeList = ""
+    dtsDirsModTimeList = ""
 
-	for dtsDir in d.getVar('DTS_DIRS').split():
-		for root, dirs, files in os.walk(dtsDir):
-			bb.parse.mark_dependency(d, root)
+    for dtsDir in d.getVar('DTS_DIRS').split():
+        for root, dirs, files in os.walk(dtsDir):
+            bb.parse.mark_dependency(d, root)
 
-			if dtsDirsModTimeList:
-				dtsDirsModTimeList += ", "
+            if dtsDirsModTimeList:
+                dtsDirsModTimeList += ", "
 
-			mtime = bb.parse.cached_mtime(root)
-			dtsDirsModTimeList += "('dir:%s',%s)" % (root, mtime)
+            mtime = bb.parse.cached_mtime(root)
+            dtsDirsModTimeList += "('dir:%s',%s)" % (root, mtime)
 
-			for file in files:
-				filename = root+"/"+file
-				mtime = bb.parse.cached_mtime(filename)
-				dtsDirsModTimeList += ", ('file:%s',%s)" % (filename, mtime)
+            for file in files:
+                filename = root+"/"+file
+                mtime = bb.parse.cached_mtime(filename)
+                dtsDirsModTimeList += ", ('file:%s',%s)" % (filename, mtime)
 
-	for file in dtsDirsModTimeList.split(', '):
-		bb.debug(2, "DTS_DIRS (mtime): %s" % (file))
+    for file in dtsDirsModTimeList.split(', '):
+        bb.debug(2, "DTS_DIRS (mtime): %s" % (file))
 
-	dtsDirsHash = hashlib.sha256(dtsDirsModTimeList.encode("utf8")).hexdigest()
-	bb.debug(1, "DTS_DIRS (overall hash): %s" % dtsDirsHash)
+    dtsDirsHash = hashlib.sha256(dtsDirsModTimeList.encode("utf8")).hexdigest()
+    bb.debug(1, "DTS_DIRS (overall hash): %s" % dtsDirsHash)
 
-	d.setVar('DTS_DIRS_HASH', dtsDirsHash)
-	d.appendVarFlag('do_unpack', 'vardeps', 'DTS_DIRS_HASH')
+    d.setVar('DTS_DIRS_HASH', dtsDirsHash)
+    d.appendVarFlag('do_unpack', 'vardeps', 'DTS_DIRS_HASH')
 }
 
 do_copy_dts() {
-	[ -n "${DTS_DIRS}" ] && {
-		bbnote "Copying/Replacing device tree files"
-		mkdir -p ${S}/arch/arm/boot/dts/netx4000/
-		for dtsDir in ${DTS_DIRS}; do
-			bbnote "src:$dtsDir"
-			cp -r $dtsDir/* ${S}/arch/arm/boot/dts/netx4000/
-		done
-	}
+    [ -n "${DTS_DIRS}" ] && {
+        bbnote "Copying/Replacing device tree files"
+        mkdir -p ${S}/arch/arm/boot/dts/netx4000/
+        for dtsDir in ${DTS_DIRS}; do
+            bbnote "src:$dtsDir"
+            cp -r $dtsDir/* ${S}/arch/arm/boot/dts/netx4000/
+        done
+    }
 }
 addtask do_copy_dts after do_patch before do_configure
 

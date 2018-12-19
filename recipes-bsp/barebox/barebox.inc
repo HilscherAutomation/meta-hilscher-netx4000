@@ -16,12 +16,12 @@ COMPATIBLE_MACHINE = "netx4000"
 GIT_BAREBOX_REPO ?= "github.com/hilscher/netx4000-barebox.git;protocol=https"
 
 SRC_URI = " \
-	git://${GIT_BAREBOX_REPO};branch=${BRANCH} \
-	${@bb.utils.contains('BAREBOX_SIGN_ENFORCE', '1', 'file://enforce_signature_verification.cfg', '',d)} \
-	${@bb.utils.contains('BAREBOX_ENABLE_NAND',  '1', 'file://enable_nand.cfg', '',d)} \
-	${@bb.utils.contains('DDR_RAM', 'IS43TR16256AL_1GIB', 'file://enable_is43tr16256a_1gib.cfg', '',d)} \
-	${@bb.utils.contains('DDR_RAM', 'AS4C512M16D3L_12_2GIB', 'file://enable_as4c512m16d3l_12_2gib.cfg', '',d)} \
-	file://cr7-wfe-loop.tar.gz \
+    git://${GIT_BAREBOX_REPO};branch=${BRANCH} \
+    ${@bb.utils.contains('BAREBOX_SIGN_ENFORCE', '1', 'file://enforce_signature_verification.cfg', '',d)} \
+    ${@bb.utils.contains('BAREBOX_ENABLE_NAND',  '1', 'file://enable_nand.cfg', '',d)} \
+    ${@bb.utils.contains('DDR_RAM', 'IS43TR16256AL_1GIB', 'file://enable_is43tr16256a_1gib.cfg', '',d)} \
+    ${@bb.utils.contains('DDR_RAM', 'AS4C512M16D3L_12_2GIB', 'file://enable_as4c512m16d3l_12_2gib.cfg', '',d)} \
+    file://cr7-wfe-loop.tar.gz \
 "
 
 S = "${WORKDIR}/git"
@@ -34,34 +34,34 @@ EXTRA_OEMAKE = "CROSS_COMPILE=${TARGET_PREFIX}"
 DEPENDS += "kern-tools-native"
 
 python () {
-	import os
-	import hashlib
+    import os
+    import hashlib
 
-	dtsDirsModTimeList = ""
+    dtsDirsModTimeList = ""
 
-	for dtsDir in d.getVar('DTS_DIRS').split():
-		for root, dirs, files in os.walk(dtsDir):
-			bb.parse.mark_dependency(d, root)
+    for dtsDir in d.getVar('DTS_DIRS').split():
+        for root, dirs, files in os.walk(dtsDir):
+            bb.parse.mark_dependency(d, root)
 
-			if dtsDirsModTimeList:
-				dtsDirsModTimeList += ", "
+            if dtsDirsModTimeList:
+                dtsDirsModTimeList += ", "
 
-			mtime = bb.parse.cached_mtime(root)
-			dtsDirsModTimeList += "('dir:%s',%s)" % (root, mtime)
+            mtime = bb.parse.cached_mtime(root)
+            dtsDirsModTimeList += "('dir:%s',%s)" % (root, mtime)
 
-			for file in files:
-				filename = root+"/"+file
-				mtime = bb.parse.cached_mtime(filename)
-				dtsDirsModTimeList += ", ('file:%s',%s)" % (filename, mtime)
+            for file in files:
+                filename = root+"/"+file
+                mtime = bb.parse.cached_mtime(filename)
+                dtsDirsModTimeList += ", ('file:%s',%s)" % (filename, mtime)
 
-	for file in dtsDirsModTimeList.split(', '):
-		bb.debug(2, "DTS_DIRS (mtime): %s" % (file))
+    for file in dtsDirsModTimeList.split(', '):
+        bb.debug(2, "DTS_DIRS (mtime): %s" % (file))
 
-	dtsDirsHash = hashlib.sha256(dtsDirsModTimeList.encode("utf8")).hexdigest()
-	bb.debug(1, "DTS_DIRS (overall hash): %s" % dtsDirsHash)
+    dtsDirsHash = hashlib.sha256(dtsDirsModTimeList.encode("utf8")).hexdigest()
+    bb.debug(1, "DTS_DIRS (overall hash): %s" % dtsDirsHash)
 
-	d.setVar('DTS_DIRS_HASH', dtsDirsHash)
-	d.appendVarFlag('do_unpack', 'vardeps', 'DTS_DIRS_HASH')
+    d.setVar('DTS_DIRS_HASH', dtsDirsHash)
+    d.appendVarFlag('do_unpack', 'vardeps', 'DTS_DIRS_HASH')
 }
 
 # returns all the elements from the src uri that are .cfg files
@@ -75,66 +75,66 @@ def find_cfgs(d):
     return sources_list
 
 do_copy_dts() {
-	[ -n "${DTS_DIRS}" ] && {
-		bbnote "Copying/Replacing device tree files"
-		mkdir -p ${S}/arch/arm/dts/netx4000
-		for dtsDir in ${DTS_DIRS}; do
-			bbnote "src:$dtsDir"
-			cp -r $dtsDir/* ${S}/arch/arm/dts/netx4000/
-		done
-	}
+    [ -n "${DTS_DIRS}" ] && {
+        bbnote "Copying/Replacing device tree files"
+        mkdir -p ${S}/arch/arm/dts/netx4000
+        for dtsDir in ${DTS_DIRS}; do
+            bbnote "src:$dtsDir"
+            cp -r $dtsDir/* ${S}/arch/arm/dts/netx4000/
+        done
+    }
 }
 addtask do_copy_dts after do_patch before do_configure
 
 do_configure_prepend() {
-	[ -r ${WORKDIR}/defconfig ] && {
-		bbnote "Copying/Replacing the netx4000_defconfig"
-		cp ${WORKDIR}/defconfig ${S}/arch/arm/configs/netx4000_defconfig
-	}
+    [ -r ${WORKDIR}/defconfig ] && {
+        bbnote "Copying/Replacing the netx4000_defconfig"
+        cp ${WORKDIR}/defconfig ${S}/arch/arm/configs/netx4000_defconfig
+    }
 
-	if [ "${ENABLE_DDR_ECC}" = "yes" ]; then
-		bbnote "Enable DDR ECC"
-		sed -i -e 's,.*\(CONFIG_ENABLE_DDR_ECC\).*,\1=y,g' ${S}/arch/arm/configs/netx4000_defconfig
-	else
-		bbnote "Disable DDR ECC"
-		sed -i -e 's,.*\(CONFIG_ENABLE_DDR_ECC\).*,# \1 is not set,g' ${S}/arch/arm/configs/netx4000_defconfig
-	fi
+    if [ "${ENABLE_DDR_ECC}" = "yes" ]; then
+        bbnote "Enable DDR ECC"
+        sed -i -e 's,.*\(CONFIG_ENABLE_DDR_ECC\).*,\1=y,g' ${S}/arch/arm/configs/netx4000_defconfig
+    else
+        bbnote "Disable DDR ECC"
+        sed -i -e 's,.*\(CONFIG_ENABLE_DDR_ECC\).*,# \1 is not set,g' ${S}/arch/arm/configs/netx4000_defconfig
+    fi
 
-	oe_runmake netx4000_defconfig
+    oe_runmake netx4000_defconfig
 
-	[ -d ${WORKDIR}/env ] && {
-		bbnote "Copying/Replacing env directory"
-		rm -rf ${S}/arch/arm/boards/netx4000/env
-		cp -r ${WORKDIR}/env ${S}/arch/arm/boards/netx4000
-	}
+    [ -d ${WORKDIR}/env ] && {
+        bbnote "Copying/Replacing env directory"
+        rm -rf ${S}/arch/arm/boards/netx4000/env
+        cp -r ${WORKDIR}/env ${S}/arch/arm/boards/netx4000
+    }
 
-	# Change used device tree in config
-	sed -i -e 's,\(CONFIG_BUILTIN_DTB_NAME=\).*,\1"${@os.path.splitext("${BAREBOX_DEVICETREE}")[0]}",g' ${S}/.config
+    # Change used device tree in config
+    sed -i -e 's,\(CONFIG_BUILTIN_DTB_NAME=\).*,\1"${@os.path.splitext("${BAREBOX_DEVICETREE}")[0]}",g' ${S}/.config
 
-	# Apply possible configuration fragments
-	merge_config.sh -m .config ${@" ".join(find_cfgs(d))}
+    # Apply possible configuration fragments
+    merge_config.sh -m .config ${@" ".join(find_cfgs(d))}
 
-	# Patch xml-file used by hboot-image-compiler
-	for xmlPatch in $(ls ${WORKDIR}/*.xmlpatch); do
-		bbwarn "hboot-image: Applying patch file '$(basename ${xmlPatch})'"
-		sed -n -i -e '/<\/Chunks>/r '${xmlPatch} -e 1x -e '2,${x;p}' -e '${x;p}' ${S}/scripts/netx4000/ca9_boot.xml && rm ${xmlPatch}
-	done
+    # Patch xml-file used by hboot-image-compiler
+    for xmlPatch in $(ls ${WORKDIR}/*.xmlpatch); do
+        bbwarn "hboot-image: Applying patch file '$(basename ${xmlPatch})'"
+        sed -n -i -e '/<\/Chunks>/r '${xmlPatch} -e 1x -e '2,${x;p}' -e '${x;p}' ${S}/scripts/netx4000/ca9_boot.xml && rm ${xmlPatch}
+    done
 }
 
 do_compile_prepend() {
-  unset LDFLAGS
+    unset LDFLAGS
 }
 
 BUILD_ID="${DATETIME}"
 BUILD_ID[vardepsexclude] = "DATETIME"
 
 do_deploy () {
-  install ${B}/barebox ${DEPLOYDIR}/${PN}-${PV}-${BUILD_ID}.elf
-  ln -sf ${PN}-${PV}-${BUILD_ID}.elf ${DEPLOYDIR}/${PN}-${PV}.elf
+    install ${B}/barebox ${DEPLOYDIR}/${PN}-${PV}-${BUILD_ID}.elf
+    ln -sf ${PN}-${PV}-${BUILD_ID}.elf ${DEPLOYDIR}/${PN}-${PV}.elf
 
-  if [ -e "${B}/barebox.netx4000" ]; then
-    install ${B}/barebox.netx4000 ${DEPLOYDIR}/${PN}-${PV}-${BUILD_ID}
-    ln -sf ${PN}-${PV}-${BUILD_ID} ${DEPLOYDIR}/netx.rom
-  fi
+    if [ -e "${B}/barebox.netx4000" ]; then
+        install ${B}/barebox.netx4000 ${DEPLOYDIR}/${PN}-${PV}-${BUILD_ID}
+        ln -sf ${PN}-${PV}-${BUILD_ID} ${DEPLOYDIR}/netx.rom
+    fi
 }
 addtask deploy before do_build after do_compile
