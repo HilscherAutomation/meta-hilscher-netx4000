@@ -4,6 +4,11 @@ SECTION = "bootloaders"
 LICENSE = "GPLv2+"
 LIC_FILES_CHKSUM ?= "file://COPYING;md5=057bf9e50e1ca857d0eb97bfe4ba8e5d"
 
+FITIMAGE_SIGN = "${PLATFORM_SIGN}"
+BAREBOX_SIGN_ENFORCE ?= "${PLATFORM_SIGN}"
+BAREBOX_SIGN_KEYDIR ?= "${PLATFORM_KEYDIR}"
+BAREBOX_SIGN_KEYNAME ?= "${PLATFORM_KEYNAME}"
+
 inherit kernel-arch deploy cml1 barebox-sign
 
 export KBUILD_BUILD_USER = "oe-user"
@@ -64,7 +69,7 @@ python () {
     d.appendVarFlag('do_unpack', 'vardeps', ' DTS_DIRS_HASH')
 }
 
-do_unpack[vardeps] += "FITIMAGE_SIGN BAREBOX_SIGN_KEYDIR BAREBOX_SIGN_KEYNAME"
+do_unpack[vardeps] += "FITIMAGE_SIGN BAREBOX_SIGN_ENFORCE BAREBOX_SIGN_KEYDIR BAREBOX_SIGN_KEYNAME"
 
 # returns all the elements from the src uri that are .cfg files
 def find_cfgs(d):
@@ -110,7 +115,7 @@ do_configure_prepend() {
         cp -r ${WORKDIR}/env ${S}/arch/arm/boards/netx4000
     }
 
-    if [ -n "${FITIMAGE_SIGN}" ]; then
+    if [ "${@bb.utils.contains('FITIMAGE_SIGN', '1', 'true', 'false', d)}" = "true" ]; then
         bbnote "Add key-node to env directory"
         echo "/signature/key-${BAREBOX_SIGN_KEYNAME}" > ${S}/arch/arm/boards/netx4000/env/key-node
     fi

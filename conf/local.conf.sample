@@ -42,25 +42,10 @@ BB_DISKMON_DIRS = "\
     ABORT,${SSTATE_DIR},100M,1K \
 "
 
-# Default key for signing and verification
-DEFAULT_SIGN_KEYDIR ?= "${TOPDIR}/../meta-hilscher-netx4000/files/keys"
-DEFAULT_SIGN_KEY ?= "debug-sample"
-
-# Enables signing and verification of update image files.
-UPDATE_SIGN_ENFORCE ?= "1"
-UPDATE_SIGN_KEYDIR ?= "${DEFAULT_SIGN_KEYDIR}"
-UPDATE_SIGN_KEY ?= "${DEFAULT_SIGN_KEY}"
-
-# To enable verified boot the following lines are required and barebox configuration adjusted to your needs :
-#BAREBOX_SIGN_KEYDIR = "${DEFAULT_SIGN_KEYDIR}"
-#BAREBOX_SIGN_KEYNAME = "${DEFAULT_SIGN_KEY}"
-#FITIMAGE_SIGN = "1"
-#FITIMAGE_HASH_ALGO = "sha512"
-# Following combinations for signing are supported:
-# "sha1,rsa2048" "sha256,rsa4096" "sha512,rsa4096"
-#FITIMAGE_SIGN_ALGO = "${FITIMAGE_HASH_ALGO},rsa4096"
-# Following line enforces signature verification (no unsigned images allowed)
-#BAREBOX_SIGN_ENFORCE = "1"
+# Platform key for signing and verification
+PLATFORM_SIGN ?= "0"
+PLATFORM_KEYDIR ?= "${TOPDIR}/../meta-hilscher-netx4000/files/keys"
+PLATFORM_KEYNAME ?= "debug-sample"
 
 # Defines the minimum size in KiB for the generated image (e.g. 8MiB).
 #IMAGE_ROOTFS_SIZE = "8192"
