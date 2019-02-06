@@ -1,4 +1,4 @@
-FROM crops/yocto:ubuntu-16.04-base
+FROM crops/yocto:ubuntu-18.04-base
 
 USER root
 
