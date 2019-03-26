@@ -140,6 +140,7 @@ do_compile_prepend() {
 BUILD_ID="${DATETIME}"
 BUILD_ID[vardepsexclude] = "DATETIME"
 
+do_deploy[cleandirs] = "${DEPLOYDIR}"
 do_deploy () {
     install ${B}/barebox ${DEPLOYDIR}/${PN}-${PV}-${BUILD_ID}.elf
     ln -sf ${PN}-${PV}-${BUILD_ID}.elf ${DEPLOYDIR}/${PN}-${PV}.elf
