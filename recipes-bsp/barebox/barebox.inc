@@ -142,12 +142,12 @@ BUILD_ID[vardepsexclude] = "DATETIME"
 
 do_deploy[cleandirs] = "${DEPLOYDIR}"
 do_deploy () {
-    install ${B}/barebox ${DEPLOYDIR}/${PN}-${PV}-${BUILD_ID}.elf
-    ln -sf ${PN}-${PV}-${BUILD_ID}.elf ${DEPLOYDIR}/${PN}-${PV}.elf
+    install ${B}/barebox ${DEPLOYDIR}/${PN}-${PV}-${MACHINE}-${BUILD_ID}.elf
+    ln -sf ${PN}-${PV}-${MACHINE}-${BUILD_ID}.elf ${DEPLOYDIR}/${PN}-${PV}.elf
 
     if [ -e "${B}/barebox.netx4000" ]; then
-        install ${B}/barebox.netx4000 ${DEPLOYDIR}/${PN}-${PV}-${BUILD_ID}
-        ln -sf ${PN}-${PV}-${BUILD_ID} ${DEPLOYDIR}/netx.rom
+        install ${B}/barebox.netx4000 ${DEPLOYDIR}/${PN}-${PV}-${MACHINE}-${BUILD_ID}
+        ln -sf ${PN}-${PV}-${MACHINE}-${BUILD_ID} ${DEPLOYDIR}/netx.rom
     fi
 }
 addtask deploy before do_build after do_compile
