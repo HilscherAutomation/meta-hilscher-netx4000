@@ -33,35 +33,13 @@ EXTRA_OEMAKE = "CROSS_COMPILE=${TARGET_PREFIX}"
 
 DEPENDS += "kern-tools-native"
 
+inherit hilscher-helpers
 python () {
-	import os
-	import hashlib
+    dtsDirsHash = dir_dep_hash(d, d.getVar('DTS_DIRS'))
+    bb.debug(1, "DTS_DIRS (overall hash): %s" % dtsDirsHash)
 
-	dtsDirsModTimeList = ""
-
-	for dtsDir in d.getVar('DTS_DIRS').split():
-		for root, dirs, files in os.walk(dtsDir):
-			bb.parse.mark_dependency(d, root)
-
-			if dtsDirsModTimeList:
-				dtsDirsModTimeList += ", "
-
-			mtime = bb.parse.cached_mtime(root)
-			dtsDirsModTimeList += "('dir:%s',%s)" % (root, mtime)
-
-			for file in files:
-				filename = root+"/"+file
-				mtime = bb.parse.cached_mtime(filename)
-				dtsDirsModTimeList += ", ('file:%s',%s)" % (filename, mtime)
-
-	for file in dtsDirsModTimeList.split(', '):
-		bb.debug(2, "DTS_DIRS (mtime): %s" % (file))
-
-	dtsDirsHash = hashlib.sha256(dtsDirsModTimeList.encode("utf8")).hexdigest()
-	bb.debug(1, "DTS_DIRS (overall hash): %s" % dtsDirsHash)
-
-	d.setVar('DTS_DIRS_HASH', dtsDirsHash)
-	d.appendVarFlag('do_unpack', 'vardeps', 'DTS_DIRS_HASH')
+    d.setVar('DTS_DIRS_HASH', dtsDirsHash)
+    d.appendVarFlag('do_unpack', 'vardeps', ' DTS_DIRS_HASH')
 }
 
 # returns all the elements from the src uri that are .cfg files
