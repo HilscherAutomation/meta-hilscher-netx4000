@@ -2,9 +2,9 @@ KBRANCH = "v4.14-netx4000-stable"
 KTYPE = "standard"
 
 # netX4000
-LINUX_VERSION = "4.14.77"
-SRCREV_machine="92346e8aae626e192896dbb5467d8ae0d0f3423a"
+LINUX_VERSION = "4.14.109"
+SRCREV_machine="c08e1397512b4182f7b18840f2b6281ef83a595a"
 
-SRCREV_meta="6a3254e7b370cbb86c1f73379dcf38885c1c69e0"
+SRCREV_meta="bc35d5bd224ab031440a69f9806d839db382f05c"
 
 require linux-hilscher-common.inc
