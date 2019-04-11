@@ -3,7 +3,7 @@ KTYPE = "preempt-rt"
 
 # netX4000
 LINUX_VERSION = "4.9.146-rt125"
-SRCREV_machine="231442e4db6f4d29997c4a8e92b2b4d621d824bf"
+SRCREV_machine="8e2079c1c3f71aeafee904abd23368a215887a93"
 
 SRCREV_meta="9aed9998adc8848b33ade296422f7df7642bbc04"
 
