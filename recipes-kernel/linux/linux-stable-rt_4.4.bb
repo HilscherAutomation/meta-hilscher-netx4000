@@ -1,5 +1,5 @@
 KBRANCH = "v4.4-netx4000-rt"
-KTYPE = "preempt-rt"
+LINUX_KERNEL_TYPE = "preempt-rt"
 
 # netX4000
 LINUX_VERSION = "4.4.174-rt178"

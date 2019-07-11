@@ -1,5 +1,5 @@
 KBRANCH = "v4.9-netx4000-stable"
-KTYPE = "standard"
+LINUX_KERNEL_TYPE = "standard"
 
 # netX4000
 LINUX_VERSION = "4.9.166"
