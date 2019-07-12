@@ -1,30 +1,30 @@
-From 533ab51ec4ce44b3362631b2cda638bff5e6406c Mon Sep 17 00:00:00 2001
+From 0ced51cec20905dd84e9c5c3a90ae0fbdb288d82 Mon Sep 17 00:00:00 2001
 From: MTR <github@hilscher.com>
-Date: Thu, 21 Dec 2017 10:01:25 +0100
-Subject: [PATCH] Implement SHA512 hash signature support (required for 
+Date: Tue, 16 Jul 2019 07:45:55 +0200
+Subject: [PATCH] Implement SHA512 hash signature support (required for
  sha512,rsa4096)
 
 ---
- common/hash.c                 |  40 +++++++
+ common/hash.c                 |  40 +++++
  common/image-fit.c            |   5 +
- common/image-sig.c            |  13 ++-
+ common/image-sig.c            |  13 +-
  include/hash.h                |   2 +-
  include/image.h               |  10 ++
  include/u-boot/rsa-checksum.h |   1 +
- include/u-boot/sha512.h       |  27 +++++
- lib/Kconfig                   |   8 ++
+ include/u-boot/sha512.h       |  27 ++++
+ lib/Kconfig                   |   8 +
  lib/Makefile                  |   1 +
- lib/sha512.c                  | 266 ++++++++++++++++++++++++++++++++++++++++++
+ lib/sha512.c                  | 266 ++++++++++++++++++++++++++++++++++
  tools/Makefile                |   2 +
  11 files changed, 372 insertions(+), 3 deletions(-)
  create mode 100644 include/u-boot/sha512.h
  create mode 100644 lib/sha512.c
 
 diff --git a/common/hash.c b/common/hash.c
-index cf4d70f..9e3edd9 100644
+index 413a5bfcda..1316f3c0a9 100644
 --- a/common/hash.c
 +++ b/common/hash.c
-@@ -28,6 +28,7 @@
+@@ -27,6 +27,7 @@
  #include <u-boot/crc.h>
  #include <u-boot/sha1.h>
  #include <u-boot/sha256.h>
@@ -32,9 +32,9 @@ index cf4d70f..9e3edd9 100644
  #include <u-boot/md5.h>
  
  #if defined(CONFIG_SHA1) && !defined(CONFIG_SHA_PROG_HW_ACCEL)
-@@ -86,6 +87,34 @@ static int hash_finish_sha256(struct hash_algo *algo, void *ctx, void
+@@ -112,6 +113,34 @@ static int hash_finish_crc16_ccitt(struct hash_algo *algo, void *ctx,
+ 	return 0;
  }
- #endif
  
 +#ifdef CONFIG_SHA512
 +static int hash_init_sha512(struct hash_algo *algo, void **ctxp)
@@ -67,10 +67,11 @@ index cf4d70f..9e3edd9 100644
  static int hash_init_crc32(struct hash_algo *algo, void **ctxp)
  {
  	uint32_t *ctx = malloc(sizeof(uint32_t));
-@@ -160,6 +189,17 @@ static struct hash_algo hash_algo[] = {
+@@ -185,6 +214,17 @@ static struct hash_algo hash_algo[] = {
+ 		.hash_finish	= hash_finish_sha256,
  #endif
  	},
- #endif
++#endif
 +#ifdef CONFIG_SHA512
 +	{
 +		"sha512",
@@ -81,15 +82,14 @@ index cf4d70f..9e3edd9 100644
 +		hash_update_sha512,
 +		hash_finish_sha512,
 +	},
-+#endif
+ #endif
  	{
- 		.name		= "crc32",
- 		.digest_size	= 4,
+ 		.name		= "crc16-ccitt",
 diff --git a/common/image-fit.c b/common/image-fit.c
-index 7f17fd1..da38c39 100644
+index a74b44f298..93efb60831 100644
 --- a/common/image-fit.c
 +++ b/common/image-fit.c
-@@ -29,6 +29,7 @@ DECLARE_GLOBAL_DATA_PTR;
+@@ -28,6 +28,7 @@ DECLARE_GLOBAL_DATA_PTR;
  #include <u-boot/md5.h>
  #include <u-boot/sha1.h>
  #include <u-boot/sha256.h>
@@ -97,7 +97,7 @@ index 7f17fd1..da38c39 100644
  
  /*****************************************************************************/
  /* New uImage format routines */
-@@ -985,6 +986,10 @@ int calculate_hash(const void *data, int data_len, const char *algo,
+@@ -1148,6 +1149,10 @@ int calculate_hash(const void *data, int data_len, const char *algo,
  		sha256_csum_wd((unsigned char *)data, data_len,
  			       (unsigned char *)value, CHUNKSZ_SHA256);
  		*value_len = SHA256_SUM_LEN;
@@ -109,10 +109,10 @@ index 7f17fd1..da38c39 100644
  		md5_wd((unsigned char *)data, data_len, value, CHUNKSZ_MD5);
  		*value_len = 16;
 diff --git a/common/image-sig.c b/common/image-sig.c
-index bf824fe..5879891 100644
+index 004fbc525b..72265c375e 100644
 --- a/common/image-sig.c
 +++ b/common/image-sig.c
-@@ -50,8 +50,17 @@ struct checksum_algo checksum_algos[] = {
+@@ -49,8 +49,17 @@ struct checksum_algo checksum_algos[] = {
  		.calculate_sign = EVP_sha256,
  #endif
  		.calculate = hash_calculate,
@@ -133,7 +133,7 @@ index bf824fe..5879891 100644
  
  struct crypto_algo crypto_algos[] = {
 diff --git a/include/hash.h b/include/hash.h
-index 4f9a8cf..bcb3f33 100644
+index f4019a9791..aaddf41203 100644
 --- a/include/hash.h
 +++ b/include/hash.h
 @@ -10,7 +10,7 @@
@@ -146,10 +146,10 @@ index 4f9a8cf..bcb3f33 100644
  enum {
  	HASH_FLAG_VERIFY	= 1 << 0,	/* Enable verify mode */
 diff --git a/include/image.h b/include/image.h
-index 127cfc5..5a4e026 100644
+index bb7089ef5d..ceb72b4b69 100644
 --- a/include/image.h
 +++ b/include/image.h
-@@ -32,6 +32,7 @@ struct lmb;
+@@ -34,6 +34,7 @@ struct fdt_region;
  #define CONFIG_FIT_ENABLE_SHA256_SUPPORT
  #define CONFIG_SHA1
  #define CONFIG_SHA256
@@ -157,7 +157,7 @@ index 127cfc5..5a4e026 100644
  
  #define IMAGE_ENABLE_IGNORE	0
  #define IMAGE_INDENT_STRING	""
-@@ -72,6 +73,11 @@ struct lmb;
+@@ -73,6 +74,11 @@ struct fdt_region;
  #  define IMAGE_ENABLE_SHA1	1
  # endif
  
@@ -169,7 +169,7 @@ index 127cfc5..5a4e026 100644
  #ifndef IMAGE_ENABLE_CRC32
  #define IMAGE_ENABLE_CRC32	0
  #endif
-@@ -91,6 +97,10 @@ struct lmb;
+@@ -92,6 +98,10 @@ struct fdt_region;
  #define IMAGE_ENABLE_SHA256	0
  #endif
  
@@ -181,10 +181,10 @@ index 127cfc5..5a4e026 100644
  
  #ifdef CONFIG_SYS_BOOT_GET_CMDLINE
 diff --git a/include/u-boot/rsa-checksum.h b/include/u-boot/rsa-checksum.h
-index c240720..85a5c1d 100644
+index 02b814d34e..54e6a73744 100644
 --- a/include/u-boot/rsa-checksum.h
 +++ b/include/u-boot/rsa-checksum.h
-@@ -11,6 +11,7 @@
+@@ -10,6 +10,7 @@
  #include <image.h>
  #include <u-boot/sha1.h>
  #include <u-boot/sha256.h>
@@ -194,7 +194,7 @@ index c240720..85a5c1d 100644
   * hash_calculate() - Calculate hash over the data
 diff --git a/include/u-boot/sha512.h b/include/u-boot/sha512.h
 new file mode 100644
-index 0000000..abdf245
+index 0000000000..abdf245ee2
 --- /dev/null
 +++ b/include/u-boot/sha512.h
 @@ -0,0 +1,27 @@
@@ -226,10 +226,10 @@ index 0000000..abdf245
 +
 +#endif /* _SHA512_H */
 diff --git a/lib/Kconfig b/lib/Kconfig
-index 18663ba..d8e7fa1 100644
+index 416e63c1c7..229127269a 100644
 --- a/lib/Kconfig
 +++ b/lib/Kconfig
-@@ -126,6 +126,14 @@ config SHA256
+@@ -304,6 +304,14 @@ config SHA256
  	  The SHA256 algorithm produces a 256-bit (32-byte) hash value
  	  (digest).
  
@@ -245,20 +245,20 @@ index 18663ba..d8e7fa1 100644
  	bool "Enable hashing using hardware"
  	help
 diff --git a/lib/Makefile b/lib/Makefile
-index 8cd779f..693c0be 100644
+index 2fffd68f94..c34ece23d1 100644
 --- a/lib/Makefile
 +++ b/lib/Makefile
-@@ -48,6 +48,7 @@ endif
+@@ -57,6 +57,7 @@ endif
  obj-$(CONFIG_RSA) += rsa/
  obj-$(CONFIG_SHA1) += sha1.o
  obj-$(CONFIG_SHA256) += sha256.o
 +obj-$(CONFIG_SHA512) += sha512.o
  
  obj-$(CONFIG_$(SPL_)ZLIB) += zlib/
- obj-$(CONFIG_$(SPL_)GZIP) += gunzip.o
+ obj-$(CONFIG_$(SPL_)ZSTD) += zstd/
 diff --git a/lib/sha512.c b/lib/sha512.c
 new file mode 100644
-index 0000000..5a095ca
+index 0000000000..ce1f814205
 --- /dev/null
 +++ b/lib/sha512.c
 @@ -0,0 +1,266 @@
@@ -529,18 +529,18 @@ index 0000000..5a095ca
 +	sha512_finish(&ctx, output);
 +}
 diff --git a/tools/Makefile b/tools/Makefile
-index 5db2a54..10e9a7a 100644
+index 33e90a8025..fc40045ffd 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
-@@ -109,6 +109,7 @@ dumpimage-mkimage-objs := aisimage.o \
- 			socfpgaimage.o \
+@@ -108,6 +108,7 @@ dumpimage-mkimage-objs := aisimage.o \
+ 			lib/crc16.o \
  			lib/sha1.o \
  			lib/sha256.o \
 +			lib/sha512.o \
  			common/hash.o \
  			ublimage.o \
  			zynqimage.o \
-@@ -220,6 +221,7 @@ HOSTCFLAGS_crc8.o := -pedantic
+@@ -213,6 +214,7 @@ HOSTCFLAGS_crc8.o := -pedantic
  HOSTCFLAGS_md5.o := -pedantic
  HOSTCFLAGS_sha1.o := -pedantic
  HOSTCFLAGS_sha256.o := -pedantic
@@ -549,5 +549,5 @@ index 5db2a54..10e9a7a 100644
  quiet_cmd_wrap = WRAP    $@
  cmd_wrap = echo "\#include <../$(patsubst $(obj)/%,%,$@)>" >$@
 -- 
-2.7.4
+2.17.1
 
