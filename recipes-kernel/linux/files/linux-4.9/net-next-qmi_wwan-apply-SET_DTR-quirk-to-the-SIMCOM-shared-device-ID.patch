@@ -1,3 +1,12 @@
+From 5fc8c3ccfcded934c5727e49473e65048dc1f2f9 Mon Sep 17 00:00:00 2001
+From: FME <github@hilscher.com>
+Date: Fri, 12 Jul 2019 10:18:44 +0200
+Subject: [PATCH] [net-next] qmi_wwan: apply SET_DTR quirk to the SIMCOM shared
+ device ID
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
 From patchwork Fri May 25 13:00:20 2018
 Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
@@ -39,17 +48,19 @@ exposure before going into stable.  I'll send a separate request
 for stable backport as soon as I'm satisfied that there are no
 hidden issues with some specific modem.
 
-
-Bjørn 
-
+Bjørn
+---
  drivers/net/usb/qmi_wwan.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
+ mode change 100644 => 100755 drivers/net/usb/qmi_wwan.c
 
 diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
-index 42565dd33aa6..148e78f8b48c 100644
+old mode 100644
+new mode 100755
+index 2b728cc..134eb18
 --- a/drivers/net/usb/qmi_wwan.c
 +++ b/drivers/net/usb/qmi_wwan.c
-@@ -1248,7 +1248,7 @@ static const struct usb_device_id products[] = {
+@@ -951,7 +951,7 @@ static const struct usb_device_id products[] = {
  	{QMI_FIXED_INTF(0x03f0, 0x4e1d, 8)},	/* HP lt4111 LTE/EV-DO/HSPA+ Gobi 4G Module */
  	{QMI_FIXED_INTF(0x03f0, 0x9d1d, 1)},	/* HP lt4120 Snapdragon X5 LTE */
  	{QMI_FIXED_INTF(0x22de, 0x9061, 3)},	/* WeTelecom WPD-600N */
@@ -57,4 +68,7 @@ index 42565dd33aa6..148e78f8b48c 100644
 +	{QMI_QUIRK_SET_DTR(0x1e0e, 0x9001, 5)},	/* SIMCom 7100E, 7230E, 7600E ++ */
  	{QMI_QUIRK_SET_DTR(0x2c7c, 0x0125, 4)},	/* Quectel EC25, EC20 R2.0  Mini PCIe */
  	{QMI_QUIRK_SET_DTR(0x2c7c, 0x0121, 4)},	/* Quectel EC21 Mini PCIe */
- 	{QMI_FIXED_INTF(0x2c7c, 0x0296, 4)},	/* Quectel BG96 */
+ 	{QMI_QUIRK_SET_DTR(0x2c7c, 0x0191, 4)},	/* Quectel EG91 */
+-- 
+2.7.4
+
