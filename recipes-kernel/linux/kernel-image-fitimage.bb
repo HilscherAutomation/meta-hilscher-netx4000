@@ -23,6 +23,12 @@ python __anonymous () {
         d.setVar('PV', FULL_FW_VERSION)
 }
 
+INITRAMFS_IMAGE_NAME ??= "${INITRAMFS_IMAGE}-${MACHINE}"
+
+IMAGE_VERSION_SUFFIX =. "-${PV}"
+FITIMAGE_NAME="fitImage-${MACHINE}${IMAGE_VERSION_SUFFIX}"
+FITIMAGE_LINK_NAME="fitImage-${MACHINE}"
+
 FITIMAGE_SIGN = "${PLATFORM_SIGN}"
 BAREBOX_SIGN_KEYDIR ?= "${PLATFORM_KEYDIR}"
 BAREBOX_SIGN_KEYNAME ?= "${PLATFORM_KEYNAME}"
@@ -105,7 +111,7 @@ fit_write_ramdisk_image() {
   # Following snippets replace copy_initramfs from kernel.bbclass which already
   # decompress the initrd
 
-  ramdisk_image=$(ls -1 ${DEPLOY_DIR_IMAGE}/${INITRAMFS_IMAGE}-${MACHINE}.cpio*)
+  ramdisk_image=$(ls -1 ${DEPLOY_DIR_IMAGE}/${INITRAMFS_IMAGE_NAME}.cpio*)
   case $ramdisk_image in
     *gz)   compression="gzip"  ;;
     *bz2)  compression="bzip2" ;;
@@ -251,26 +257,13 @@ do_install() {
 PACKAGES="${PN}"
 FILES_${PN}="/boot"
 
-do_deploy[vardepsexclude] = "DATETIME"
 do_deploy() {
-  fit_its_file="fitImage.its"
-  fit_image="fitImage.bin"
-
   rm -f ${DEPLOYDIR}/*
 
-  # Update deploy directory
-  echo "Copying fit-image.its source file..."
-  its_base_name="${MACHINE}_fitImage_${PV}_${DATETIME}"
-  its_symlink_name=${MACHINE}_fitImage.its
-  install -m 0644 ${fit_its_file} ${DEPLOYDIR}/${its_base_name}.its
-
-  linux_bin_base_name="${MACHINE}_fitImage_${PV}_${DATETIME}"
-  linux_bin_symlink_name=${MACHINE}_fitImage.bin
-  install -m 0644 ${fit_image} ${DEPLOYDIR}/${linux_bin_base_name}.bin
-
-  cd ${DEPLOYDIR}
-  ln -sf ${its_base_name}.its ${its_symlink_name}
-  ln -sf ${linux_bin_base_name}.bin ${linux_bin_symlink_name}
+  for ext in its bin; do
+    install -m 0644 fitImage.$ext ${DEPLOYDIR}/${FITIMAGE_NAME}.$ext
+    ln -sf ${FITIMAGE_NAME}.$ext ${DEPLOYDIR}/${FITIMAGE_LINK_NAME}.$ext
+  done
 }
 addtask deploy after do_install
 
