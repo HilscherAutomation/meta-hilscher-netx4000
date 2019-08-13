@@ -25,15 +25,12 @@ MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append += "device-tree"
 #############################################################################
 # Kernel
 #############################################################################
-KERNEL_IMAGETYPE ?= "zImage"
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append +="kernel-modules kernel-image-fitimage \
-    libcifx cifxsample \
-    ${@oe.utils.ifelse(d.getVar('KERNEL_DEVICETREE_OVERLAYS'), 'kernel-devicetree-overlays' ,'')} \
-    ${@oe.utils.ifelse(d.getVar('KERNEL_DEVICETREE_OVERLAYS'), 'dto-utils' ,'')}"
-
-KERNEL_DEVICETREE_OVERLAYS_append += " \
-	netx4000/overlays/cifx-dpm0.dtbo \
-	netx4000/overlays/cifx-dpm1.dtbo \
+KERNEL_CLASSES += "kernel-fitimage"
+KERNEL_IMAGETYPES ?= "zImage fitImage"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append +=" \
+	kernel-modules \
+	libcifx cifxsample \
+	dto-utils \
 "
 
 # Kernel default config does not set default parameters and yocto uses allnoconfig
