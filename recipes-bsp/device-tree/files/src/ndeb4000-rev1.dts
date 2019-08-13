@@ -1,9 +1,5 @@
 /*
-* Device tree for Hilscher netX4000 based ndeb4000 rev-1 modules
-*
-* arch/arm/boot/dts/netx4000/ndeb4000-rev1.dtsi
-*
-* (C) Copyright 2015 Hilscher Gesellschaft fuer Systemautomation mbH
+* (C) Copyright 2018 Hilscher Gesellschaft fuer Systemautomation mbH
 * http://www.hilscher.com
 *
 * This program is free software; you can redistribute it and/or
@@ -13,17 +9,16 @@
 *
 * This program is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 * GNU General Public License for more details.
-*
 */
 
 /dts-v1/;
 
-#include "ndcm4000-rev1.dts"
+#include "netx4000-common.dtsi"
 
 / {
-	model = "Hilscher NDEB4000 rev1";
+	model = "ndeb4000-rev1";
 
 	leds {
 		compatible = "gpio-leds";

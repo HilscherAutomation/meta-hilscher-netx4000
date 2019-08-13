@@ -1,9 +1,5 @@
 /*
-* Device tree for Hilscher netX4000 based NDCM4000 rev1 modules
-*
-* arch/arm/boot/dts/netx4000/ndcm4000-rev1.dtsi
-*
-* (C) Copyright 2015 Hilscher Gesellschaft fuer Systemautomation mbH
+* (C) Copyright 2018 Hilscher Gesellschaft fuer Systemautomation mbH
 * http://www.hilscher.com
 *
 * This program is free software; you can redistribute it and/or
@@ -13,9 +9,8 @@
 *
 * This program is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 * GNU General Public License for more details.
-*
 */
 
 /dts-v1/;
@@ -23,7 +18,7 @@
 #include "netx4000-common.dtsi"
 
 / {
-	model = "Hilscher NDCM4000 rev1";
+	model = "ndcm4000-rev1";
 	compatible = "hilscher,netx4000";
 
 	chosen {

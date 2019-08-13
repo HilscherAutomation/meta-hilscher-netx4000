@@ -5,7 +5,7 @@
 DEFAULTTUNE ?= "cortexa9hf-neon"
 require conf/machine/include/tune-cortexa9.inc
 
-SOC_FAMILY="netx4000:"
+SOC_FAMILY="netx4000"
 require conf/machine/include/soc-family.inc
 
 #############################################################################
@@ -14,9 +14,13 @@ require conf/machine/include/soc-family.inc
 EXTRA_IMAGEDEPENDS += "barebox-netx4000"
 
 PREFERRED_PROVIDER_virtual/bootloader ?= "barebox-netx4000"
+
 PREFERRED_PROVIDER_virtual/kernel ??= "linux-stable"
 PREFERRED_VERSION_linux-stable ??= "4.9.%"
 PREFERRED_VERSION_linux-stable-rt ??="4.9.%"
+
+PREFERRED_PROVIDER_virtual/dtb = "device-tree"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append += "device-tree"
 
 #############################################################################
 # Kernel

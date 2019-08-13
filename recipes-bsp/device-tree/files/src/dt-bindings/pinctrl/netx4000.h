@@ -26,4 +26,19 @@
 
 #define MUX_PIN(major,minor) ((major * 16 + minor) * 4)
 
+/* netX multiplexer */
+
+#define MMIO(a) (a*4)
+
+#define MMIO_IN_INV  (1<<10)
+#define MMIO_OUT_INV (1<<9)
+
+/* mmio select */
+#define PHY0_LED_PHY_CTRL_LNK 0x77
+#define PHY0_LED_PHY_CTRL_ACT 0x78
+
+#define PHY1_LED_PHY_CTRL_LNK 0x7b
+#define PHY1_LED_PHY_CTRL_ACT 0x7c
+
+
 #endif

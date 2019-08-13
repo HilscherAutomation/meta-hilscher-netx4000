@@ -1,4 +1,0 @@
-Copy your own board specific device tree file into this directory.
-The barebox recipe will copy these files to the right place for builds.
-
-Make sure to properly set BAREBOX_DEVICETREE variable.

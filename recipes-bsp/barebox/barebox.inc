@@ -59,18 +59,40 @@ def find_cfgs(d):
 
     return sources_list
 
-do_copy_dts() {
-    [ -n "${DTS_DIRS}" ] && {
-        bbnote "Copying/Replacing device tree files"
-        mkdir -p ${S}/arch/arm/dts/netx4000
-        for dtsDir in ${DTS_DIRS}; do
-            bbnote "src:$dtsDir"
-            cp -r $dtsDir/* ${S}/arch/arm/dts/netx4000/
-        done
-    }
-}
-addtask do_copy_dts after do_patch before do_configure
+PREFERRED_PROVIDER_virtual/dtb ??= ""
+patch_builtin_dtb_name() {
+	conf=$1
+	barebox_devicetree="${BAREBOX_DEVICETREE}"
+	external_devicetree="${PREFERRED_PROVIDER_virtual/dtb}"
 
+	if [ -n "$barebox_devicetree" ] && [ -z "$external_devicetree" ]; then
+		devicetree="$(ls ${S}/arch/arm/dts/${barebox_devicetree%.*}.dts || true)"
+	fi
+	if [ -n "$external_devicetree" ]; then
+		devicetree_count="$(ls ${WORKDIR}/recipe-sysroot/boot/devicetree/*.dtb | wc -l)"
+		if [ "$devicetree_count" -gt "1" -a -z "$barebox_devicetree" ]; then
+			bberror "There are multiple devicetrees provided by virtual/dtb '${PREFERRED_PROVIDER_virtual/dtb}'!"
+			bbfatal "Please select a specific one by adding 'BAREBOX_DEVICETREE' to machine configuration."
+		elif [ "$devicetree_count" -eq "1" -a -n "$barebox_devicetree" ]; then
+			bbwarn "There is only one devicetree provided by virtual/dtb '${PREFERRED_PROVIDER_virtual/dtb}'!"
+			bbwarn "Therfore 'BAREBOX_DEVICETREE' is not required and should be removed from configuration."
+		fi
+		if [ -n "$barebox_devicetree" ]; then
+			devicetree="$(ls ${WORKDIR}/recipe-sysroot/boot/devicetree/${barebox_devicetree})"
+		else
+			devicetree="$(ls ${WORKDIR}/recipe-sysroot/boot/devicetree/*.dtb)"
+		fi
+	fi
+	[ -z "$devicetree" ] && bbfatal "Invalid or missing devicetree, please check 'PREFERRED_PROVIDER_virtual/dtb' and 'BAREBOX_DEVICETREE'!"
+
+	# Remove extension from devicetree filename and patch .config
+	devicetree="$(realpath --relative-to ${S}/arch/arm/dts ${devicetree%.*})"
+	sed -i -e 's,\(CONFIG_BUILTIN_DTB_NAME=\).*,\1"'$devicetree'",g' $conf
+
+	bbwarn "Use '$devicetree.dtb' as devicetree."
+}
+
+do_configure[depends] = "virtual/dtb:do_populate_sysroot"
 do_configure_prepend() {
     [ -r ${WORKDIR}/defconfig ] && {
         bbnote "Copying/Replacing the netx4000_defconfig"
@@ -98,8 +120,8 @@ do_configure_prepend() {
         echo "/signature/key-${BAREBOX_SIGN_KEYNAME}" > ${S}/arch/arm/boards/netx4000/env/key-node
     fi
 
-    # Change used device tree in config
-    sed -i -e 's,\(CONFIG_BUILTIN_DTB_NAME=\).*,\1"${@os.path.splitext("${BAREBOX_DEVICETREE}")[0]}",g' ${S}/.config
+    # Patch CONFIG_BUILTIN_DTB_NAME in .config
+	patch_builtin_dtb_name ${S}/.config
 
     # Apply possible configuration fragments
     merge_config.sh -m .config ${@" ".join(find_cfgs(d))}

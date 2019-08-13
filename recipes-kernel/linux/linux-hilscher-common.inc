@@ -25,27 +25,6 @@ PV = "${LINUX_VERSION}+git${SRCPV}"
 # Prevent automatically inclusion of kernel-image into rootfs/image
 RDEPENDS_${KERNEL_PACKAGE_NAME}-base=""
 
-inherit hilscher-helpers
-python () {
-    dtsDirsHash = dir_dep_hash(d, d.getVar('DTS_DIRS'))
-    bb.debug(1, "DTS_DIRS (overall hash): %s" % dtsDirsHash)
-
-    d.setVar('DTS_DIRS_HASH', dtsDirsHash)
-    d.appendVarFlag('do_unpack', 'vardeps', ' DTS_DIRS_HASH')
-}
-
-do_copy_dts() {
-    [ -n "${DTS_DIRS}" ] && {
-        bbnote "Copying/Replacing device tree files"
-        mkdir -p ${S}/arch/arm/boot/dts/netx4000/
-        for dtsDir in ${DTS_DIRS}; do
-            bbnote "src:$dtsDir"
-            cp -r $dtsDir/* ${S}/arch/arm/boot/dts/netx4000/
-        done
-    }
-}
-addtask do_copy_dts after do_patch before do_configure
-
 KERNEL_EXTRA_FEATURES ?= "features/netfilter/netfilter.scc"
 KERNEL_FEATURES_append = " ${KERNEL_EXTRA_FEATURES}"
 
