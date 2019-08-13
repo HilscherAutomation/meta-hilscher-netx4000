@@ -1,6 +1,6 @@
 require barebox.inc
 
 BRANCH = "master"
-SRCREV = "c854f79fd3b1c831cb583d2776a668dd260449e4"
+SRCREV = "b275fa9abb6ab2af2a0f3bbd770dfa7a5badd9f8"
 
 DEPENDS += "lzop-native python-native"
