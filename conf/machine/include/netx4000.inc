@@ -19,7 +19,7 @@ PREFERRED_PROVIDER_virtual/kernel ??= "linux-stable"
 PREFERRED_VERSION_linux-stable ??= "4.9.%"
 PREFERRED_VERSION_linux-stable-rt ??="4.9.%"
 
-PREFERRED_PROVIDER_virtual/dtb = "device-tree"
+PREFERRED_PROVIDER_virtual/dtb ??= "device-tree"
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append += "device-tree"
 
 #############################################################################

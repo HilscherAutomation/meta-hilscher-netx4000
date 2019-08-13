@@ -78,3 +78,5 @@ INHERIT_DISTRO_append += "icecc"
 ICECC_DISABLED ?= "1"
 # Disable fallthrough warning/error to prevents icecc build errors when using gcc 7.x.
 #TARGET_CFLAGS_append += "-Wimplicit-fallthrough=0"
+
+include local.overrides.conf
