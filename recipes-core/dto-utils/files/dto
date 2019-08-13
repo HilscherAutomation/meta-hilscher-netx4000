@@ -20,8 +20,8 @@
 #
 
 DEFAULT_CONFIG_FILE="/etc/default/dto"
-DTBO_ORIGIN_PATH="/boot/dt-overlays"
-DTBO_TMP_PATH="/tmp/dt-overlays"
+DTBO_ORIGIN_PATH="/boot/devicetree"
+DTBO_TMP_PATH="/tmp/devicetree"
 DTBO_PATH=${DTBO_TMP_PATH}
 VERBOSE=0
 _VERBOSE=0
@@ -32,7 +32,7 @@ verbose() {
 }
 
 list_dtbos() {
-	if [ -n "${1}" ]; then 
+	if [ -n "${1}" ]; then
 		dtbos=${1}
 	else
 		dtbos="*.dtbo"
@@ -60,7 +60,7 @@ list_params() {
 }
 
 list_props() {
-	if [ -n "${1}" ]; then 
+	if [ -n "${1}" ]; then
 		nodes=${1}
 	else
 		verbose "off"
@@ -90,7 +90,7 @@ search_dtbo() {
 
 get_node_prop() {
 	_node=${1}
-        
+
 	dtbos=$(search_dtbo ${_node})
 	for dtbo in ${dtbos}; do
 		node=$(fdtget ${dtbo} /__parameters__/${_node} node)
@@ -104,7 +104,7 @@ get_node_prop() {
 set_node_prop() {
 	_node=${1}
 	_val=${2}
-	
+
 	dtbos=$(search_dtbo ${_node})
 	[ $(echo ${dtbos} | wc -w) -gt 1 ] && {
 		echo "Error: Multiple dtbo files found!"
@@ -114,7 +114,7 @@ set_node_prop() {
 	node=$(fdtget ${dtbo} /__parameters__/${_node} node)
 	prop=$(fdtget ${dtbo} /__parameters__/${_node} prop)
 	type=$(fdtget ${dtbo} /__parameters__/${_node} type 2>/dev/null)
-	
+
 	case ${type} in
 		"")
 			type="";;
@@ -167,7 +167,7 @@ remove_dtbo() {
 		echo "Error: ConfigFS not mounted!"
 		exit 1
 	}
-	
+
 	dtbo_dir=${mp}/device-tree/overlays/$(basename ${dtbo})
 	[ -d "${dtbo_dir}" ] || {
 		echo "Error: ${dtbo_dir} does not exists!"
@@ -235,7 +235,7 @@ Commands are:
   copy dtbo         copy dtbo file to work directory
   cleanup           delete temporary work directory
   defconfig [file]  creates default config file (default: ${DEFAULT_CONFIG_FILE})
-  
+
 EOF
 }
 

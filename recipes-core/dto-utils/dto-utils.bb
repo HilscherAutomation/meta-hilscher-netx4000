@@ -53,6 +53,3 @@ INITSCRIPT_NAME   = "dto"
 INITSCRIPT_PARAMS = "defaults 0 99"
 
 SYSTEMD_SERVICE_${PN} = "dto.service"
-
-BBCLASSEXTEND = "native"
-DEPENDS_class-native = "dtc-native"
