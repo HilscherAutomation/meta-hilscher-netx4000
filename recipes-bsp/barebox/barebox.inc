@@ -4,7 +4,20 @@ SECTION = "bootloaders"
 LICENSE = "GPLv2+"
 LIC_FILES_CHKSUM ?= "file://COPYING;md5=057bf9e50e1ca857d0eb97bfe4ba8e5d"
 
-FITIMAGE_SIGN = "${PLATFORM_SIGN}"
+# Check for mandatory parameters
+python() {
+    if d.getVar('DDR_RAM', True) is None:
+        bb.error("Unspecified 'DDR_RAM' parameter.")
+        bb.error("Please define it in machine configuration.")
+        bb.error("  DDR_RAM = 'IS43TR16256AL_1GIB'")
+        bb.fatal("  DDR_RAM = 'AS4C512M16D3L_12_2GIB'")
+
+    if d.getVar('ENABLE_DDR_ECC', True) is None:
+        bb.error("Unspecified 'ENABLE_DDR_ECC' parameter.")
+        bb.error("Please define it in machine configuration.")
+        bb.fatal("  ENABLE_DDR_ECC = 'yes' or 'no'")
+}
+
 BAREBOX_SIGN_ENFORCE ?= "${PLATFORM_SIGN}"
 BAREBOX_SIGN_KEYDIR ?= "${PLATFORM_KEYDIR}"
 BAREBOX_SIGN_KEYNAME ?= "${PLATFORM_KEYNAME}"
@@ -38,16 +51,7 @@ EXTRA_OEMAKE = "CROSS_COMPILE=${TARGET_PREFIX}"
 
 DEPENDS += "kern-tools-native"
 
-inherit hilscher-helpers
-python () {
-    dtsDirsHash = dir_dep_hash(d, d.getVar('DTS_DIRS'))
-    bb.debug(1, "DTS_DIRS (overall hash): %s" % dtsDirsHash)
-
-    d.setVar('DTS_DIRS_HASH', dtsDirsHash)
-    d.appendVarFlag('do_unpack', 'vardeps', ' DTS_DIRS_HASH')
-}
-
-do_unpack[vardeps] += "FITIMAGE_SIGN BAREBOX_SIGN_ENFORCE BAREBOX_SIGN_KEYDIR BAREBOX_SIGN_KEYNAME"
+do_unpack[vardeps] += "BAREBOX_SIGN_ENFORCE BAREBOX_SIGN_KEYDIR BAREBOX_SIGN_KEYNAME"
 
 # returns all the elements from the src uri that are .cfg files
 def find_cfgs(d):
@@ -115,7 +119,7 @@ do_configure_prepend() {
         cp -r ${WORKDIR}/env ${S}/arch/arm/boards/netx4000
     }
 
-    if [ "${@bb.utils.contains('FITIMAGE_SIGN', '1', 'true', 'false', d)}" = "true" ]; then
+    if [ "${@bb.utils.contains('BAREBOX_SIGN_ENFORCE', '1', 'true', 'false', d)}" = "true" ]; then
         bbnote "Add key-node to env directory"
         echo "/signature/key-${BAREBOX_SIGN_KEYNAME}" > ${S}/arch/arm/boards/netx4000/env/key-node
     fi

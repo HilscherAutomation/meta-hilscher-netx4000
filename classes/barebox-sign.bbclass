@@ -76,7 +76,7 @@ python do_apply_verification_keys() {
 }
 
 python() {
-  sign_image = d.getVar("FITIMAGE_SIGN") or "0"
+  sign_image = d.getVar("BAREBOX_SIGN_ENFORCE") or "0"
   if sign_image != "0":
     bb.build.addtask('do_apply_verification_keys', 'do_compile', 'do_configure', d)
 }
