@@ -63,11 +63,10 @@ def find_cfgs(d):
 
     return sources_list
 
-PREFERRED_PROVIDER_virtual/dtb ??= ""
 patch_builtin_dtb_name() {
 	conf=$1
-	barebox_devicetree="${BAREBOX_DEVICETREE}"
-	external_devicetree="${PREFERRED_PROVIDER_virtual/dtb}"
+	barebox_devicetree="${@d.getVar('BAREBOX_DEVICETREE') or ""}"
+	external_devicetree="${@d.getVar('PREFERRED_PROVIDER_virtual/dtb') or ""}"
 
 	if [ -n "$barebox_devicetree" ] && [ -z "$external_devicetree" ]; then
 		devicetree="$(ls ${S}/arch/arm/dts/${barebox_devicetree%.*}.dts || true)"
