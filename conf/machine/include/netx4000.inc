@@ -41,13 +41,6 @@ KCONFIG_MODE ?= "--alldefconfig"
 KERNEL_EXTRA_FEATURES_append += "${@ 'features/nfsd/nfsd-enable.scc' if '${DISTRO}' == 'poky-lsb' else '' }"
 
 #############################################################################
-# Initramfs
-#############################################################################
-INITRAMFS_IMAGE ?= "core-image-minimal-initramfs"
-INITRAMFS_IMAGE_BUNDLE ?= ""
-INITRAMFS_FSTYPES ?= "cpio.gz"
-
-#############################################################################
 # Contents of boot partition (excluding rootfs)
 #############################################################################
 IMAGE_BOOT_FILES ?= "netx.rom"
