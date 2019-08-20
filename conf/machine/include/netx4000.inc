@@ -43,4 +43,7 @@ KERNEL_EXTRA_FEATURES_append += "${@ 'features/nfsd/nfsd-enable.scc' if '${DISTR
 #############################################################################
 # Contents of boot partition (excluding rootfs)
 #############################################################################
-IMAGE_BOOT_FILES ?= "netx.rom"
+IMAGE_BOOT_FILES ?= "netx.rom fitImage-${MACHINE}.bin;fitImage"
+
+WKS_FILE ?= "sdimage-bootpart.wks"
+IMAGE_FSTYPES ?= "wic wic.bmap"

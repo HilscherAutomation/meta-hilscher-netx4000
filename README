@@ -145,16 +145,20 @@ Example machine:
 2.4.1 SD/MMC card
 =================
 
-Per default the board specific machine file nxhx4000-jtag-plus-rev2.conf includes
-IMAGE_CLASSES += "image-sdimg" and IMAGE_FSTYPES += "sdimg" lines.
+The netX4000 base machine configuration (netx4000.inc) includes
+IMAGE_FSTYPES ?= "wic wic.bmap" and WKS_FILE ?= "sdimg-bootpart.wks" lines.
+
 These are responsible for automatically building an SD card image file.
 
 To use it, change into the machine related deploy directory and copy the image
 file to SD card.
 
 EXAMPLE: (host command line)
-  cd tmp/deploy/images/nxhx4000-jtag-plus-rev2
-  dd if=core-image-minimal-nxhx4000-jtag-plus-rev2.sdimg of=/dev/sdb bs=4M && sync
+  cd tmp/deploy/images/nxhx4000-jtag-plus-rev4
+  dd if=core-image-minimal-nxhx4000-jtag-plus-rev4.wic of=/dev/sdb bs=4M && sync
+
+Alternatively you can use bmaptool as described in the yocto manual:
+  https://www.yoctoproject.org/docs/2.7/dev-manual/dev-manual.html#flashing-images-using-bmaptool
 
 NOTE:
  * /dev/sdb is the device file of SD card and must be adapted to your conditions!
