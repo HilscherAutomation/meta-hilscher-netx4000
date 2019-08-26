@@ -49,7 +49,7 @@ SRC_URI_append_nxhx4000-jtag-plus-rev5 += "\
 "
 
 # --------------------------------------
-# ndcm4000-revX based boards
+# ndeb4000-revX based boards
 
 COMPATIBLE_MACHINE_ndeb4000-revX = ".*"
 DTS_BASE_ndeb4000-revX += " \
@@ -66,6 +66,25 @@ DTS_BASE_ndeb4000-revX += " \
 SRC_URI_append_ndeb4000-rev1 = "\
 	file://src/ndcm4000-rev1.dts \
 	file://src/ndeb4000-rev1.dts \
+"
+
+# --------------------------------------
+# ndcm4000-revX based boards
+
+COMPATIBLE_MACHINE_ndcm4000-revX = ".*"
+DTS_BASE_ndcm4000-revX += " \
+        file://src/uart1.dtso \
+        file://src/can0.dtso \
+        file://src/mdio0.dtso \
+        file://src/gmac0.dtso \
+        file://src/gmac1.dtso \
+        file://src/pcie-rc.dtso \
+        file://src/adc0.dtso \
+        file://src/adc1.dtso \
+"
+
+SRC_URI_append_ndcm4000-rev1 = "\
+	file://src/ndcm4000-rev1.dts \
 "
 
 # --------------------------------------
