@@ -1,0 +1,51 @@
+pipeline {
+	agent any
+
+	parameters {
+		string(defaultValue: "core-image-minimal", description: 'Image to build', name: 'BUILD_IMAGE')
+		string(defaultValue: "", description: 'Additional packages to install', name: 'ADDITIONAL_PACKAGES')
+	}
+
+	stages {
+		stage('Build') {
+			agent {
+				dockerfile {
+					dir 'meta-hilscher-netx4000/scripts/yocto/docker'
+					args '-v ${WORKSPACE}:/build'
+				}
+			}
+
+			environment {
+				ADDITIONAL_PACKAGES = "${params.ADDITIONAL_PACKAGES}"
+				BUILD_IMAGE = "${params.BUILD_IMAGE}"
+			}
+
+			steps {
+				sh '''
+					# Search all layers for machine configurations
+					cd /build
+					for layer in meta-*; do
+						if [ -d "$layer/conf/machine" ]; then
+							for machine_conf in $(grep -l "@TYPE: Machine" $layer/conf/machine/*.conf); do
+								machine=$(echo $(basename $machine_conf) | sed "s/.conf//")
+								BUILD_MACHINES="$BUILD_MACHINES $machine"
+							done
+						fi
+					done
+
+					# Remove configuration, so it will be recreated
+					rm -rf build/conf/
+
+					# Build all found machines
+					for machine in $BUILD_MACHINES; do
+						export MACHINE="$machine"
+						echo "Building $MACHINE"
+						./build.sh ${BUILD_IMAGE}
+					done
+				'''
+
+				archiveArtifacts artifacts: 'build/tmp/deploy/**/*', fingerprint: true
+			}
+		}
+	}
+}
