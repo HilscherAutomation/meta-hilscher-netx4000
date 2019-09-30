@@ -19,10 +19,9 @@ python() {
 }
 
 BAREBOX_SIGN_ENFORCE ?= "${PLATFORM_SIGN}"
-BAREBOX_SIGN_KEYDIR ?= "${PLATFORM_KEYDIR}"
 BAREBOX_SIGN_KEYNAME ?= "${PLATFORM_KEYNAME}"
 
-inherit kernel-arch deploy cml1 barebox-sign
+inherit kernel-arch deploy cml1
 
 export KBUILD_BUILD_USER = "oe-user"
 export KBUILD_BUILD_HOST = "oe-host"
@@ -51,7 +50,7 @@ EXTRA_OEMAKE = "CROSS_COMPILE=${TARGET_PREFIX}"
 
 DEPENDS += "kern-tools-native"
 
-do_unpack[vardeps] += "BAREBOX_SIGN_ENFORCE BAREBOX_SIGN_KEYDIR BAREBOX_SIGN_KEYNAME"
+do_unpack[vardeps] += "BAREBOX_SIGN_ENFORCE BAREBOX_SIGN_KEYNAME"
 
 # returns all the elements from the src uri that are .cfg files
 def find_cfgs(d):

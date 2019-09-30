@@ -1,3 +1,5 @@
+DEPENDS_append += "openssl-native"
+
 python do_apply_verification_keys() {
   import subprocess
   import sys
@@ -21,7 +23,7 @@ python do_apply_verification_keys() {
       else:
           return x % m
 
-  key_file=os.path.join(d.getVar("BAREBOX_SIGN_KEYDIR"), d.getVar("BAREBOX_SIGN_KEYNAME") + ".key")
+  key_file=os.path.join(d.getVar("DTS_SIGN_KEY_DIR"), d.getVar("DTS_SIGN_KEY_NAME") + ".key")
 
   # Extract modulus and N0inv
   modulus = subprocess.check_output(["openssl", "rsa", "-in", key_file, "-modulus", "-noout"])
@@ -59,24 +61,22 @@ python do_apply_verification_keys() {
         };
     };
 };
-""" % ( d.getVar("BAREBOX_SIGN_KEYNAME"),
+""" % ( d.getVar("DTS_SIGN_KEY_NAME"),
         dtc_modulus, int(exponent),
         N0inv, keylen, rr)
 
-  dts_path = os.path.join(d.getVar("B"),
-                         "arch", d.getVar("ARCH"), "dts", "netx4000")
+  # Add include to main dts file
+  dts_file = d.getVar("DTS_TO_SIGN")
+  dts_path = os.path.dirname(dts_file)
   with open(os.path.join(dts_path, "signature_check.dtsi"), 'w+') as sig_check:
     sig_check.write(signature_block)
-
-  # Add include to main dts file
-  dts_file = os.path.join(dts_path, os.path.basename(d.getVar("BAREBOX_DEVICETREE").replace('.dtb', '.dts')))
 
   with open(dts_file, 'a') as dts:
     dts.write('\n#include "signature_check.dtsi"\n')
 }
 
 python() {
-  sign_image = d.getVar("BAREBOX_SIGN_ENFORCE") or "0"
+  sign_image = d.getVar("DTS_SIGN_ENFORCE") or "0"
   if sign_image != "0":
     bb.build.addtask('do_apply_verification_keys', 'do_compile', 'do_configure', d)
 }

@@ -11,6 +11,14 @@ LIC_FILES_CHKSUM = " \
 
 inherit devicetree
 
+inherit dts-sign
+# Setup public key patching into dts
+DTS_SIGN_ENFORCE="${PLATFORM_SIGN}"
+DTS_SIGN_KEY_DIR="${PLATFORM_KEYDIR}"
+DTS_SIGN_KEY_NAME="${PLATFORM_KEYNAME}"
+DTS_TO_SIGN="${WORKDIR}/src/${MACHINE}.dts"
+do_unpack[vardeps] += "PLATFORM_SIGN PLATFORM_KEYDIR PLATFORM_KEYNAME"
+
 S = "${WORKDIR}/src"
 
 # Add symbols to dtb files
