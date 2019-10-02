@@ -26,7 +26,7 @@ inherit kernel-arch deploy cml1
 export KBUILD_BUILD_USER = "oe-user"
 export KBUILD_BUILD_HOST = "oe-host"
 
-PROVIDES = "virtual/bootloader barebox netx.rom u-boot"
+PROVIDES = "virtual/bootloader netx.rom"
 
 COMPATIBLE_MACHINE = "netx4000"
 

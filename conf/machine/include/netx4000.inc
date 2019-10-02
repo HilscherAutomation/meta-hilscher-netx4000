@@ -11,7 +11,7 @@ require conf/machine/include/soc-family.inc
 #############################################################################
 # Bootloader
 #############################################################################
-EXTRA_IMAGEDEPENDS += "barebox-netx4000"
+EXTRA_IMAGEDEPENDS += "virtual/bootloader"
 
 PREFERRED_PROVIDER_virtual/bootloader ?= "barebox-netx4000"
 
