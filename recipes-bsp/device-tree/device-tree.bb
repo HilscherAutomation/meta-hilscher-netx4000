@@ -21,8 +21,22 @@ do_unpack[vardeps] += "PLATFORM_SIGN PLATFORM_KEYDIR PLATFORM_KEYNAME"
 
 S = "${WORKDIR}/src"
 
-# Add symbols to dtb files
-DTC_BFLAGS_append += "-@"
+devicetree_do_install_append() {
+	default_dtb=${KERNEL_DEVICETREE:-${MACHINE}}
+
+	install -d ${D}/boot/dt-overlays
+	for DTB_FILE in `ls *.dtbo`; do
+		mv ${D}/boot/devicetree/${DTB_FILE} ${D}/boot/dt-overlays
+	done
+
+	find ${D}/boot/devicetree ! -name "${default_dtb}.dtb" -type f -exec rm -f {} +
+}
+
+devicetree_do_deploy() {
+	cp -a ${D}/boot/* ${DEPLOYDIR}
+}
+
+FILES_${PN} += "boot/dt-overlays"
 
 # --------------------------------------
 # common include files

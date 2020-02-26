@@ -20,8 +20,9 @@
 #
 
 DEFAULT_CONFIG_FILE="/etc/default/dto"
-DTBO_ORIGIN_PATH="/boot/devicetree"
-DTBO_TMP_PATH="/tmp/devicetree"
+DTBO_ORIGIN_PATH="/boot/dt-overlays"
+[ ! -e $DTBO_ORIGIN_PATH ] && DTBO_ORIGIN_PATH="/boot/devicetree"
+DTBO_TMP_PATH="/tmp/$(basename $DTBO_ORIGIN_PATH)"
 DTBO_PATH=${DTBO_TMP_PATH}
 VERBOSE=0
 _VERBOSE=0
