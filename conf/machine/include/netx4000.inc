@@ -44,4 +44,4 @@ KERNEL_EXTRA_FEATURES_append += "${@ 'features/nfsd/nfsd-enable.scc' if '${DISTR
 IMAGE_BOOT_FILES ??= "netx.rom fitImage-${MACHINE}.bin;fitImage"
 
 WKS_FILES_prepend =+ "sdimage-bootpart.wks"
-IMAGE_FSTYPES ??= "wic wic.bmap"
+IMAGE_FSTYPES_append += "wic wic.bmap"
