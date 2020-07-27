@@ -106,11 +106,8 @@ non-mainline drivers:
     * BAREBOX_SIGN_KEYDIR : must point to the directory containing your private key
     * BAREBOX_SIGN_KEYNAME : must contain the name of your key (excluding the mandatory .key file extension)
     * FITIMAGE_SIGN : Must be set to 1 to enable signing
-    * FITIMAGE_SIGN_ALGO : must be set according to your private key (rsa2048 or rsa4096) as one of the following:
-       - sha1,rsa2048
-       - sha256,rsa4096
-       - sha512,rsa4096
-    * FITIMAGE_HASH_ALGO : (optional) can be set to sha1/sha256/sha512
+    * FIT_SIGN_ALG  : must be set according to your private key (rsa2048 or rsa4096)
+    * FIT_HASH_ALG : can be set to sha1/sha256
 3. To force only signed image can be booted you need to setup barebox to only accept signed images
    See CONFIG_BOOTM_FORCE_SIGNED_IMAGES configuration option (bitbake barebox -c menuconfig).
    Alternatively BAREBOX_SIGN_ENFORCE can be set to 1
