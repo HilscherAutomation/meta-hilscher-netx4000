@@ -21,10 +21,6 @@ MACHINE ?= "ndeb4000-rev1"
 # Possible values: linux-stable (default), linux-stable-rt
 #PREFERRED_PROVIDER_virtual/kernel = "linux-stable-rt"
 
-# Setup preferred kernel version
-# Possible values: 4.4.%, 4.9.% (default)
-#PREFERRED_VERSION_linux-stable ?= "4.9.%"
-#PREFERRED_VERSION_linux-stable-rt ?="4.9.%"
 # To use latest (bleeding edge) netx4000 kernel commit of the selected major version
 #SRCREV_pn-linux-stable="${AUTOREV}"
 #SRCREV_pn-linux-stable-rt="${AUTOREV}"

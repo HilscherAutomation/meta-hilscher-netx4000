@@ -13,8 +13,7 @@ Table of Contents
   2.3 Creating own machines
   2.4 Creating bootable images
       2.4.1 SD/MMC card
-      2.4.2 NAND flash
-      2.4.3 USB stick
+      2.4.2 USB stick
 
 
 1. Description
@@ -58,7 +57,6 @@ mainline drivers:
 
 non-mainline drivers:
  * SDIO (including DMA support)
- * NAND (PL353) - based on https://github.com/Xilinx/linux-xlnx/blob/master/drivers/mtd/nand/pl35x_nand.c
  * SQI - 4-bit SPI unit
  * GPIO
  * USB 2.0 Device
@@ -165,27 +163,7 @@ NOTE:
  * Perhaps sudo permissions are required
 
 
-2.4.2 NAND flash
-================
-NOTE: Building NAND images requires barebox bootloader to either be
-      started from a serial flash connected to the netX chip or
-      from an SD/MMC card.
-
-Pre-Requisites:
- * Make sure that IMAGE_FSTYPES (local.conf or machine-configuration)
-   contains "ubi"
-
-Flash ubi image to rootfs partition of NAND flash (see device tree, default 128KiB).
-
-EXAMPLE: (barebox shell)
-  erase /dev/nand0.rootfs
-  cp /boot/core-image-minimal-nxhx4000-jtag-plus-rev2.ubi /dev/nand0.rootfs.bb
-
-NOTE:
-The ubi image is located on the boot partition of SD card.
-
-
-2.4.3 USB stick
+2.4.2 USB stick
 ================
 NOTE: Building USB sticks requires barebox bootloader to either be
       started from a serial flash connected to the netX chip or
