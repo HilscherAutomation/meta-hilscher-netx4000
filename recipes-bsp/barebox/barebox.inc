@@ -34,6 +34,7 @@ GIT_BAREBOX_REPO ?= "github.com/hilscher/netx4000-barebox.git;protocol=https"
 
 SRC_URI = " \
     git://${GIT_BAREBOX_REPO};branch=${BRANCH} \
+    file://python3_compatibility.patch \
     ${@bb.utils.contains('BAREBOX_SIGN_ENFORCE', '1', 'file://enforce_signature_verification.cfg', '',d)} \
     ${@bb.utils.contains('BAREBOX_ENABLE_NAND',  '1', 'file://enable_nand.cfg', '',d)} \
     ${@bb.utils.contains('DDR_RAM', 'IS43TR16256AL_1GIB', 'file://enable_is43tr16256a_1gib.cfg', '',d)} \
