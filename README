@@ -84,7 +84,7 @@ non-mainline drivers:
 2. Add meta-hilscher-netx4000 layer to conf/bblayers.conf
 
 3. Setup machine in conf/local.conf
-    * MACHINE = "nxhx4000-jtag-plus-rev2"
+    * MACHINE = "nxhx4000-jtag-plus-rev4"
 
 4. Build any default image "bitbake <image>"
     * core-image-minimal
