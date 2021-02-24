@@ -7,7 +7,7 @@
 	fragment@0 {
 		target = <&display0>;
 		__overlay__ {
-			status = "ok";
+			status = "okay";
 			pixel-format = <RGB565>;
 			display-timings {
 				native-mode = <&etq570g0dh6_ntsc>;

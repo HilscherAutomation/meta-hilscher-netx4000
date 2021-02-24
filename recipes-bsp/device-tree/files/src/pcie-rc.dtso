@@ -5,7 +5,7 @@
 	fragment@0 {
 		target = <&pcie_rc>;
 		__overlay__ {
-			status = "ok";
+			status = "okay";
 		};
 	};
 };

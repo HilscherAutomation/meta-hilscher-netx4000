@@ -36,12 +36,8 @@
 		spi0 = &spi0;
 		spi1 = &spi1;
 		mdio-gpio0 = &mdio0;
-	};
-
-	environment {
-		compatible = "barebox,environment";
-		device-path = &sdmmc0, "partname:0";
-		file-path = "bareboxenv";
+		ethernet0 = &gmac0;
+		ethernet1 = &gmac1;
 	};
 
 	/* CPU */
@@ -204,10 +200,14 @@
 		#size-cells = <0>;
 		gpios = <&gpio4 1 GPIO_ACTIVE_HIGH &gpio4 0 GPIO_ACTIVE_HIGH>; /* MDC, MDIO */
 
-		phy0: phy0 {
+		phy0: phy0@0 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			device_type = "ethernet-phy";
 			reg = <0>;
 		};
-		phy1: phy1 {
+		phy1: phy1@1 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			device_type = "ethernet-phy";
 			reg = <1>;
 		};
 	};
@@ -372,7 +372,7 @@
 		/* GPIO */
 
 		gpio0: gpio@f801f000 {
-			status = "ok";
+			status = "okay";
 			compatible = "hilscher,netx4000-gpio";
 			reg = <0xf801f000 0x100>;
 			interrupts = <GIC_SPI (123-32) IRQ_TYPE_LEVEL_HIGH>;
@@ -385,7 +385,7 @@
 		};
 
 		gpio1: gpio@f801f100 {
-			status = "ok";
+			status = "okay";
 			compatible = "hilscher,netx4000-gpio";
 			reg = <0xf801f100 0x100>;
 			interrupts = <GIC_SPI (124-32) IRQ_TYPE_LEVEL_HIGH>;
@@ -398,7 +398,7 @@
 		};
 
 		gpio2: gpio@f801f200 {
-			status = "ok";
+			status = "okay";
 			compatible = "hilscher,netx4000-gpio";
 			reg = <0xf801f200 0x100>;
 			interrupts = <GIC_SPI (125-32) IRQ_TYPE_LEVEL_HIGH>;
@@ -410,7 +410,7 @@
 		};
 
 		gpio3: gpio@f801f300 {
-			status = "ok";
+			status = "okay";
 			compatible = "hilscher,netx4000-gpio";
 			reg = <0xf801f300 0x100>;
 			interrupts = <GIC_SPI (126-32) IRQ_TYPE_LEVEL_HIGH>;
@@ -425,7 +425,7 @@
 		};
 
 		gpio4: gpio@f801f400 {
-			status = "ok";
+			status = "okay";
 			compatible = "hilscher,netx4000-gpio";
 			reg = <0xf801f400 0x100>;
 			interrupts = <GIC_SPI (127-32) IRQ_TYPE_LEVEL_HIGH>;

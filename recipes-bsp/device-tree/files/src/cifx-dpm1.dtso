@@ -5,7 +5,7 @@
 	fragment@0 {
 		target = <&idpm1>;
 		__overlay__ {
-			status = "ok";
+			status = "okay";
 			startuptype = "flash";  /* "auto","ram","flash","donttouch" */
 			alias = "idpm1"; /* alias card name */
 		};

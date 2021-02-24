@@ -22,7 +22,7 @@
 	compatible = "hilscher,netx4000";
 
 	chosen {
-		linux,stdout-path = &uart0;
+		stdout-path = &uart0;
 	};
 
 	memory {
@@ -32,15 +32,15 @@
 };
 
 &uart0 {
-	status = "ok";
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart0_pins>;
 };
 
 &sdmmc0 {
-	status = "ok";
+	status = "okay";
 };
 
 &rtc0 {
-	status = "ok";
+	status = "okay";
 };

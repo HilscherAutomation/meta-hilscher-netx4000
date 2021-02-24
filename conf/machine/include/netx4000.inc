@@ -13,7 +13,9 @@ require conf/machine/include/soc-family.inc
 #############################################################################
 EXTRA_IMAGEDEPENDS += "virtual/bootloader"
 
-PREFERRED_PROVIDER_virtual/bootloader ??= "barebox-netx4000"
+PREFERRED_PROVIDER_virtual/bootloader ??= "u-boot"
+UBOOT_MACHINE ??= "netx4000_defconfig"
+UBOOT_ENTRYPOINT ?= "0x40008000"
 
 PREFERRED_PROVIDER_virtual/kernel ??= "linux-stable"
 
@@ -44,4 +46,4 @@ KERNEL_EXTRA_FEATURES_append += "${@ 'features/nfsd/nfsd-enable.scc' if '${DISTR
 IMAGE_BOOT_FILES ??= "netx.rom fitImage-${MACHINE}.bin;fitImage"
 
 WKS_FILES_prepend =+ "sdimage-bootpart.wks"
-IMAGE_FSTYPES_append += "wic wic.bmap"
+IMAGE_FSTYPES_append += "wic.bz2 wic.bmap"

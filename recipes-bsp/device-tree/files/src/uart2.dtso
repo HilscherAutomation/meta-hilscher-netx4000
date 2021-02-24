@@ -5,7 +5,7 @@
 	fragment@0 {
 		target = <&uart2>;
 		__overlay__ {
-			status = "ok";
+			status = "okay";
 			pinctrl-names = "default";
 			pinctrl-0 = <&uart2_pins>;
 		};

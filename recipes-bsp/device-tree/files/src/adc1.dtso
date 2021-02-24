@@ -5,7 +5,7 @@
 	fragment@0 {
 		target = <&adc1>;
 		__overlay__ {
-			status = "ok";
+			status = "okay";
 			vref = <3300>;
 		};
 	};

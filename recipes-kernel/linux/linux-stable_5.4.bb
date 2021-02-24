@@ -1,10 +1,15 @@
 KBRANCH = "v5.4-netx4000"
 LINUX_KERNEL_TYPE = "standard"
+LINUX_VERSION = "5.4.100"
 
-# netX4000
-LINUX_VERSION = "5.4.53"
-SRCREV_machine="a0c4fc3d56f43adb5a9d1756267ee58cd12c3484"
-SRCREV_meta="8267fef5a5b157fe90a1107943ef0eea8afb80a8"
+GIT_KERNEL_REPO ?= "github.com/hilscher/netx4000-linux.git;protocol=https"
+
+SRC_URI += "git://${GIT_KERNEL_REPO};name=machine;branch=${KBRANCH};nocheckout=1 \
+            git://git.yoctoproject.org/yocto-kernel-cache;type=kmeta;name=meta;branch=yocto-5.4;destsuffix=${KMETA} \
+            file://defconfig"
+
+SRCREV_machine="fcb7c903c47ba1d4736bea455ce147ca4cbe9f6e"
+SRCREV_meta="4f6d6c23cc8ca5d9c39b1efc2619b1dfec1ef2bc"
 
 require linux-hilscher-common.inc
 

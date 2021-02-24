@@ -98,19 +98,7 @@ non-mainline drivers:
 
 2.2.1 Enabling verified boot
 ============================
-1. Generate keys
-    * openssl genrsa -F4 -out <keyname>.key 2048|4096 (or see meta-hilscher-netx4000/files/keys/gen_key.sh)
-   NOTE: A sample key (RSA4096) which must not to be used in production environment is provided as 
-         meta-hilscher-netx4000/files/keys/debug-sample.key
-2. Setup environment to sign the kernel and initrd (check variable INITRAMFS_IMAGE)
-    * BAREBOX_SIGN_KEYDIR : must point to the directory containing your private key
-    * BAREBOX_SIGN_KEYNAME : must contain the name of your key (excluding the mandatory .key file extension)
-    * FITIMAGE_SIGN : Must be set to 1 to enable signing
-    * FIT_SIGN_ALG  : must be set according to your private key (rsa2048 or rsa4096)
-    * FIT_HASH_ALG : can be set to sha1/sha256
-3. To force only signed image can be booted you need to setup barebox to only accept signed images
-   See CONFIG_BOOTM_FORCE_SIGNED_IMAGES configuration option (bitbake barebox -c menuconfig).
-   Alternatively BAREBOX_SIGN_ENFORCE can be set to 1
+See yocto reference manual for enabling veified boot in u-boot
 
 
 2.3 Creating own machines
@@ -118,19 +106,11 @@ non-mainline drivers:
 
 see http://www.yoctoproject.org/docs/latest/mega-manual/mega-manual.html#platdev-newmachine
 
-Additional parameters:
- * BAREBOX_DEVICETREE
-   Set board specific hardware description
- * ENABLE_DDR_ECC
-   Enable hardware error correction on DDR memory
- * SERIAL_CONSOLE
-   Define the console port
-  
 Example machine:
  * machine configuration:
-   meta-hilscher-netx4000/conf/nxhx4000-jtag-plus-rev2.conf
+   meta-hilscher-netx4000/conf/nxhx4000-jtag-plus-rev4.conf
  * hardware description (device tree):
-   https://github.com/Hilscher/netx4000-barebox/blob/v2016.07.0-netx4000/arch/arm/dts/nxhx4000-jtag-plus_rev2.dts
+   meta-hilscher-netx4000/recipes-bsp/device-tree/files/nxhx4000-jtag-plus_rev4.dts
 
 
 2.4 Creating bootable images
@@ -162,7 +142,7 @@ NOTE:
 
 2.4.2 USB stick
 ================
-NOTE: Building USB sticks requires barebox bootloader to either be
+NOTE: Building USB sticks requires bootloader to either be
       started from a serial flash connected to the netX chip or
       from an SD/MMC card.
 
@@ -181,5 +161,3 @@ EXAMPLE: (host command line)
 NOTE:
  * /dev/sdb is the device file of USB stick and must be adapted to your conditions!
  * Perhaps sudo permissions are required
-
-
