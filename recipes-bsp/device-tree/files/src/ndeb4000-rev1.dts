@@ -86,14 +86,14 @@
 };
 
 &hcd0 {
-	status = "ok";
+	status = "okay";
 	num-ports = <1>; /* 1 or 2 */
 	pinctrl-names = "default";
 	pinctrl-0 = <&hcd0_0_pins>;
 };
 
 &udc0 {
-	status = "ok";
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&hcd0_1_pins>;
 };

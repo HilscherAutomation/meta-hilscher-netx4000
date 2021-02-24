@@ -1,0 +1,20 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target = <&qspi0>;
+		__overlay__ {
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			spi-flash@0 {
+				compatible = "macronix,mx25l12805d", "jedec,spi-nor";
+				reg = <0>;
+				spi-tx-bus-width = <1>;
+				spi-rx-bus-width = <1>;
+				spi-max-frequency = <25000000>;
+			};
+		};
+	};
+};

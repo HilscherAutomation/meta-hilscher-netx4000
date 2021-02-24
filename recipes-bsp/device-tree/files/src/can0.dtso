@@ -5,7 +5,7 @@
 	fragment@0 {
 		target = <&can0>;
 		__overlay__ {
-			status = "ok";
+			status = "okay";
 			channels = <0>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&can0_0_pins>;

@@ -11,14 +11,6 @@ LIC_FILES_CHKSUM = " \
 
 inherit devicetree
 
-inherit dts-sign
-# Setup public key patching into dts
-DTS_SIGN_ENFORCE="${PLATFORM_SIGN}"
-DTS_SIGN_KEY_DIR="${PLATFORM_KEYDIR}"
-DTS_SIGN_KEY_NAME="${PLATFORM_KEYNAME}"
-DTS_TO_SIGN="${WORKDIR}/src/${MACHINE}.dts"
-do_unpack[vardeps] += "PLATFORM_SIGN PLATFORM_KEYDIR PLATFORM_KEYNAME"
-
 S = "${WORKDIR}/src"
 
 devicetree_do_install_append() {
@@ -49,17 +41,18 @@ SRC_URI_netx4000 = " \
 "
 
 # --------------------------------------
-# nxhx4000-jtag-plus-revX boards
+# nxhx4000-jtag-plus-revx boards
 
-COMPATIBLE_MACHINE_nxhx4000-jtag-plus-revX = ".*"
-DTS_BASE_nxhx4000-jtag-plus-revX += " \
-	file://src/nxhx4000-jtag-plus-revX.dts \
+COMPATIBLE_MACHINE_nxhx4000-jtag-plus-revx = ".*"
+DTS_BASE_nxhx4000-jtag-plus-revx += " \
+	file://src/nxhx4000-jtag-plus-revx.dts \
 	file://src/adc0.dtso \
 	file://src/adc1.dtso \
 	file://src/i2c1.dtso \
 	file://src/nxhx4000-rev3-spi0.dtso \
 	file://src/can0.dtso \
 	file://src/uart1.dtso \
+	file://src/qspi_flash.dtso \
 "
 
 SRC_URI_append_nxhx4000-jtag-plus-rev4 += " \
@@ -71,10 +64,10 @@ SRC_URI_append_nxhx4000-jtag-plus-rev5 += "\
 "
 
 # --------------------------------------
-# ndeb4000-revX based boards
+# ndeb4000-revx based boards
 
-COMPATIBLE_MACHINE_ndeb4000-revX = ".*"
-DTS_BASE_ndeb4000-revX += " \
+COMPATIBLE_MACHINE_ndeb4000-revx = ".*"
+DTS_BASE_ndeb4000-revx += " \
 	file://src/uart1.dtso \
 	file://src/can0.dtso \
 	file://src/mdio0.dtso \
@@ -91,10 +84,10 @@ SRC_URI_append_ndeb4000-rev1 = "\
 "
 
 # --------------------------------------
-# ndcm4000-revX based boards
+# ndcm4000-revx based boards
 
-COMPATIBLE_MACHINE_ndcm4000-revX = ".*"
-DTS_BASE_ndcm4000-revX += " \
+COMPATIBLE_MACHINE_ndcm4000-revx = ".*"
+DTS_BASE_ndcm4000-revx += " \
         file://src/uart1.dtso \
         file://src/can0.dtso \
         file://src/mdio0.dtso \
@@ -107,15 +100,4 @@ DTS_BASE_ndcm4000-revX += " \
 
 SRC_URI_append_ndcm4000-rev1 = "\
 	file://src/ndcm4000-rev1.dts \
-"
-
-# --------------------------------------
-# netxflex4000-revX boards
-
-COMPATIBLE_MACHINE_netflex4000-revX = ".*"
-DTS_BASE_netflex4000-revX += " \
-"
-
-SRC_URI_append_netflex4000-rev1 = "\
-	file://src/netflex4000-rev1.dts \
 "

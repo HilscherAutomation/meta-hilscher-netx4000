@@ -5,7 +5,7 @@
 	fragment@0 {
 		target = <&i2c3>;
 		__overlay__ {
-			status = "ok";
+			status = "okay";
 			clock-frequency = <100000>;
 		};
 	};

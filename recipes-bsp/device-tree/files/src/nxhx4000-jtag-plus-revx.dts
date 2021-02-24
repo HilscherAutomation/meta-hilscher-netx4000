@@ -18,11 +18,11 @@
 #include "netx4000-common.dtsi"
 
 / {
-	model = "nxhx4000-jtag-plus-revX";
+	model = "nxhx4000-jtag-plus-revx";
 	compatible = "hilscher,netx4000";
 
 	chosen {
-		linux,stdout-path = &uart0;
+		stdout-path = &uart0;
 	};
 
 	memory {
@@ -109,21 +109,21 @@
 };
 
 &sdmmc0 {
-	status = "ok";
+	status = "okay";
 };
 
 &rtc0 {
-	status = "ok";
+	status = "okay";
 };
 
 &uart0 {
-	status = "ok";
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart0_pins>;
 };
 
 &i2c0 {
-	status = "ok";
+	status = "okay";
 	clock-frequency = <800000>;
 	/* Uncomment the line below to enable the polling mode. */
 //	interrupts = <0>;
@@ -139,36 +139,36 @@
 };
 
 &hcd0 {
-	status = "ok";
+	status = "okay";
 	num-ports = <1>; /* 1 or 2 */
 	pinctrl-names = "default";
 	pinctrl-0 = <&hcd0_0_pins>;
 };
 
 &udc0 {
-	status = "ok";
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&hcd0_1_pins>;
 };
 
 &mdio0 {
-	status = "ok";
+	status = "okay";
 };
 
 &gmac0 {
-	status = "ok";
+	status = "okay";
 };
 
 &gmac1 {
-	status = "ok";
+	status = "okay";
 };
 
 &idpm0 {
-	status = "ok";
+	status = "okay";
 };
 
 &pcie_rc {
-	status = "ok";
+	status = "okay";
 	reset-gpio   = <&gpio2 18 GPIO_ACTIVE_LOW>;
 	wake-gpio    = <&gpio2 30 GPIO_ACTIVE_LOW>;
 	clkreq-gpio  = <&gpio2 31 GPIO_ACTIVE_LOW>;
