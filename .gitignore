@@ -1,4 +1,4 @@
 scripts/ubuntu/build/
-scripts/ubuntu/netx4000-barebox
+scripts/ubuntu/netx4000-uboot
 scripts/ubuntu/netx4000-linux
 scripts/ubuntu/yocto-kernel-cache
