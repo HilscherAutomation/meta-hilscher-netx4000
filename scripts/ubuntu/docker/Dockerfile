@@ -5,8 +5,8 @@ ENV TERM="xterm-color"
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y locales debootstrap qemu-user-static \
-    build-essential gcc-arm-linux-gnueabihf git fakechroot \
-    lzop libncurses5-dev python bc apt-utils \
+    build-essential gcc-arm-linux-gnueabihf git fakechroot libssl-dev python3 \
+    lzop libncurses5-dev python bc apt-utils flex bison rsync \
     kernel-package parted dosfstools mtools && \
     apt-get clean
 

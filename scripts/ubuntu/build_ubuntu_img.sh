@@ -9,26 +9,26 @@ cat ./ubuntu.cfg
 echo ----------------------------------
 source ./ubuntu.cfg
 
-default_barebox_args=""
+default_uboot_args=""
 default_rootfs_args=""
 default_sdimg_args="$(basename $DEVICE_TREE)"
 
-do_build_barebox() {
+do_build_uboot() {
 	echo "Building bootloader"
 
-	if [ ! -d "netx4000-barebox" ]; then
-		git clone https://github.com/Hilscher/netx4000-barebox.git
+	if [ ! -d "netx4000-uboot" ]; then
+		git clone https://github.com/Hilscher/netx4000-uboot.git
 	fi
 
-	# Barebox destination
-	export BAREBOX_DEST=$(pwd)/build/barebox
+	# u-boot destination
+	export UBOOT_DEST=$(pwd)/build/uboot
 
-	pushd netx4000-barebox
-	git checkout $BAREBOX_BRANCH
+	pushd netx4000-uboot
+	git checkout $UBOOT_BRANCH
 	git pull
 
 	# Copy DTS files
-	cp -r ../../../meta-hilscher-netx4000/files/dts/* arch/arm/dts/netx4000/
+	cp -r ../../../meta-hilscher-netx4000/recipes-bsp/device-tree/files/src/* arch/arm/dts/
 
 	# Create default config if neccessary
 	if [ ! -e .config ]; then
@@ -38,15 +38,29 @@ do_build_barebox() {
 		sed -i -e "s,\(CONFIG_BUILTIN_DTB_NAME=\).*,\1\"${DEVICE_TREE}\",g" .config
 	fi
 
-	make ${@:-${default_barebox_args}}
+	make ${@:-${default_uboot_args}}
+
+	# Create boot script
+	cat <<EOF>boot.cmd
+load mmc 0:1 \${loadaddr} zImage
+load mmc 0:1 \${fdt_addr} oftree
+setenv bootargs "root=/dev/mmcblk0p2 rw rootwait console=ttyAMA0,115200 earlyprintk"
+bootm \${loadaddr} - \${fdt_addr}
+EOF
+	tools/mkimage -A arm -O linux -T script -C none -n "Boot ubuntu" -d boot.cmd boot.scr
 
 	if [ "$*" == "clean" ]; then
-		rm -f barebox.netx4000
+		rm -f u-boot.netx4000
 	fi
 
-	if [ -e barebox.netx4000 ]; then
-		mkdir -p ${BAREBOX_DEST}
-		cp barebox.netx4000 ${BAREBOX_DEST}/netx.rom
+	if [ -e u-boot.netx4000 ]; then
+		mkdir -p ${UBOOT_DEST}
+		cp u-boot.netx4000 ${UBOOT_DEST}/netx.rom
+	fi
+
+	if [ -e boot.scr ]; then
+		mkdir -p ${UBOOT_DEST}
+		cp boot.scr ${UBOOT_DEST}/
 	fi
 
 	popd
@@ -76,7 +90,7 @@ do_build_kernel() {
 	git pull
 
 	# Copy DTS files
-	cp -r ../../../meta-hilscher-netx4000/files/dts/* arch/arm/boot/dts/netx4000/
+	cp -r ../../../meta-hilscher-netx4000/recipes-bsp/device-tree/files/src/* arch/arm/boot/dts/netx4000/
 
 	# Create default config if neccessary
 	if [ ! -e .config ]; then
@@ -116,9 +130,9 @@ do_create_sdimg() {
 }
 
 case $1 in
-	barebox)
+	uboot)
 		shift
-		do_build_barebox $@
+		do_build_uboot $@
 		;;
 	kernel)
 		shift
@@ -133,7 +147,7 @@ case $1 in
 		do_create_sdimg $@
 		;;
 	*)
-		do_build_barebox
+		do_build_uboot
 		do_build_kernel
 		do_create_rootfs
 		do_create_sdimg

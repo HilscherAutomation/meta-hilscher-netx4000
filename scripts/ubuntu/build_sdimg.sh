@@ -8,7 +8,7 @@ SDIMG="${IMAGE_NAME}-${MACHINE}.sdimg"
 
 # Contents of boot partition 
 # Note: The basename will be used as destination file name!
-SDIMG_BOOT_FILES="barebox/netx.rom oftree"
+SDIMG_BOOT_FILES="uboot/netx.rom uboot/boot.scr oftree"
 
 # ext4 rootfs image name
 ROOTFS_IMAGE="${IMAGE_NAME}-rootfs.ext4"
