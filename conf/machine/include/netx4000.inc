@@ -31,6 +31,7 @@ MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append +=" \
 	kernel-modules \
 	libcifx cifxsample \
 	dto-utils \
+	kernel-module-netx4000-xc-stdmac kernel-module-mdio-xc-netx4000 hethmac \
 "
 
 # Kernel default config does not set default parameters and yocto uses allnoconfig
@@ -38,7 +39,10 @@ MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append +=" \
 KCONFIG_MODE ??= "--alldefconfig"
 
 # poky-lsb requires nfsd in kernel
-KERNEL_EXTRA_FEATURES_append += "${@ 'features/nfsd/nfsd-enable.scc' if '${DISTRO}' == 'poky-lsb' else '' }"
+KERNEL_EXTRA_FEATURES_append += " \
+	${@ 'features/nfsd/nfsd-enable.scc' if '${DISTRO}' == 'poky-lsb' else '' } \
+	features/firmware/firmware.scc \
+"
 
 #############################################################################
 # Contents of boot partition (excluding rootfs)

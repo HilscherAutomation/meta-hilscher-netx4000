@@ -53,6 +53,8 @@ DTS_BASE_nxhx4000-jtag-plus-revx += " \
 	file://src/can0.dtso \
 	file://src/uart1.dtso \
 	file://src/qspi_flash.dtso \
+	file://src/xceth0.dtso \
+	file://src/xceth1.dtso \
 "
 
 SRC_URI_append_nxhx4000-jtag-plus-rev4 += " \
@@ -76,6 +78,8 @@ DTS_BASE_ndeb4000-revx += " \
 	file://src/pcie-rc.dtso \
 	file://src/adc0.dtso \
 	file://src/adc1.dtso \
+	file://src/xceth0.dtso \
+	file://src/xceth1.dtso \
 "
 
 SRC_URI_append_ndeb4000-rev1 = "\
@@ -96,6 +100,8 @@ DTS_BASE_ndcm4000-revx += " \
         file://src/pcie-rc.dtso \
         file://src/adc0.dtso \
         file://src/adc1.dtso \
+        file://src/xceth0.dtso \
+        file://src/xceth1.dtso \
 "
 
 SRC_URI_append_ndcm4000-rev1 = "\
