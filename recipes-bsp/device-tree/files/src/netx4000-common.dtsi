@@ -38,6 +38,9 @@
 		mdio-gpio0 = &mdio0;
 		ethernet0 = &gmac0;
 		ethernet1 = &gmac1;
+		/* CAUTION: Only use eth2/3 if no R7 firmware is running */
+		ethernet2 = &xceth0;
+		ethernet3 = &xceth1;
 	};
 
 	/* CPU */
@@ -190,6 +193,39 @@
 // 			clock-frequency = <(600 * 1000 * 1000)>;
 // 			clock-mask = <0x40>;
 // 		};
+	};
+
+	netx4000_xc: netx4000_xc {
+		status = "okay";
+		compatible = "hilscher,netx4000-xc";
+	};
+
+	mdio_xc0: mdio_xc0 {
+		status = "okay";
+		compatible = "hilscher,netx4000-mdio-xc0";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0xf4023a90 0x10>;
+		intphy_id = <0>;
+
+		intphy0: phy {
+			phy-mode = "internal";
+			reg = <0>;
+		};
+	};
+
+	mdio_xc1: mdio_xc1 {
+		status = "okay";
+		compatible = "hilscher,netx4000-mdio-xc1";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0xf4023aa0 0x10>;
+		intphy_id = <1>;
+
+		intphy1: phy {
+			phy-mode = "internal";
+			reg = <1>;
+		};
 	};
 
 	/* Bitbang MDIO device */
@@ -380,7 +416,8 @@
 			#gpio-cells = <2>;
 
 			gpio-ranges = <&pinctrl 0 (MUX_PIN(10,10)/4) 1>,
-			              <&pinctrl 1 (MUX_PIN(3,1)/4) 15>,
+			              // <&pinctrl 1 (MUX_PIN(3,5)/4) 15>, // Use this line instead to use all pins as GPIOs
+			              <&pinctrl 5 (MUX_PIN(3,5)/4) 11>,    // Use this line when using xc port
 			              <&pinctrl 16 (MUX_PIN(7,1)/4) 8>;
 		};
 
@@ -777,6 +814,57 @@
 				#interrupt-cells = <1>;
 			};
 		};
+
+		/* XC Port (ethernet)
+		   CAUTION: Only use, when no R7 firmware is running */
+
+		xceth0: xceth0 {
+			status = "disabled";
+			compatible = "hilscher,netx4000-xceth0";
+
+			pinctrl-names = "default";
+			pinctrl-0 = <&xc0_pins &netx_xc0_pins>;
+
+			phy-handle = <&intphy0>;
+
+			port = <0>;
+			xc_res = "xc0";/* array of xc refs */
+
+			interrupt-parent = <&gic>;
+			interrupts = <GIC_SPI (206-32) IRQ_TYPE_LEVEL_HIGH>;
+
+			mac-address = [00 00 00 00 00 00]; /* will be filled by bootloader */
+		};
+
+		xceth1: xceth1 {
+			status = "disabled";
+			compatible = "hilscher,netx4000-xceth1";
+
+			pinctrl-names = "default";
+			pinctrl-0 = <&xc1_pins &netx_xc1_pins>;
+
+			phy-handle = <&intphy1>;
+
+			port = <1>;
+			xc_res = "xc1";/* array of xc refs */
+
+			interrupt-parent = <&gic>;
+			interrupts = <GIC_SPI (207-32) IRQ_TYPE_LEVEL_HIGH>;
+
+			mac-address = [00 00 00 00 00 00]; /* will be filled by bootloader */
+		};
+
+		netx_pinctrl: pinctrl@f4080400 {
+			compatible = "pinctrl-single-netx4000";
+			reg = <0xf4080400 0x400>;
+			pinctrl-single,register-width = <32>;
+			pinctrl-single,function-mask = <0xffff>;
+
+			ranges;
+			keyaccess-control {
+				reg = <0xf408017c 0x4>;
+			};
+		};
 	};
 };
 
@@ -1072,5 +1160,33 @@
 			MUX_PIN(10,10)  (REEMUX_2 | REEMUX_DRV_06MA | REEMUX_UDC_PULLDOWN50K)  // PL353_DATA15
 		>;
 	};
+
+	xc0_pins: xc0_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(3,1)  (REEMUX_0 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // mmio1 / phy0activity
+			MUX_PIN(3,2)  (REEMUX_0 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // mmio2 / phy0link
+		>;
+	};
+
+	xc1_pins: xc1_pins {
+		pinctrl-single,pins = <
+			MUX_PIN(3, 3)  (REEMUX_0 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // mmio3 / phy1activity
+			MUX_PIN(3, 4)  (REEMUX_0 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))  // mmio4 / phy1link
+		>;
+	};
 };
 
+&netx_pinctrl {
+	netx_xc0_pins: xc0_pins {
+		pinctrl-single,pins = <
+				MMIO(1) (MMIO_OUT_INV | PHY0_LED_PHY_CTRL_LNK)
+				MMIO(2) (MMIO_OUT_INV | PHY0_LED_PHY_CTRL_ACT)
+		>;
+	};
+	netx_xc1_pins: xc1_pins {
+		pinctrl-single,pins = <
+				MMIO(3) (MMIO_OUT_INV | PHY1_LED_PHY_CTRL_LNK)
+				MMIO(4) (MMIO_OUT_INV | PHY1_LED_PHY_CTRL_ACT)
+		>;
+	};
+};
