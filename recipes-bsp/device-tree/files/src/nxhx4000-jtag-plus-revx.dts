@@ -151,10 +151,6 @@
 	pinctrl-0 = <&hcd0_1_pins>;
 };
 
-&mdio0 {
-	status = "okay";
-};
-
 &gmac0 {
 	status = "okay";
 };

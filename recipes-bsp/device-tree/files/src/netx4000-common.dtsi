@@ -35,7 +35,6 @@
 		serial3 = &uart3;
 		spi0 = &spi0;
 		spi1 = &spi1;
-		mdio-gpio0 = &mdio0;
 		ethernet0 = &gmac0;
 		ethernet1 = &gmac1;
 		/* CAUTION: Only use eth2/3 if no R7 firmware is running */
@@ -224,26 +223,6 @@
 
 		intphy1: phy {
 			phy-mode = "internal";
-			reg = <1>;
-		};
-	};
-
-	/* Bitbang MDIO device */
-	mdio0: mdio0 {
-		status = "disabled";
-		compatible = "virtual,mdio-gpio";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		gpios = <&gpio4 1 GPIO_ACTIVE_HIGH &gpio4 0 GPIO_ACTIVE_HIGH>; /* MDC, MDIO */
-
-		phy0: phy0@0 {
-			compatible = "ethernet-phy-ieee802.3-c22";
-			device_type = "ethernet-phy";
-			reg = <0>;
-		};
-		phy1: phy1@1 {
-			compatible = "ethernet-phy-ieee802.3-c22";
-			device_type = "ethernet-phy";
 			reg = <1>;
 		};
 	};
@@ -469,7 +448,7 @@
 			gpio-controller;
 			#gpio-cells = <2>;
 
-			gpio-ranges = <&pinctrl 0 (MUX_PIN(15,0)/4) 14>,
+			gpio-ranges = <&pinctrl 0 (MUX_PIN(15,2)/4) 14>,
 			              <&pinctrl 14 (MUX_PIN(16,0)/4) 12>,
 			              <&pinctrl 26 (MUX_PIN(2,0)/4) 2>;
 		};
@@ -673,7 +652,7 @@
 		gmac0: gmac@f8010000 {
 			status = "disabled";
 			pinctrl-names = "default";
-			pinctrl-0 = <&rgmii0_pins>;
+			pinctrl-0 = <&rgmii0_pins &gmac0_mdio_pins>;
 			compatible = "snps,dwc-qos-ethernet-4.10", "hilscher,netx4000-gmac";
 			reg = <0xf8010000 0x4000>;
 			clocks = <&gmac_clk>, <&gmac_clk>, <&gmac_clk>, <&gmac_clk>;
@@ -685,6 +664,22 @@
 			phy-handle = <&phy0>;
 			phy-mode = "rgmii-id";
 			mac-address = [00 00 00 00 00 00]; /* will be filled by bootloader */
+
+			mdio {
+				compatible = "snps,dwc-qos-ethernet-mdio";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				phy0: phy0@0 {
+					compatible = "ethernet-phy-ieee802.3-c22";
+					device_type = "ethernet-phy";
+					reg = <0>;
+				};
+				phy1: phy1@1 {
+					compatible = "ethernet-phy-ieee802.3-c22";
+					device_type = "ethernet-phy";
+					reg = <1>;
+				};
+			};
 		};
 
 		gmac1: gmac@f8014000 {
@@ -735,7 +730,6 @@
 			reg = <0xf8003000 0x1000>;
 			clocks = <&periph_clk>;
 			clock-names = "apb_pclk";
-			ranges;
 		};
 
 		/* SD/MMC */
@@ -860,7 +854,8 @@
 			pinctrl-single,register-width = <32>;
 			pinctrl-single,function-mask = <0xffff>;
 
-			ranges;
+			#address-cells = <1>;
+			#size-cells = <0>;
 			keyaccess-control {
 				reg = <0xf408017c 0x4>;
 			};
