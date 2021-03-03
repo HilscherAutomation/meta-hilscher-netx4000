@@ -11,6 +11,9 @@ KCONF_BSP_AUDIT_LEVEL = "2"
 PR = "r0"
 PV = "${LINUX_VERSION}+git${SRCPV}"
 
+# Prevent automatically inclusion of kernel-image into rootfs/image
+RDEPENDS_${KERNEL_PACKAGE_NAME}-base=""
+
 KERNEL_EXTRA_FEATURES ?= "features/netfilter/netfilter.scc features/leds/leds.scc"
 KERNEL_FEATURES_append = "${KERNEL_EXTRA_FEATURES}"
 

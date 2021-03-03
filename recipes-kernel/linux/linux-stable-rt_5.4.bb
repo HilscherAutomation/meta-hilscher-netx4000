@@ -8,7 +8,7 @@ SRC_URI += "git://${GIT_KERNEL_REPO};name=machine;branch=${KBRANCH};nocheckout=1
             git://git.yoctoproject.org/yocto-kernel-cache;type=kmeta;name=meta;branch=yocto-5.4;destsuffix=${KMETA} \
             file://defconfig"
 
-SRCREV_machine="5a708da9d148443b376a6012f9a26135ca73eea0"
+SRCREV_machine="a4889f302ec48644658d1bd96fd9cd5ffee0888f"
 SRCREV_meta="4f6d6c23cc8ca5d9c39b1efc2619b1dfec1ef2bc"
 
 require linux-hilscher-common.inc
