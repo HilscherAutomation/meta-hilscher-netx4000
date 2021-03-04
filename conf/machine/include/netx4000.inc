@@ -49,5 +49,5 @@ KERNEL_EXTRA_FEATURES_append += " \
 #############################################################################
 IMAGE_BOOT_FILES ??= "netx.rom fitImage-${MACHINE}.bin;fitImage"
 
-WKS_FILES_prepend =+ "sdimage-bootpart.wks"
-IMAGE_FSTYPES_append += "wic.bz2 wic.bmap"
+WKS_FILE ?= "sdimage-bootpart.wks"
+IMAGE_FSTYPES ?= "wic.bz2 wic.bmap"
