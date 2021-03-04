@@ -855,7 +855,8 @@
 			pinctrl-single,function-mask = <0xffff>;
 
 			#address-cells = <1>;
-			#size-cells = <0>;
+			#size-cells = <1>;
+			ranges;
 			keyaccess-control {
 				reg = <0xf408017c 0x4>;
 			};
