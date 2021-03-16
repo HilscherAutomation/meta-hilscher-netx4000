@@ -72,7 +72,6 @@ COMPATIBLE_MACHINE_ndeb4000-revx = ".*"
 DTS_BASE_ndeb4000-revx += " \
 	file://src/uart1.dtso \
 	file://src/can0.dtso \
-	file://src/mdio0.dtso \
 	file://src/gmac0.dtso \
 	file://src/gmac1.dtso \
 	file://src/pcie-rc.dtso \
@@ -94,7 +93,6 @@ COMPATIBLE_MACHINE_ndcm4000-revx = ".*"
 DTS_BASE_ndcm4000-revx += " \
         file://src/uart1.dtso \
         file://src/can0.dtso \
-        file://src/mdio0.dtso \
         file://src/gmac0.dtso \
         file://src/gmac1.dtso \
         file://src/pcie-rc.dtso \
