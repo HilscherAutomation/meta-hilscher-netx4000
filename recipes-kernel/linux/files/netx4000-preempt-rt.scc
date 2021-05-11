@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT
+define KMACHINE netx4000
+define KTYPE preempt-rt
+define KARCH arm
+
+# no new branch required, re-use the ktypes/preempt-rt/preempt-rt.scc branch
+include ktypes/preempt-rt/preempt-rt.scc nopatch
+include netx4000.scc

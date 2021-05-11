@@ -1,0 +1,893 @@
+From 9e485aaabdb798623cd409872e2fdeb700faddd2 Mon Sep 17 00:00:00 2001
+From: Michael Trensch <mtrensch@hilscher.com>
+Date: Tue, 11 May 2021 13:44:10 +0200
+Subject: [PATCH 2/5] netx4000: Add MMC driver
+
+---
+ drivers/mmc/Kconfig        |   9 +
+ drivers/mmc/Makefile       |   1 +
+ drivers/mmc/netx4000-mci.c | 575 +++++++++++++++++++++++++++++++++++++
+ drivers/mmc/netx4000-mci.h | 257 +++++++++++++++++
+ 4 files changed, 842 insertions(+)
+ create mode 100644 drivers/mmc/netx4000-mci.c
+ create mode 100644 drivers/mmc/netx4000-mci.h
+
+diff --git a/drivers/mmc/Kconfig b/drivers/mmc/Kconfig
+index 14d7913986..aa3f8b9f8a 100644
+--- a/drivers/mmc/Kconfig
++++ b/drivers/mmc/Kconfig
+@@ -302,6 +302,15 @@ config MMC_MXS
+ 
+ 	  If unsure, say N.
+ 
++config MMC_NETX4000
++	bool "Hilscher netX4000 SDIO Interface support"
++	depends on ARCH_NETX4000
++	help
++	  This selects the Hilscher netX4000 SDIO controller found on netX4000 based
++	  platforms
++
++	  If unsure, say N.
++
+ config MMC_PCI
+ 	bool "Support for MMC controllers on PCI"
+ 	help
+diff --git a/drivers/mmc/Makefile b/drivers/mmc/Makefile
+index 1c849cbab2..81bcff0f46 100644
+--- a/drivers/mmc/Makefile
++++ b/drivers/mmc/Makefile
+@@ -37,6 +37,7 @@ obj-$(CONFIG_MVEBU_MMC) += mvebu_mmc.o
+ obj-$(CONFIG_MMC_OMAP_HS)		+= omap_hsmmc.o
+ obj-$(CONFIG_MMC_MXC)			+= mxcmmc.o
+ obj-$(CONFIG_MMC_MXS)			+= mxsmmc.o
++obj-$(CONFIG_MMC_NETX4000)		+= netx4000-mci.o
+ obj-$(CONFIG_MMC_OCTEONTX)		+= octeontx_hsmmc.o
+ obj-$(CONFIG_MMC_PCI)			+= pci_mmc.o
+ obj-$(CONFIG_PXA_MMC_GENERIC) += pxa_mmc_gen.o
+diff --git a/drivers/mmc/netx4000-mci.c b/drivers/mmc/netx4000-mci.c
+new file mode 100644
+index 0000000000..0071527432
+--- /dev/null
++++ b/drivers/mmc/netx4000-mci.c
+@@ -0,0 +1,575 @@
++/*
++* MCI (SD/MMC) driver for Hilscher netx4000 based platforms
++*
++* drivers/mmc/netx4000-mci.c
++*
++* (C) Copyright 2019 Hilscher Gesellschaft fuer Systemautomation mbH
++* http://www.hilscher.com
++*
++* This program is free software; you can redistribute it and/or
++* modify it under the terms of the GNU General Public License as
++* published by the Free Software Foundation; version 2 of
++* the License.
++*
++* This program is distributed in the hope that it will be useful,
++* but WITHOUT ANY WARRANTY; without even the implied warranty of
++* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++* GNU General Public License for more details.
++*
++*/
++
++#include <clk.h>
++#include <common.h>
++#include <malloc.h>
++#include <mmc.h>
++#include <linux/errno.h>
++#include <linux/delay.h>
++#include <dm.h>
++#include <dm/device_compat.h>
++#include <asm/io.h>
++#include "netx4000-mci.h"
++
++struct netx4000_mmc_plat {
++	struct mmc_config cfg;
++	struct mmc mmc;
++};
++
++struct netx4000_mmc_priv {
++	struct udevice 				*dev;
++	struct netx4000_sdio_reg __iomem	*regs;
++	struct clk				clk;
++	u16					int_info1;
++	u16					int_info2;
++};
++
++/* ---- time out count ---- */
++#define SD_TIMEOUT		(  100 * 1000 * 1000) /* 100ms - commnad timeout */
++#define SD_TIMEOUT_CMD		(  100 * 1000 * 1000) /* 100ms - commnad timeout */
++#define SD_TIMEOUT_MULTIPLE	( 1000 * 1000 * 1000) /* 1000ms - block transfer timeout */
++#define SD_TIMEOUT_RESP		( 1000 * 1000 * 1000) /* command sequence timeout */
++#define SD_TIMEOUT_ERASE_CMD	( 1000 * 1000 * 1000) /* erase timeout */
++#define SD_TIMEOUT_PROG_CMD	( 1000 * 1000 * 1000) /* programing timeout */
++
++/* All errors */
++#define SD_INFO2_MASK_ALL_ERR	( MSK_NX4000_SDIO_SD_INFO2_ERR0 \
++				| MSK_NX4000_SDIO_SD_INFO2_ERR1 \
++				| MSK_NX4000_SDIO_SD_INFO2_ERR2 \
++				| MSK_NX4000_SDIO_SD_INFO2_ERR3 \
++				| MSK_NX4000_SDIO_SD_INFO2_ERR4 \
++				| MSK_NX4000_SDIO_SD_INFO2_ERR5 \
++				| MSK_NX4000_SDIO_SD_INFO2_ERR6 \
++				| MSK_NX4000_SDIO_SD_INFO2_ILA )
++
++static int s_fNextAppCmd = 0;
++static int s_fAutomaticBlockCount = 1;
++
++static int netx4000_wait_for_sclkdiven(struct netx4000_mmc_priv* host)
++{
++	while (!(readl(&host->regs->sd_info2) & MSK_NX4000_SDIO_SD_INFO2_SCLKDIVEN)) {
++		/* FIXME: timeout handling */
++	}
++	return 0;
++}
++
++static u32 wait_for_irq_or_error(struct netx4000_mmc_priv *host, u32 info1_mask, u32 info2_mask, u32 error_mask, u32 time, u32 *error)
++{
++	u32 ret = 0;
++	//u32 timeout = get_time_ns() + time;
++	//TODO: response timeout -> longer than 640 cycles SDCLK
++	u32 timeout = (time > 0 ) ? time : 1;
++	u32 value = 0;
++	do{
++		/* wait for irq */
++		if (info1_mask) {
++			value = readl(&host->regs->sd_info1);
++			if ( (value = (value & info1_mask)) ) {
++				writel(~value,&host->regs->sd_info1);
++				ret = value;
++			}
++		} else {
++			value = readl(&host->regs->sd_info2);
++			if ( (value = (value & info2_mask)) ) {
++				writel(~value,&host->regs->sd_info2);
++				ret = value;
++			}
++		}
++		/* check error */
++		value = readl(&host->regs->sd_info2);
++		if ( (value = (value & error_mask)) ) {
++			//TODO:debug
++			writel(~value,&host->regs->sd_info2);
++			ret = 0;
++			if (error)
++				*error = value;
++			break;
++		}
++	//} while ((ret<0) && (get_time_ns()<timeout));
++	} while ((ret==0) && (--timeout>0));
++
++	return ret;
++}
++
++static int wait_for_response(struct netx4000_mmc_priv *host) {
++	int ret = 0;
++	u32 error = 0;
++	if (0 == wait_for_irq_or_error( host, MSK_NX4000_SDIO_SD_INFO1_INFO0, 0, SD_INFO2_MASK_ALL_ERR, SD_TIMEOUT_RESP, &error)) {
++		ret = -EIO;
++		if (error & MSK_NX4000_SDIO_SD_INFO2_ERR6)
++			ret = -ETIMEDOUT;
++	}
++	return ret;
++}
++
++static int wait_for_buffer_ready(struct netx4000_mmc_priv *host) {
++	int ret = 0;
++	u32 error = 0;
++	if (0 == wait_for_irq_or_error( host, 0, MSK_NX4000_SDIO_SD_INFO2_BRE | MSK_NX4000_SDIO_SD_INFO2_BWE, SD_INFO2_MASK_ALL_ERR, SD_TIMEOUT, &error)) {
++		ret = -EIO;
++		if (error & MSK_NX4000_SDIO_SD_INFO2_ERR6)
++			ret = -ETIMEDOUT;
++	}
++	return ret;
++}
++
++static int wait_for_access_end(struct netx4000_mmc_priv *host)
++{
++	int ret = 0;
++	u32 error = 0;
++	if (0 == wait_for_irq_or_error( host, MSK_NX4000_SDIO_SD_INFO1_INFO2, 0, SD_INFO2_MASK_ALL_ERR, SD_TIMEOUT, &error)) {
++		ret = -EIO;
++		if (error & MSK_NX4000_SDIO_SD_INFO2_ERR6)
++			ret = -ETIMEDOUT;
++	}
++	return ret;
++}
++
++static int read_data( struct netx4000_mmc_priv *host, uint8_t *buff, long num)
++{
++	uint32_t data32 = 0;
++	uint32_t count = num/sizeof(uint32_t);
++	while(count>0) {
++		data32 = readl(&host->regs->sd_buf0);
++		*(buff++) = (uint8_t) (data32 & 0x000000FF);
++		*(buff++) = (uint8_t)((data32 & 0x0000FF00)>> 8);
++		*(buff++) = (uint8_t)((data32 & 0x00FF0000)>>16);
++		*(buff++) = (uint8_t)((data32 & 0xFF000000)>>24);
++		num -= sizeof(uint32_t);
++		count--;
++	}
++	if(num>0) {
++		int i;
++		data32 = readl(&host->regs->sd_buf0);
++		for(i=0;i<num;i++) {
++			*(buff++) = data32 & 0xFF;
++			data32    = (data32 >> (8*i));
++		}
++	}
++	return 0;
++}
++
++static int write_data( struct netx4000_mmc_priv *host, const char *buff, long num)
++{
++	uint32_t data32 = 0;
++	uint32_t count = num/sizeof(uint32_t);
++	while(count>0) {
++		data32  = (*buff++);
++		data32 |= (*buff++ <<  8);
++		data32 |= (*buff++ << 16);
++		data32 |= (*buff++ << 24);
++		writel(data32, &host->regs->sd_buf0);
++		num -= sizeof(uint32_t);
++		count--;
++	}
++	if(num>0) {
++		int i;
++		data32 = 0;
++		for(i=0;i<num;i--) {
++			data32 |= (*buff++ << (8*i));
++		}
++		writel( data32, &host->regs->sd_buf0);
++	}
++	return 0;
++
++}
++
++static int transfer_data( struct netx4000_mmc_priv *host, const char *buff, long cnt, long size, int dir)
++{
++	long i;
++	int err = 0;
++
++	for(i=cnt; i>0 ;i--){
++		/* wait BWE/BRE or error */
++		if (0>(err = wait_for_buffer_ready(host))) {
++			break;
++		}
++		if (dir == MMC_DATA_READ) {
++			/* read to SD_BUF */
++			if(read_data(host, (uint8_t*)buff, size) != 0){
++				err = -EIO;
++				break;
++			}
++		} else {
++			/* write to SD_BUF */
++			if(write_data(host, buff, size) != 0){
++				err = -EIO;
++				break;
++			}
++		}
++		/* update buffer */
++		buff+=size;
++	}
++	if (err == 0)
++		err = wait_for_access_end( host);
++
++	return err;
++}
++
++static int get_resp(struct netx4000_mmc_priv *host, struct mmc_cmd *cmd)
++{
++	struct netx4000_sdio_reg __iomem *regs = host->regs;
++	/* ----- Select RESP Register Depend on the Response Type ----- */
++	switch(cmd->resp_type) {
++		/* No Response */
++		case MMC_RSP_NONE:
++			break;
++		case MMC_RSP_R2:
++		{/* CID (->CMD2,CMD10) / CSD (->CMD9) */
++			uint8_t CRC = 0xAF;
++
++			/* read all register and shift 8bit < */
++			cmd->response[3] = readl(&regs->sd_rsp10);
++			cmd->response[2] = readl(&regs->sd_rsp32);
++			cmd->response[1] = readl(&regs->sd_rsp54);
++			cmd->response[0] = readl(&regs->sd_rsp76);
++
++			/* shifting and crc calc */
++			cmd->response[0] = (cmd->response[0] << 8);
++			cmd->response[0] |= 0xFF & (cmd->response[1] >> 24);
++			cmd->response[1]  = (cmd->response[1] << 8);
++			cmd->response[1] |= 0xFF & (cmd->response[2] >> 24);
++			cmd->response[2]  = (cmd->response[2] << 8);
++			cmd->response[2] |= 0xFF & (cmd->response[3] >> 24);
++			cmd->response[3]  = (cmd->response[3] << 8);
++			cmd->response[3] |= 0xFF & CRC;
++		}
++			break;
++		/* Nomal Response (32bits Length) */
++		case MMC_RSP_R1:
++		case MMC_RSP_R1b: /* Nomal Response with an Optional Busy Signal */
++		case MMC_RSP_R3: /* OCR Register (32bits Length) */
++			/* MMC_RSP_R4 MMC_RSP_R5 MMC_RSP_R6 MMC_RSP_R7 same format */
++			cmd->response[0] = readl(&regs->sd_rsp10);
++			break;
++		default:
++			/* unknown type */
++			dev_err(host->dev, "Unknown response type (%i)\n", cmd->resp_type);
++			break;
++	}
++	return 0;
++}
++
++static int handle_stop_cmd( struct netx4000_mmc_priv *host)
++{
++	struct netx4000_sdio_reg __iomem *regs = host->regs;
++
++	/* signal transfer stop */
++	writel( 1, &regs->sd_stop);
++	wait_for_response(host);
++	netx4000_wait_for_sclkdiven(host);
++	wait_for_access_end(host);
++	return 0;
++}
++
++static void setup_cmd(struct netx4000_mmc_priv *host, struct mmc_cmd *cmd, struct mmc_data *data)
++{
++	struct netx4000_sdio_reg __iomem *regs = host->regs;
++	u32 cmd_tmp = 0;
++
++	cmd_tmp = (cmd->cmdidx & MSK_NX4000_SDIO_SD_CMD_CF);
++	if (cmd->cmdidx == MMC_CMD_APP_CMD)
++		s_fNextAppCmd = 1;
++
++	/* handle application commands (followed of CMD55 -> s_fNextAppCmd = 1) */
++	switch (cmd->cmdidx)
++	{
++		case 6:
++		case 13:
++		case 22:
++		case 23:
++		case 41:
++		case 42:
++		case 51:
++			if (s_fNextAppCmd) {
++				s_fNextAppCmd = 0;
++				cmd_tmp |= (1<<6);
++				break;
++			}
++		default:
++		break;
++	}
++
++	/* We have to configure a extended mode as some commands cannot be used in normal mode.
++	 * To make it easier we do it for all commands.
++	 * A test passed successfuly for a SDHC-Card (v2.0) and a MultiMediaCard (v5.0). */
++	switch(cmd->resp_type) {
++		case MMC_RSP_NONE:
++			cmd_tmp |= (3 << SRT_NX4000_SDIO_SD_CMD_MD_RSP); /* Extended mode/No response */
++			break;
++		case MMC_RSP_R1:
++// 		case MMC_RSP_R5:
++// 		case MMC_RSP_R6:
++// 		case MMC_RSP_R7:
++			cmd_tmp |= (4 << SRT_NX4000_SDIO_SD_CMD_MD_RSP); /* Extended mode/SD card R1, R5, R6, R7 response */
++			break;
++		case MMC_RSP_R1b:
++			cmd_tmp |= (5 << SRT_NX4000_SDIO_SD_CMD_MD_RSP); /* Extended mode/SD card R1b response */
++			break;
++		case MMC_RSP_R2:
++			cmd_tmp |= (6 << SRT_NX4000_SDIO_SD_CMD_MD_RSP); /* Extended mode/SD card R2 response */
++			break;
++		case MMC_RSP_R3:
++// 		case MMC_RSP_R4:
++			cmd_tmp |= (7 << SRT_NX4000_SDIO_SD_CMD_MD_RSP); /* Extended mode/SD card R3, R4 response */
++			break;
++	}
++
++	/* build command */
++	if (data) {/* additional data transmitted */
++		cmd_tmp |= 1 << SRT_NX4000_SDIO_SD_CMD_MD3;
++
++		if (MMC_DATA_READ == data->flags)
++			cmd_tmp |= 1 << SRT_NX4000_SDIO_SD_CMD_MD4;
++
++		/* disable block counting (sends stop command after all blocks are transferred) */
++		writel(data->blocksize, &regs->sd_size);
++		/* not required in since automatic mode is disabled */
++		writel( data->blocks, &regs->sd_seccnt); /* deliver number of blocks */
++		if (s_fAutomaticBlockCount)
++			writel( (1<<8), &regs->sd_stop);/* enable automatic block count */
++		else
++			writel( 0, &regs->sd_stop);/* disable */
++
++		if (data->blocks>1) {
++			cmd_tmp |= MSK_NX4000_SDIO_SD_CMD_MD5; /* enable multiple block mode */
++			if (!s_fAutomaticBlockCount)
++				cmd_tmp |= MSK_NX4000_SDIO_SD_CMD_MD_MLT_BLK;/* stop command required */
++		}
++	}
++
++	writel( cmd->cmdarg, &regs->sd_arg0);
++	/* issue command */
++	writel(cmd_tmp, &regs->sd_cmd);
++}
++
++
++static int netx4000_send_cmd(struct udevice *dev, struct mmc_cmd *cmd,
++			     struct mmc_data *data)
++{
++	struct netx4000_mmc_priv *host = dev_get_priv(dev);
++	struct netx4000_sdio_reg __iomem *regs = host->regs;
++	int ret = 0;
++
++	/* handle stop command separate */
++	if (cmd->cmdidx == MMC_CMD_STOP_TRANSMISSION) {
++		if (s_fAutomaticBlockCount)
++			return 0;/* stop command is handle by hardware -> so return */
++		else
++		return handle_stop_cmd( host);
++	}
++
++	netx4000_wait_for_sclkdiven(host);
++
++	/* Acknowledge any pending "response end" bit. */
++	writel(~MSK_NX4000_SDIO_SD_INFO1_INFO0,&regs->sd_info1);
++	/* clear all flags */
++	writel(0, &regs->sd_info2);
++
++	/* issue command */
++	setup_cmd(host, cmd, data);
++	/* wait resp or error */
++	if (0>(ret = wait_for_response( host))) {
++		s_fNextAppCmd = 0;
++		return ret;
++	} else {
++		/* in case of no error transfer data present */
++		get_resp( host, cmd);
++		if (data) {
++			if (data->flags & MMC_DATA_WRITE)
++				ret = transfer_data( host, data->src, data->blocks, data->blocksize, data->flags);
++			else
++				ret = transfer_data( host, data->dest, data->blocks, data->blocksize, data->flags);
++		}
++	}
++
++	return ret;
++}
++
++static void netx4000_mmc_set_clock(struct netx4000_mmc_priv *priv, u32 clock)
++{
++	u32 clock_setting = 0;
++	u32 div;
++	unsigned long max = clk_get_rate(&priv->clk);
++
++	/* do not write to clk-ctrl while SCLKDIVEN is not set */
++	netx4000_wait_for_sclkdiven(priv);
++
++	/* disable clock */
++	writel(clock_setting, &priv->regs->sd_clk_ctrl);
++
++	/* calculate new clock divider ... */
++	if (clock >= max) {
++		writel( 0xFF, &priv->regs->sd_clk_ctrl);
++        } else {
++		div = 2;
++		while (div < 1024) {
++			if (clock > (max/div))
++				break;
++			div <<= 1;
++                }
++		/* shift for register */
++		/* clear clock settings */
++		clock_setting &= ~0xFF;
++		clock_setting |= MSK_NX4000_SDIO_SD_CLK_CTRL_DIV & (div >> 2);
++	}
++	/* ... and write it to chip */
++	writel(clock_setting | MSK_NX4000_SDIO_SD_CLK_CTRL_SD_CLK_OFFEN, &priv->regs->sd_clk_ctrl);
++
++	/* enable clock */
++	clock_setting |= MSK_NX4000_SDIO_SD_CLK_CTRL_SD_CLK_EN;
++	writel( clock_setting | MSK_NX4000_SDIO_SD_CLK_CTRL_SD_CLK_OFFEN, &priv->regs->sd_clk_ctrl);
++}
++
++static int netx4000_set_ios(struct udevice *dev)
++{
++	struct netx4000_mmc_priv *priv = dev_get_priv(dev);
++	struct mmc *mmc = mmc_get_mmc_dev(dev);
++	u32 val;
++
++	/* set clock */
++	netx4000_mmc_set_clock(priv, mmc->clock);
++
++	/* set bus width */
++	val = readl(&priv->regs->sd_option);
++	if (mmc->bus_width == 1)
++		val |= (1 << SRT_NX4000_SDIO_SD_OPTION_WIDTH);
++	else if (mmc->bus_width == 4)
++		val &= ~(1 << SRT_NX4000_SDIO_SD_OPTION_WIDTH);
++
++	writel( val, &priv->regs->sd_option);
++	return 0;
++}
++
++static int netx4000_get_cd(struct udevice *dev)
++{
++	struct netx4000_mmc_priv *priv = dev_get_priv(dev);
++	struct netx4000_sdio_reg __iomem *regs = priv->regs;
++	u32 reg;
++
++	reg = readl(&regs->sd_info1);
++	if (reg & MSK_NX4000_SDIO_SD_INFO1_INFO10) /* check DAT3 level */ //reg &= 0x0020u;     /* check CD level */
++		return 1; /* inserted */
++
++	return 0;
++}
++
++static void netx4000_mmc_init(struct netx4000_mmc_priv *host)
++{
++	struct netx4000_sdio_reg __iomem *regs = host->regs;
++	u32 tmpreg;
++
++	/* reset */
++	writel( 0, &regs->soft_rst);
++	ndelay(50);
++	writel( 1, &regs->soft_rst);
++
++	/* clear all interrupts */
++	writel( 0x0000031D, &regs->sd_info1_mask); /* disable all interrupts */
++	writel( 0x00008B7F, &regs->sd_info2_mask); /* disable all interrupts */
++	writel( 0x0000C007, &regs->sdio_info1_mask); /* disable all interrupts */
++
++	/* initialize all register */
++	writel( 0x00000000, &regs->cc_ext_mode);
++	writel( 0x00000000, &regs->sdif_mode);
++	writel( 0x00000000, &regs->host_mode);/* 32-bit access */
++	writel( 0x00000000, &regs->sdio_mode);
++	writel( 0x00000000, &regs->ext_swap);
++	writel( 0x00000000, &regs->sd_portsel);
++
++	/* reset pending infos */
++	tmpreg = readl( &regs->sd_info1);
++	tmpreg |= ~(1|4);
++	writel( tmpreg, &regs->sd_info1);
++	writel( 0x00000000, &regs->sd_info2);
++	writel( 0x00000000, &regs->sdio_info1);
++	writel( 0x0000C0EE, &regs->sd_option);/* max. timeout */
++
++	netx4000_mmc_set_clock(host, 400000);
++	writel( ~0x10,&regs->sd_info1);
++}
++
++static int netx4000_mmc_probe(struct udevice *dev)
++{
++	struct netx4000_mmc_priv *priv = dev_get_priv(dev);
++	struct netx4000_mmc_plat *plat = dev_get_platdata(dev);
++
++	plat->cfg.name = dev->name;
++	plat->cfg.voltages = MMC_VDD_32_33 | MMC_VDD_33_34;
++	plat->cfg.host_caps = MMC_MODE_4BIT;
++	plat->cfg.f_max = clk_get_rate(&priv->clk);
++	plat->cfg.f_min = plat->cfg.f_max / 1024;
++	plat->cfg.b_max = 2048;
++
++	clk_enable(&priv->clk);
++
++	netx4000_mmc_init(priv);
++	priv->dev = dev;
++
++	return mmc_init(&plat->mmc);
++}
++
++static int netx4000_mmc_bind(struct udevice *dev)
++{
++	struct netx4000_mmc_plat *plat = dev_get_platdata(dev);
++
++	return mmc_bind(dev, &plat->mmc, &plat->cfg);
++}
++
++static const struct dm_mmc_ops netx4000_dm_mmc_ops = {
++	.send_cmd = netx4000_send_cmd,
++	.set_ios = netx4000_set_ios,
++	.get_cd = netx4000_get_cd,
++};
++
++static int netx4000_mmc_ofdata_to_platdata(struct udevice *dev)
++{
++	struct netx4000_mmc_priv *priv = dev->priv;
++	fdt_addr_t addr;
++
++	addr = dev_read_addr(dev);
++	if (addr == FDT_ADDR_T_NONE)
++		return -EINVAL;
++
++	priv->regs = (struct netx4000_sdio_reg __iomem*)addr;
++
++	if(clk_get_by_index(dev, 0, &priv->clk))
++		return -EINVAL;
++
++	return 0;
++}
++
++static const struct udevice_id netx4000_mmc_match[] = {
++	{ .compatible = "hilscher,netx4000-sdio" },
++	{ /* sentinel */ }
++};
++
++U_BOOT_DRIVER(netx4000_mci) = {
++	.name = "netx4000_mci",
++	.id = UCLASS_MMC,
++	.of_match = netx4000_mmc_match,
++	.ops = &netx4000_dm_mmc_ops,
++	.probe = netx4000_mmc_probe,
++	.ofdata_to_platdata = netx4000_mmc_ofdata_to_platdata,
++	.bind = netx4000_mmc_bind,
++	.priv_auto_alloc_size = sizeof(struct netx4000_mmc_priv),
++	.platdata_auto_alloc_size = sizeof(struct netx4000_mmc_plat),
++};
+diff --git a/drivers/mmc/netx4000-mci.h b/drivers/mmc/netx4000-mci.h
+new file mode 100644
+index 0000000000..63eea5111e
+--- /dev/null
++++ b/drivers/mmc/netx4000-mci.h
+@@ -0,0 +1,257 @@
++/*
++* drivers/mci/mci-netx4000.h
++*
++* (C) Copyright 2015 Hilscher Gesellschaft fuer Systemautomation mbH
++* http://www.hilscher.com
++*
++* This program is free software; you can redistribute it and/or
++* modify it under the terms of the GNU General Public License as
++* published by the Free Software Foundation; version 2 of
++* the License.
++*
++* This program is distributed in the hope that it will be useful,
++* but WITHOUT ANY WARRANTY; without even the implied warranty of
++* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++* GNU General Public License for more details.
++*
++*/
++
++#ifndef __NETX4000_SDIO_H__
++#define __NETX4000_SDIO_H__
++
++/* Register Definitions */
++struct netx4000_sdio_reg {
++	u32 sd_cmd;           /* command type and response type */
++	u32 sd_portsel;       /* port selection of the sd-card  */
++	u32 sd_arg0;          /* command argument */
++	u32 sd_arg1;          /* command argument */
++	u32 sd_stop;          /* en-/disable block counting in case of multiple block transfer */
++	u32 sd_seccnt;        /* number of blocks to transfer */
++	u32 sd_rsp10;         /* response of the sd-card */
++	u32 sd_rsp1;          /*  */
++	u32 sd_rsp32;
++	u32 sd_rsp3;
++	u32 sd_rsp54;
++	u32 sd_rsp5;
++	u32 sd_rsp76;
++	u32 sd_rsp7;
++	u32 sd_info1;         /* response info */
++	u32 sd_info2;         /* response info */
++	u32 sd_info1_mask;    /* en-/disables sd_info1 interrupt */
++	u32 sd_info2_mask;    /* en-/disables sd_info2 interrupt */
++	u32 sd_clk_ctrl;      /* SDCLK configuration */
++	u32 sd_size;          /* transfer data length */
++	u32 sd_option;        /* sd-card access control */
++        u32 reserved0;
++	u32 sd_err_sts1;      /* sd-card error status register */
++	u32 sd_err_sts2;      /* sd-card error status register */
++	u32 sd_buf0;          /* read/write buffer */
++        u32 reserved1;
++	u32 sdio_mode;        /* command mode configuration */
++	u32 sdio_info1;       /* interrupt flag register */
++	u32 sdio_info1_mask;  /* en-/disables sdio_info1 interrupt */
++        u32 reserved2[79];
++	u32 cc_ext_mode;      /* dma mode configuration */
++        u32 reserved3[3];
++	u32 soft_rst;         /* software reset register */
++	u32 version;          /* version */
++	u32 host_mode;        /* host interface mode */
++	u32 sdif_mode;        /* sd interface mode */
++        u32 reserved4[4];
++	u32 ext_swap;         /* swap control register */
++	u32 sd_status;
++	u32 ext_sdio;         /* en-/disables sdio interrupt */
++	u32 ext_wp;           /* write protected state of the extended port1 */
++	u32 ext_cd;           /* card detect of port1 */
++	u32 ext_cd_dat3;      /* extended card detect */
++	u32 ext_cd_mask;      /* interrupt mask register */
++	u32 ext_cd_dat3_mask; /* interrupt mask register */
++};
++
++/* NETX4000 - REGDEF */
++
++/* --------------------------------------------------------------------- */
++/* Register SDIO_SD_CLK_CTRL */
++/* => SD clock control register */
++/* => Mode: R/W */
++/* --------------------------------------------------------------------- */
++
++#define MSK_NX4000_SDIO_SD_CLK_CTRL_DIV                  0x000000ffU
++#define SRT_NX4000_SDIO_SD_CLK_CTRL_DIV                  0
++#define DFLT_VAL_NX4000_SDIO_SD_CLK_CTRL_DIV             0x00000020U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_CLK_CTRL_DIV          0x00000020U
++#define MSK_NX4000_SDIO_SD_CLK_CTRL_SD_CLK_EN            0x00000100U
++#define SRT_NX4000_SDIO_SD_CLK_CTRL_SD_CLK_EN            8
++#define DFLT_VAL_NX4000_SDIO_SD_CLK_CTRL_SD_CLK_EN       0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_CLK_CTRL_SD_CLK_EN    0x00000000U
++#define MSK_NX4000_SDIO_SD_CLK_CTRL_SD_CLK_OFFEN         0x00000200U
++#define SRT_NX4000_SDIO_SD_CLK_CTRL_SD_CLK_OFFEN         9
++#define DFLT_VAL_NX4000_SDIO_SD_CLK_CTRL_SD_CLK_OFFEN    0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_CLK_CTRL_SD_CLK_OFFEN 0x00000000U
++#define MSK_NX4000_SDIO_SD_CLK_CTRL_SD_CLK_SEL           0x00000400U
++#define SRT_NX4000_SDIO_SD_CLK_CTRL_SD_CLK_SEL           10
++#define DFLT_VAL_NX4000_SDIO_SD_CLK_CTRL_SD_CLK_SEL      0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_CLK_CTRL_SD_CLK_SEL   0x00000000U
++
++/* --------------------------------------------------------------------- */
++/* Register SDIO_SD_OPTION */
++/* => SD card access control option register */
++/* => Mode: R/W */
++/* --------------------------------------------------------------------- */
++
++#define MSK_NX4000_SDIO_SD_OPTION_CTOP          0x0000000fU
++#define SRT_NX4000_SDIO_SD_OPTION_CTOP          0
++#define DFLT_VAL_NX4000_SDIO_SD_OPTION_CTOP     0x0000000eU
++#define DFLT_BF_VAL_NX4000_SDIO_SD_OPTION_CTOP  0x0000000eU
++#define MSK_NX4000_SDIO_SD_OPTION_TOP           0x000000f0U
++#define SRT_NX4000_SDIO_SD_OPTION_TOP           4
++#define DFLT_VAL_NX4000_SDIO_SD_OPTION_TOP      0x000000e0U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_OPTION_TOP   0x0000000eU
++#define MSK_NX4000_SDIO_SD_OPTION_WIDTH         0x00008000U
++#define SRT_NX4000_SDIO_SD_OPTION_WIDTH         15
++#define DFLT_VAL_NX4000_SDIO_SD_OPTION_WIDTH    0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_OPTION_WIDTH 0x00000000U
++
++/* --------------------------------------------------------------------- */
++/* Register SDIO_SD_CMD */
++/* => Command type regsiter */
++/* => Mode: R/W */
++/* --------------------------------------------------------------------- */
++
++#define MSK_NX4000_SDIO_SD_CMD_CF                 0x0000003fU
++#define SRT_NX4000_SDIO_SD_CMD_CF                 0
++#define DFLT_VAL_NX4000_SDIO_SD_CMD_CF            0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_CMD_CF         0x00000000U
++#define MSK_NX4000_SDIO_SD_CMD_C                  0x000000c0U
++#define SRT_NX4000_SDIO_SD_CMD_C                  6
++#define DFLT_VAL_NX4000_SDIO_SD_CMD_C             0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_CMD_C          0x00000000U
++#define MSK_NX4000_SDIO_SD_CMD_MD_RSP             0x00000700U
++#define SRT_NX4000_SDIO_SD_CMD_MD_RSP             8
++#define DFLT_VAL_NX4000_SDIO_SD_CMD_MD_RSP        0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_CMD_MD_RSP     0x00000000U
++#define MSK_NX4000_SDIO_SD_CMD_MD3                0x00000800U
++#define SRT_NX4000_SDIO_SD_CMD_MD3                11
++#define DFLT_VAL_NX4000_SDIO_SD_CMD_MD3           0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_CMD_MD3        0x00000000U
++#define MSK_NX4000_SDIO_SD_CMD_MD4                0x00001000U
++#define SRT_NX4000_SDIO_SD_CMD_MD4                12
++#define DFLT_VAL_NX4000_SDIO_SD_CMD_MD4           0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_CMD_MD4        0x00000000U
++#define MSK_NX4000_SDIO_SD_CMD_MD5                0x00002000U
++#define SRT_NX4000_SDIO_SD_CMD_MD5                13
++#define DFLT_VAL_NX4000_SDIO_SD_CMD_MD5           0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_CMD_MD5        0x00000000U
++#define MSK_NX4000_SDIO_SD_CMD_MD_MLT_BLK         0x0000c000U
++#define SRT_NX4000_SDIO_SD_CMD_MD_MLT_BLK         14
++#define DFLT_VAL_NX4000_SDIO_SD_CMD_MD_MLT_BLK    0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_CMD_MD_MLT_BLK 0x00000000U
++
++/* --------------------------------------------------------------------- */
++/* Register SDIO_SD_INFO1 */
++/* => SD card interrupt flag register 1 */
++/* => Mode: R/W */
++/* --------------------------------------------------------------------- */
++
++#define MSK_NX4000_SDIO_SD_INFO1_INFO0          0x00000001U
++#define SRT_NX4000_SDIO_SD_INFO1_INFO0          0
++#define DFLT_VAL_NX4000_SDIO_SD_INFO1_INFO0     0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO1_INFO0  0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO1_INFO2          0x00000004U
++#define SRT_NX4000_SDIO_SD_INFO1_INFO2          2
++#define DFLT_VAL_NX4000_SDIO_SD_INFO1_INFO2     0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO1_INFO2  0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO1_INFO3          0x00000008U
++#define SRT_NX4000_SDIO_SD_INFO1_INFO3          3
++#define DFLT_VAL_NX4000_SDIO_SD_INFO1_INFO3     0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO1_INFO3  0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO1_INFO4          0x00000010U
++#define SRT_NX4000_SDIO_SD_INFO1_INFO4          4
++#define DFLT_VAL_NX4000_SDIO_SD_INFO1_INFO4     0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO1_INFO4  0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO1_INFO5          0x00000020U
++#define SRT_NX4000_SDIO_SD_INFO1_INFO5          5
++#define DFLT_VAL_NX4000_SDIO_SD_INFO1_INFO5     0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO1_INFO5  0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO1_INFO7          0x00000080U
++#define SRT_NX4000_SDIO_SD_INFO1_INFO7          7
++#define DFLT_VAL_NX4000_SDIO_SD_INFO1_INFO7     0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO1_INFO7  0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO1_INFO8          0x00000100U
++#define SRT_NX4000_SDIO_SD_INFO1_INFO8          8
++#define DFLT_VAL_NX4000_SDIO_SD_INFO1_INFO8     0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO1_INFO8  0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO1_INFO9          0x00000200U
++#define SRT_NX4000_SDIO_SD_INFO1_INFO9          9
++#define DFLT_VAL_NX4000_SDIO_SD_INFO1_INFO9     0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO1_INFO9  0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO1_INFO10         0x00000400U
++#define SRT_NX4000_SDIO_SD_INFO1_INFO10         10
++#define DFLT_VAL_NX4000_SDIO_SD_INFO1_INFO10    0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO1_INFO10 0x00000000U
++
++/* --------------------------------------------------------------------- */
++/* Register SDIO_SD_INFO2 */
++/* => SD card interrupt flag register 2 */
++/* => Mode: R/W */
++/* --------------------------------------------------------------------- */
++
++#define MSK_NX4000_SDIO_SD_INFO2_ERR0              0x00000001U
++#define SRT_NX4000_SDIO_SD_INFO2_ERR0              0
++#define DFLT_VAL_NX4000_SDIO_SD_INFO2_ERR0         0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO2_ERR0      0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO2_ERR1              0x00000002U
++#define SRT_NX4000_SDIO_SD_INFO2_ERR1              1
++#define DFLT_VAL_NX4000_SDIO_SD_INFO2_ERR1         0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO2_ERR1      0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO2_ERR2              0x00000004U
++#define SRT_NX4000_SDIO_SD_INFO2_ERR2              2
++#define DFLT_VAL_NX4000_SDIO_SD_INFO2_ERR2         0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO2_ERR2      0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO2_ERR3              0x00000008U
++#define SRT_NX4000_SDIO_SD_INFO2_ERR3              3
++#define DFLT_VAL_NX4000_SDIO_SD_INFO2_ERR3         0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO2_ERR3      0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO2_ERR4              0x00000010U
++#define SRT_NX4000_SDIO_SD_INFO2_ERR4              4
++#define DFLT_VAL_NX4000_SDIO_SD_INFO2_ERR4         0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO2_ERR4      0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO2_ERR5              0x00000020U
++#define SRT_NX4000_SDIO_SD_INFO2_ERR5              5
++#define DFLT_VAL_NX4000_SDIO_SD_INFO2_ERR5         0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO2_ERR5      0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO2_ERR6              0x00000040U
++#define SRT_NX4000_SDIO_SD_INFO2_ERR6              6
++#define DFLT_VAL_NX4000_SDIO_SD_INFO2_ERR6         0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO2_ERR6      0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO2_DAT0              0x00000080U
++#define SRT_NX4000_SDIO_SD_INFO2_DAT0              7
++#define DFLT_VAL_NX4000_SDIO_SD_INFO2_DAT0         0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO2_DAT0      0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO2_BRE               0x00000100U
++#define SRT_NX4000_SDIO_SD_INFO2_BRE               8
++#define DFLT_VAL_NX4000_SDIO_SD_INFO2_BRE          0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO2_BRE       0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO2_BWE               0x00000200U
++#define SRT_NX4000_SDIO_SD_INFO2_BWE               9
++#define DFLT_VAL_NX4000_SDIO_SD_INFO2_BWE          0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO2_BWE       0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO2_BSYNC2            0x00000400U
++#define SRT_NX4000_SDIO_SD_INFO2_BSYNC2            10
++#define DFLT_VAL_NX4000_SDIO_SD_INFO2_BSYNC2       0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO2_BSYNC2    0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO2_SCLKDIVEN         0x00002000U
++#define SRT_NX4000_SDIO_SD_INFO2_SCLKDIVEN         13
++#define DFLT_VAL_NX4000_SDIO_SD_INFO2_SCLKDIVEN    0x00002000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO2_SCLKDIVEN 0x00000001U
++#define MSK_NX4000_SDIO_SD_INFO2_CBSY              0x00004000U
++#define SRT_NX4000_SDIO_SD_INFO2_CBSY              14
++#define DFLT_VAL_NX4000_SDIO_SD_INFO2_CBSY         0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO2_CBSY      0x00000000U
++#define MSK_NX4000_SDIO_SD_INFO2_ILA               0x00008000U
++#define SRT_NX4000_SDIO_SD_INFO2_ILA               15
++#define DFLT_VAL_NX4000_SDIO_SD_INFO2_ILA          0x00000000U
++#define DFLT_BF_VAL_NX4000_SDIO_SD_INFO2_ILA       0x00000000U
++
++
++#endif /* __NETX4000_SDIO_H__ */
+-- 
+2.17.1
+

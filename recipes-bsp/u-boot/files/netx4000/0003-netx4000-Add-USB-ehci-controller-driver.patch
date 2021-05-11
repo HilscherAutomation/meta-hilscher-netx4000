@@ -1,0 +1,730 @@
+From 431491352416c0bb58060a0be1d93f8170bc9187 Mon Sep 17 00:00:00 2001
+From: Michael Trensch <mtrensch@hilscher.com>
+Date: Tue, 11 May 2021 13:45:00 +0200
+Subject: [PATCH 3/5] netx4000: Add USB ehci controller driver
+
+---
+ drivers/usb/host/Kconfig         |   8 +
+ drivers/usb/host/Makefile        |   1 +
+ drivers/usb/host/ehci-netx4000.c | 255 +++++++++++++++++++
+ drivers/usb/host/ehci-netx4000.h | 415 +++++++++++++++++++++++++++++++
+ 4 files changed, 679 insertions(+)
+ create mode 100644 drivers/usb/host/ehci-netx4000.c
+ create mode 100644 drivers/usb/host/ehci-netx4000.h
+
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 0971a7c813..285fa47bab 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -161,6 +161,14 @@ config USB_EHCI_MX7
+ 	---help---
+ 	  Enables support for the on-chip EHCI controller on i.MX7 SoCs.
+ 
++config USB_EHCI_NETX4000
++	bool "Support for netX4000 on-chip EHCI USB controller"
++	depends on ARCH_NETX4000
++	select DM_USB
++	default y
++	---help---
++	  Enables support for the on-chip EHCI controller on netX4000 SoCs.
++
+ config USB_EHCI_OMAP
+ 	bool "Support for OMAP3+ on-chip EHCI USB controller"
+ 	depends on ARCH_OMAP2PLUS
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index a12e8f2702..bd37bf5b6f 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -32,6 +32,7 @@ obj-$(CONFIG_USB_EHCI_MXS) += ehci-mxs.o
+ obj-$(CONFIG_USB_EHCI_MX5) += ehci-mx5.o
+ obj-$(CONFIG_USB_EHCI_MX6) += ehci-mx6.o
+ obj-$(CONFIG_USB_EHCI_MX7) += ehci-mx6.o
++obj-$(CONFIG_USB_EHCI_NETX4000) += ehci-netx4000.o
+ obj-$(CONFIG_USB_EHCI_OMAP) += ehci-omap.o
+ obj-$(CONFIG_USB_EHCI_MARVELL) += ehci-marvell.o
+ obj-$(CONFIG_USB_EHCI_MSM) += ehci-msm.o
+diff --git a/drivers/usb/host/ehci-netx4000.c b/drivers/usb/host/ehci-netx4000.c
+new file mode 100644
+index 0000000000..8edb07cd61
+--- /dev/null
++++ b/drivers/usb/host/ehci-netx4000.c
+@@ -0,0 +1,255 @@
++/*
++* USB EHCI driver for Hilscher netx4000 based platforms
++*
++* drivers/usb/host/ehci-netx4000.c
++*
++* (C) Copyright 2015 Hilscher Gesellschaft fuer Systemautomation mbH
++* http://www.hilscher.com
++*
++* This program is free software; you can redistribute it and/or
++* modify it under the terms of the GNU General Public License as
++* published by the Free Software Foundation; version 2 of
++* the License.
++*
++* This program is distributed in the hope that it will be useful,
++* but WITHOUT ANY WARRANTY; without even the implied warranty of
++* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++* GNU General Public License for more details.
++*
++*/
++
++#include <common.h>
++#include <clk.h>
++#include <dm.h>
++#include <dm/device_compat.h>
++#include <asm/io.h>
++#include <linux/delay.h>
++#include <usb.h>
++#include "ehci.h"
++#include <mach/netx4000_regs.h>
++#include "ehci-netx4000.h"
++
++struct netx4000_ehci_priv {
++	struct ehci_ctrl ctrl;
++	USB_HOST_AREA_T *regbase;
++	struct clk clk;
++
++	unsigned int num_ports;
++
++	unsigned int ahbpci_win1_ctr;
++	unsigned int ahbpci_win2_ctr;
++	unsigned int pciahb_win1_ctr;
++	unsigned int pciahb_win2_ctr;
++
++	unsigned int pciahb_win1_base_address;
++	unsigned int pciahb_win2_base_address;
++	unsigned int ahbpci_bridge_base_address;
++
++	unsigned int ohci_base_address;
++	unsigned int ehci_base_address;
++};
++
++static inline int32_t ioset32(uint32_t setmask, void *addr)
++{
++	uint32_t val;
++
++	val = readl(addr);
++	writel(val | setmask, addr);
++
++	return 0;
++}
++
++static inline int32_t ioclear32(uint32_t clearmask, void *addr)
++{
++	uint32_t val;
++
++	val = readl(addr);
++	writel(val & ~clearmask, addr);
++
++	return 0;
++}
++
++static int netx4000_ehci_chip_reset(struct netx4000_ehci_priv *priv)
++{
++	ioset32((0x3 << 10) | /* win1 size 2gb */
++		MSK_USB_HOST_USBCTR_PLL_RST |
++		MSK_USB_HOST_USBCTR_USBH_RST,
++		(void*)&priv->regbase->ulUSB_HOST_USBCTR);
++	udelay(5);
++	ioclear32(MSK_USB_HOST_USBCTR_PLL_RST |
++		MSK_USB_HOST_USBCTR_PCICLK_MASK |
++		MSK_USB_HOST_USBCTR_USBH_RST,
++		(void*)&priv->regbase->ulUSB_HOST_USBCTR);
++
++	return 0;
++}
++
++#define USB2CFG  (NETX4000_SYSTEMCTRL_VIRT_BASE + 0x10)
++#define netx4000_ehci_power_up()  ioclear32(0x1, (void*)USB2CFG)
++#define netx4000_ehci_power_down()  ioset32(0x1, (void*)USB2CFG)
++#define netx4000_ehci_h2mode_disable()  ioclear32(0x2, (void*)USB2CFG)
++#define netx4000_ehci_h2mode_enable()  ioset32(0x2, (void*)USB2CFG)
++static int netx4000_ehci_chip_init(struct netx4000_ehci_priv *priv, struct udevice *dev)
++{
++	if (priv->num_ports > 1)
++		netx4000_ehci_h2mode_enable();
++
++	if(clk_enable(&priv->clk)) {
++		dev_err(dev, "netx4000_periph_clock_enable() failed\n");
++		return -EIO;
++	}
++	netx4000_ehci_power_up();
++
++	netx4000_ehci_chip_reset(priv);
++
++	/* AHB-PCI Bridge PCI Communiction Registers */
++	writel(MSK_USB_HOST_AHB_BUS_CTR_SMODE_READY_CTR |
++		MSK_USB_HOST_AHB_BUS_CTR_MMODE_HBUSREQ |
++		MSK_USB_HOST_AHB_BUS_CTR_MMODE_WR_INCR |
++		MSK_USB_HOST_AHB_BUS_CTR_MMODE_BYTE_BURST |
++		MSK_USB_HOST_AHB_BUS_CTR_MMODE_HTRANS,
++		&priv->regbase->ulUSB_HOST_AHB_BUS_CTR);
++
++	writel((priv->pciahb_win1_ctr & MSK_USB_HOST_PCIAHB_WIN1_CTR_AHB_BASEADR) |
++		(0 << SRT_USB_HOST_PCIAHB_WIN1_CTR_ENDIAN_CTR) |
++		(3 << SRT_USB_HOST_PCIAHB_WIN1_CTR_PREFETCH),
++		&priv->regbase->ulUSB_HOST_PCIAHB_WIN1_CTR); /* (1)-a */
++
++	writel((priv->pciahb_win2_ctr & MSK_USB_HOST_PCIAHB_WIN2_CTR_AHB_BASEADR) |
++		(0 << SRT_USB_HOST_PCIAHB_WIN2_CTR_ENDIAN_CTR) |
++		(3 << SRT_USB_HOST_PCIAHB_WIN2_CTR_PREFETCH),
++		&priv->regbase->ulUSB_HOST_PCIAHB_WIN2_CTR); /* (1)-b */
++
++	writel((priv->ahbpci_win2_ctr & MSK_USB_HOST_AHBPCI_WIN2_CTR_PCIWIN2_BASEADR) |
++		(0 << SRT_USB_HOST_AHBPCI_WIN2_CTR_BURST_EN) |
++		(3 << SRT_USB_HOST_AHBPCI_WIN2_CTR_PCICMD),
++		&priv->regbase->ulUSB_HOST_AHBPCI_WIN2_CTR); /* (2) */
++
++	writel(0x000b103f,&priv->regbase->ulUSB_HOST_PCI_INT_ENABLE);
++
++	writel(MSK_USB_HOST_PCI_ARBITER_CTR_PCIBP_MODE |
++		MSK_USB_HOST_PCI_ARBITER_CTR_PCIREQ0 |
++		MSK_USB_HOST_PCI_ARBITER_CTR_PCIREQ1,
++		&priv->regbase->ulUSB_HOST_PCI_ARBITER_CTR);
++
++	/* PCI Configuration Registers for AHB-PCI Bridge */
++
++	writel((0x40000000 & MSK_USB_HOST_AHBPCI_WIN1_CTR_PCIWIN1_BASEADR) |
++		(5 << SRT_USB_HOST_AHBPCI_WIN1_CTR_PCICMD),
++		&priv->regbase->ulUSB_HOST_AHBPCI_WIN1_CTR); /* (3) */
++
++	writel(MSK_USB_HOST_CMND_STS_OHCI_SERR_ENABLE |
++		MSK_USB_HOST_CMND_STS_OHCI_PARITY_ERROR_RESPONSE |
++		MSK_USB_HOST_CMND_STS_OHCI_BUS_MASTER |
++		MSK_USB_HOST_CMND_STS_OHCI_MEMORY_SPACE,
++		&priv->regbase->ulUSB_HOST_CMND_STS_OHCI);
++
++	writel(priv->ahbpci_bridge_base_address, &priv->regbase->ulUSB_HOST_BASEAD_OHCI); /* (4) */
++	writel(priv->pciahb_win1_base_address, &priv->regbase->ulUSB_HOST_WIN1_BASEAD); /* (5)-a */
++	writel(priv->pciahb_win2_base_address, &priv->regbase->ulUSB_HOST_WIN2_BASEAD); /* (5)-b */
++
++	/* PCI Configuration Registers for OHCI/EHCI */
++
++	writel((0x80000000 & MSK_USB_HOST_AHBPCI_WIN1_CTR_PCIWIN1_BASEADR) |
++		(5 << SRT_USB_HOST_AHBPCI_WIN1_CTR_PCICMD),
++		&priv->regbase->ulUSB_HOST_AHBPCI_WIN1_CTR); /* (6) */
++
++	writel(MSK_USB_HOST_CMND_STS_OHCI_SERR_ENABLE |
++		MSK_USB_HOST_CMND_STS_OHCI_PARITY_ERROR_RESPONSE |
++		MSK_USB_HOST_CMND_STS_OHCI_BUS_MASTER |
++		MSK_USB_HOST_CMND_STS_OHCI_MEMORY_SPACE,
++		&priv->regbase->ulUSB_HOST_CMND_STS_EHCI);
++
++	writel(priv->ohci_base_address, &priv->regbase->ulUSB_HOST_BASEAD_OHCI); /* (7) */
++	writel(priv->ehci_base_address, &priv->regbase->ulUSB_HOST_BASEAD_EHCI); /* (7) */
++
++	/* UTMI */
++
++//	writel(0x0, &priv->regbase->ulUSB_HOST_UTMICTRL_OHCI); // it's the same register as ...
++	writel(0x0, &priv->regbase->ulUSB_HOST_UTMICTRL_EHCI);
++
++	return 0;
++}
++
++static int netx4000_ehci_probe(struct udevice *dev)
++{
++	struct netx4000_ehci_priv *priv = dev_get_priv(dev);
++	int rc;
++	u32 num_ports;
++	struct ehci_hccr *hccr;
++	struct ehci_hcor *hcor;
++
++	rc = ofnode_read_u32(dev_ofnode(dev), "num-ports", &num_ports);
++	if (rc) {
++		dev_warn(dev, "num_ports not provided in DT => defaulting to one port!");
++		num_ports = 1;
++	}
++	else if ((num_ports < 1) || (num_ports > 2)) {
++		dev_err(dev, "num_ports out of range [1,2]");
++		return -EINVAL;
++	}
++
++	priv->num_ports = num_ports;
++	/* Initialize the USB chip */
++
++//	priv->pciahb_win1_ctr = PHYS_OFFSET; /* DDR-RAM 0x40000000 */
++	priv->pciahb_win1_ctr = 0x40000000;
++	priv->pciahb_win2_ctr = 0x0; /* unused */
++//	priv->pciahb_win1_base_address = PHYS_OFFSET; /* DDR-RAM 0x40000000 */
++	priv->pciahb_win1_base_address = 0x40000000;
++	priv->pciahb_win2_base_address = 0x0; /* unused */
++
++	priv->ahbpci_win1_ctr = 0x0; /* xxx */
++	priv->ahbpci_win2_ctr = (unsigned int)priv->regbase; /* 0xf9000000 */
++	priv->ahbpci_bridge_base_address = priv->ahbpci_win2_ctr+0x10800; /* 0xf9010800 */
++
++	priv->ohci_base_address = priv->ahbpci_win2_ctr;
++	priv->ehci_base_address = priv->ohci_base_address+0x1000;
++
++	priv->num_ports = num_ports;
++
++	rc = netx4000_ehci_chip_init(priv, dev);
++	if (rc)
++		return rc;
++
++	hccr = (struct ehci_hccr*)((uintptr_t)priv->regbase + 0x1000);
++	hcor = (struct ehci_hcor*)((uintptr_t)hccr +
++				  HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
++
++	/* Add USB device */
++	return ehci_register(dev, hccr, hcor, NULL, 0, USB_INIT_HOST);
++}
++
++static int netx4000_ehci_ofdata_to_platdata(struct udevice *dev)
++{
++	struct netx4000_ehci_priv *priv = dev_get_priv(dev);
++	fdt_addr_t addr;
++
++	addr = dev_read_addr(dev);
++	if(addr == FDT_ADDR_T_NONE)
++		return -EINVAL;
++
++	priv->regbase = (void*)addr;
++
++	if(clk_get_by_index(dev, 0, &priv->clk))
++		return -EINVAL;
++
++	return 0;
++}
++
++static const struct udevice_id netx4000_ehci_ids[] = {
++	{.compatible = "hilscher,netx4000-hcd",},
++	{},
++};
++
++U_BOOT_DRIVER(netx4000_ehci_host) = {
++	.name = "netx4000-ehci-host",
++	.id = UCLASS_USB,
++	.ofdata_to_platdata = netx4000_ehci_ofdata_to_platdata,
++	.of_match = netx4000_ehci_ids,
++	.probe = netx4000_ehci_probe,
++	.ops = &ehci_usb_ops,
++	.platdata_auto_alloc_size = sizeof(struct usb_platdata),
++	.priv_auto_alloc_size = sizeof(struct netx4000_ehci_priv),
++	.flags = DM_FLAG_ALLOC_PRIV_DMA,
++};
+diff --git a/drivers/usb/host/ehci-netx4000.h b/drivers/usb/host/ehci-netx4000.h
+new file mode 100644
+index 0000000000..6293bf772e
+--- /dev/null
++++ b/drivers/usb/host/ehci-netx4000.h
+@@ -0,0 +1,415 @@
++/*
++* drivers/usb/host/ehci-netx4000.h
++*
++* (C) Copyright 2015 Hilscher Gesellschaft fuer Systemautomation mbH
++* http://www.hilscher.com
++*
++* This program is free software; you can redistribute it and/or
++* modify it under the terms of the GNU General Public License as
++* published by the Free Software Foundation; version 2 of
++* the License.
++*
++* This program is distributed in the hope that it will be useful,
++* but WITHOUT ANY WARRANTY; without even the implied warranty of
++* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++* GNU General Public License for more details.
++*
++*/
++
++#ifndef __NETX4000_OHCI_
++#define __NETX4000_OHCI_
++
++#define MSK_USB_HOST_USBCTR_USBH_RST				0x00000001
++#define MSK_USB_HOST_USBCTR_PCICLK_MASK				0x00000002
++#define MSK_USB_HOST_USBCTR_PLL_RST					0x00000004
++
++#define MSK_USB_HOST_USBCTR_DIRPD					0x00000100
++#define MSK_USB_HOST_USBCTR_PCI_AHB_WIN2_EN			0x00000200
++
++#define MSK_USB_HOST_AHB_BUS_CTR_MMODE_HTRANS             0x00000001U
++#define SRT_USB_HOST_AHB_BUS_CTR_MMODE_HTRANS             0
++#define DFLT_VAL_USB_HOST_AHB_BUS_CTR_MMODE_HTRANS        0x00000000U
++#define DFLT_BF_VAL_USB_HOST_AHB_BUS_CTR_MMODE_HTRANS     0x00000000U
++#define MSK_USB_HOST_AHB_BUS_CTR_MMODE_BYTE_BURST         0x00000002U
++#define SRT_USB_HOST_AHB_BUS_CTR_MMODE_BYTE_BURST         1
++#define DFLT_VAL_USB_HOST_AHB_BUS_CTR_MMODE_BYTE_BURST    0x00000000U
++#define DFLT_BF_VAL_USB_HOST_AHB_BUS_CTR_MMODE_BYTE_BURST 0x00000000U
++#define MSK_USB_HOST_AHB_BUS_CTR_MMODE_WR_INCR            0x00000004U
++#define SRT_USB_HOST_AHB_BUS_CTR_MMODE_WR_INCR            2
++#define DFLT_VAL_USB_HOST_AHB_BUS_CTR_MMODE_WR_INCR       0x00000000U
++#define DFLT_BF_VAL_USB_HOST_AHB_BUS_CTR_MMODE_WR_INCR    0x00000000U
++#define MSK_USB_HOST_AHB_BUS_CTR_RESERVED0                0x00000078U
++#define SRT_USB_HOST_AHB_BUS_CTR_RESERVED0                3
++#define DFLT_VAL_USB_HOST_AHB_BUS_CTR_RESERVED0           0x00000000U
++#define DFLT_BF_VAL_USB_HOST_AHB_BUS_CTR_RESERVED0        0x00000000U
++#define MSK_USB_HOST_AHB_BUS_CTR_MMODE_HBUSREQ            0x00000080U
++#define SRT_USB_HOST_AHB_BUS_CTR_MMODE_HBUSREQ            7
++#define DFLT_VAL_USB_HOST_AHB_BUS_CTR_MMODE_HBUSREQ       0x00000000U
++#define DFLT_BF_VAL_USB_HOST_AHB_BUS_CTR_MMODE_HBUSREQ    0x00000000U
++#define MSK_USB_HOST_AHB_BUS_CTR_RESERVED1                0x0001ff00U
++#define SRT_USB_HOST_AHB_BUS_CTR_RESERVED1                8
++#define DFLT_VAL_USB_HOST_AHB_BUS_CTR_RESERVED1           0x00000000U
++#define DFLT_BF_VAL_USB_HOST_AHB_BUS_CTR_RESERVED1        0x00000000U
++#define MSK_USB_HOST_AHB_BUS_CTR_SMODE_READY_CTR          0x00020000U
++#define SRT_USB_HOST_AHB_BUS_CTR_SMODE_READY_CTR          17
++#define DFLT_VAL_USB_HOST_AHB_BUS_CTR_SMODE_READY_CTR     0x00020000U
++#define DFLT_BF_VAL_USB_HOST_AHB_BUS_CTR_SMODE_READY_CTR  0x00000001U
++#define MSK_USB_HOST_AHB_BUS_CTR_RESERVED2                0xfffc0000U
++#define SRT_USB_HOST_AHB_BUS_CTR_RESERVED2                18
++#define DFLT_VAL_USB_HOST_AHB_BUS_CTR_RESERVED2           0x00000000U
++#define DFLT_BF_VAL_USB_HOST_AHB_BUS_CTR_RESERVED2        0x00000000U
++
++#define MSK_USB_HOST_PCIAHB_WIN1_CTR_PREFETCH            0x00000003U
++#define SRT_USB_HOST_PCIAHB_WIN1_CTR_PREFETCH            0
++#define DFLT_VAL_USB_HOST_PCIAHB_WIN1_CTR_PREFETCH       0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PCIAHB_WIN1_CTR_PREFETCH    0x00000000U
++#define MSK_USB_HOST_PCIAHB_WIN1_CTR_RESERVED0           0x0000003cU
++#define SRT_USB_HOST_PCIAHB_WIN1_CTR_RESERVED0           2
++#define DFLT_VAL_USB_HOST_PCIAHB_WIN1_CTR_RESERVED0      0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PCIAHB_WIN1_CTR_RESERVED0   0x00000000U
++#define MSK_USB_HOST_PCIAHB_WIN1_CTR_ENDIAN_CTR          0x000001c0U
++#define SRT_USB_HOST_PCIAHB_WIN1_CTR_ENDIAN_CTR          6
++#define DFLT_VAL_USB_HOST_PCIAHB_WIN1_CTR_ENDIAN_CTR     0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PCIAHB_WIN1_CTR_ENDIAN_CTR  0x00000000U
++#define MSK_USB_HOST_PCIAHB_WIN1_CTR_RESERVED1           0x0ffffe00U
++#define SRT_USB_HOST_PCIAHB_WIN1_CTR_RESERVED1           9
++#define DFLT_VAL_USB_HOST_PCIAHB_WIN1_CTR_RESERVED1      0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PCIAHB_WIN1_CTR_RESERVED1   0x00000000U
++#define MSK_USB_HOST_PCIAHB_WIN1_CTR_AHB_BASEADR         0xf0000000U
++#define SRT_USB_HOST_PCIAHB_WIN1_CTR_AHB_BASEADR         28
++#define DFLT_VAL_USB_HOST_PCIAHB_WIN1_CTR_AHB_BASEADR    0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PCIAHB_WIN1_CTR_AHB_BASEADR 0x00000000U
++
++#define MSK_USB_HOST_PCIAHB_WIN2_CTR_PREFETCH            0x00000003U
++#define SRT_USB_HOST_PCIAHB_WIN2_CTR_PREFETCH            0
++#define DFLT_VAL_USB_HOST_PCIAHB_WIN2_CTR_PREFETCH       0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PCIAHB_WIN2_CTR_PREFETCH    0x00000000U
++#define MSK_USB_HOST_PCIAHB_WIN2_CTR_RESERVED0           0x0000003cU
++#define SRT_USB_HOST_PCIAHB_WIN2_CTR_RESERVED0           2
++#define DFLT_VAL_USB_HOST_PCIAHB_WIN2_CTR_RESERVED0      0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PCIAHB_WIN2_CTR_RESERVED0   0x00000000U
++#define MSK_USB_HOST_PCIAHB_WIN2_CTR_ENDIAN_CTR          0x000001c0U
++#define SRT_USB_HOST_PCIAHB_WIN2_CTR_ENDIAN_CTR          6
++#define DFLT_VAL_USB_HOST_PCIAHB_WIN2_CTR_ENDIAN_CTR     0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PCIAHB_WIN2_CTR_ENDIAN_CTR  0x00000000U
++#define MSK_USB_HOST_PCIAHB_WIN2_CTR_RESERVED1           0x0ffffe00U
++#define SRT_USB_HOST_PCIAHB_WIN2_CTR_RESERVED1           9
++#define DFLT_VAL_USB_HOST_PCIAHB_WIN2_CTR_RESERVED1      0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PCIAHB_WIN2_CTR_RESERVED1   0x00000000U
++#define MSK_USB_HOST_PCIAHB_WIN2_CTR_AHB_BASEADR         0xf0000000U
++#define SRT_USB_HOST_PCIAHB_WIN2_CTR_AHB_BASEADR         28
++#define DFLT_VAL_USB_HOST_PCIAHB_WIN2_CTR_AHB_BASEADR    0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PCIAHB_WIN2_CTR_AHB_BASEADR 0x00000000U
++
++#define MSK_USB_HOST_AHBPCI_WIN2_CTR_RESERVED0               0x00000001U
++#define SRT_USB_HOST_AHBPCI_WIN2_CTR_RESERVED0               0
++#define DFLT_VAL_USB_HOST_AHBPCI_WIN2_CTR_RESERVED0          0x00000000U
++#define DFLT_BF_VAL_USB_HOST_AHBPCI_WIN2_CTR_RESERVED0       0x00000000U
++#define MSK_USB_HOST_AHBPCI_WIN2_CTR_PCICMD                  0x0000000eU
++#define SRT_USB_HOST_AHBPCI_WIN2_CTR_PCICMD                  1
++#define DFLT_VAL_USB_HOST_AHBPCI_WIN2_CTR_PCICMD             0x00000000U
++#define DFLT_BF_VAL_USB_HOST_AHBPCI_WIN2_CTR_PCICMD          0x00000000U
++#define MSK_USB_HOST_AHBPCI_WIN2_CTR_RESERVED1               0x00000010U
++#define SRT_USB_HOST_AHBPCI_WIN2_CTR_RESERVED1               4
++#define DFLT_VAL_USB_HOST_AHBPCI_WIN2_CTR_RESERVED1          0x00000000U
++#define DFLT_BF_VAL_USB_HOST_AHBPCI_WIN2_CTR_RESERVED1       0x00000000U
++#define MSK_USB_HOST_AHBPCI_WIN2_CTR_BURST_EN                0x00000020U
++#define SRT_USB_HOST_AHBPCI_WIN2_CTR_BURST_EN                5
++#define DFLT_VAL_USB_HOST_AHBPCI_WIN2_CTR_BURST_EN           0x00000020U
++#define DFLT_BF_VAL_USB_HOST_AHBPCI_WIN2_CTR_BURST_EN        0x00000001U
++#define MSK_USB_HOST_AHBPCI_WIN2_CTR_RESERVED2               0x0000ffc0U
++#define SRT_USB_HOST_AHBPCI_WIN2_CTR_RESERVED2               6
++#define DFLT_VAL_USB_HOST_AHBPCI_WIN2_CTR_RESERVED2          0x00000000U
++#define DFLT_BF_VAL_USB_HOST_AHBPCI_WIN2_CTR_RESERVED2       0x00000000U
++#define MSK_USB_HOST_AHBPCI_WIN2_CTR_PCIWIN2_BASEADR         0xffff0000U
++#define SRT_USB_HOST_AHBPCI_WIN2_CTR_PCIWIN2_BASEADR         16
++#define DFLT_VAL_USB_HOST_AHBPCI_WIN2_CTR_PCIWIN2_BASEADR    0x00000000U
++#define DFLT_BF_VAL_USB_HOST_AHBPCI_WIN2_CTR_PCIWIN2_BASEADR 0x00000000U
++
++#define MSK_USB_HOST_PCI_ARBITER_CTR_PCIREQ0            0x00000001U
++#define SRT_USB_HOST_PCI_ARBITER_CTR_PCIREQ0            0
++#define DFLT_VAL_USB_HOST_PCI_ARBITER_CTR_PCIREQ0       0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PCI_ARBITER_CTR_PCIREQ0    0x00000000U
++#define MSK_USB_HOST_PCI_ARBITER_CTR_PCIREQ1            0x00000002U
++#define SRT_USB_HOST_PCI_ARBITER_CTR_PCIREQ1            1
++#define DFLT_VAL_USB_HOST_PCI_ARBITER_CTR_PCIREQ1       0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PCI_ARBITER_CTR_PCIREQ1    0x00000000U
++#define MSK_USB_HOST_PCI_ARBITER_CTR_RESERVED0          0x00000ffcU
++#define SRT_USB_HOST_PCI_ARBITER_CTR_RESERVED0          2
++#define DFLT_VAL_USB_HOST_PCI_ARBITER_CTR_RESERVED0     0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PCI_ARBITER_CTR_RESERVED0  0x00000000U
++#define MSK_USB_HOST_PCI_ARBITER_CTR_PCIBP_MODE         0x00001000U
++#define SRT_USB_HOST_PCI_ARBITER_CTR_PCIBP_MODE         12
++#define DFLT_VAL_USB_HOST_PCI_ARBITER_CTR_PCIBP_MODE    0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PCI_ARBITER_CTR_PCIBP_MODE 0x00000000U
++#define MSK_USB_HOST_PCI_ARBITER_CTR_RESERVED1          0xffffe000U
++#define SRT_USB_HOST_PCI_ARBITER_CTR_RESERVED1          13
++#define DFLT_VAL_USB_HOST_PCI_ARBITER_CTR_RESERVED1     0x00070000U
++#define DFLT_BF_VAL_USB_HOST_PCI_ARBITER_CTR_RESERVED1  0x00000038U
++
++#define MSK_USB_HOST_AHBPCI_WIN1_CTR_RESERVED0               0x00000001U
++#define SRT_USB_HOST_AHBPCI_WIN1_CTR_RESERVED0               0
++#define DFLT_VAL_USB_HOST_AHBPCI_WIN1_CTR_RESERVED0          0x00000000U
++#define DFLT_BF_VAL_USB_HOST_AHBPCI_WIN1_CTR_RESERVED0       0x00000000U
++#define MSK_USB_HOST_AHBPCI_WIN1_CTR_PCICMD                  0x0000000eU
++#define SRT_USB_HOST_AHBPCI_WIN1_CTR_PCICMD                  1
++#define DFLT_VAL_USB_HOST_AHBPCI_WIN1_CTR_PCICMD             0x00000000U
++#define DFLT_BF_VAL_USB_HOST_AHBPCI_WIN1_CTR_PCICMD          0x00000000U
++#define MSK_USB_HOST_AHBPCI_WIN1_CTR_RESERVED1               0x000007f0U
++#define SRT_USB_HOST_AHBPCI_WIN1_CTR_RESERVED1               4
++#define DFLT_VAL_USB_HOST_AHBPCI_WIN1_CTR_RESERVED1          0x00000000U
++#define DFLT_BF_VAL_USB_HOST_AHBPCI_WIN1_CTR_RESERVED1       0x00000000U
++#define MSK_USB_HOST_AHBPCI_WIN1_CTR_PCIWIN1_BASEADR         0xfffff800U
++#define SRT_USB_HOST_AHBPCI_WIN1_CTR_PCIWIN1_BASEADR         11
++#define DFLT_VAL_USB_HOST_AHBPCI_WIN1_CTR_PCIWIN1_BASEADR    0x00000000U
++#define DFLT_BF_VAL_USB_HOST_AHBPCI_WIN1_CTR_PCIWIN1_BASEADR 0x00000000U
++
++#define MSK_USB_HOST_CMND_STS_OHCI_I_O_SPACE                                  0x00000001U
++#define SRT_USB_HOST_CMND_STS_OHCI_I_O_SPACE                                  0
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_I_O_SPACE                             0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_I_O_SPACE                          0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_MEMORY_SPACE                               0x00000002U
++#define SRT_USB_HOST_CMND_STS_OHCI_MEMORY_SPACE                               1
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_MEMORY_SPACE                          0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_MEMORY_SPACE                       0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_BUS_MASTER                                 0x00000004U
++#define SRT_USB_HOST_CMND_STS_OHCI_BUS_MASTER                                 2
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_BUS_MASTER                            0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_BUS_MASTER                         0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_SPECIAL_CYCLE                              0x00000008U
++#define SRT_USB_HOST_CMND_STS_OHCI_SPECIAL_CYCLE                              3
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_SPECIAL_CYCLE                         0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_SPECIAL_CYCLE                      0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_MEMORY_WRITE_AND_INVALIDATE_ENABLE         0x00000010U
++#define SRT_USB_HOST_CMND_STS_OHCI_MEMORY_WRITE_AND_INVALIDATE_ENABLE         4
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_MEMORY_WRITE_AND_INVALIDATE_ENABLE    0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_MEMORY_WRITE_AND_INVALIDATE_ENABLE 0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_VGA_PALETTE_SNOOP                          0x00000020U
++#define SRT_USB_HOST_CMND_STS_OHCI_VGA_PALETTE_SNOOP                          5
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_VGA_PALETTE_SNOOP                     0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_VGA_PALETTE_SNOOP                  0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_PARITY_ERROR_RESPONSE                      0x00000040U
++#define SRT_USB_HOST_CMND_STS_OHCI_PARITY_ERROR_RESPONSE                      6
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_PARITY_ERROR_RESPONSE                 0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_PARITY_ERROR_RESPONSE              0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_WAIT_CYCLE_CONTROL                         0x00000080U
++#define SRT_USB_HOST_CMND_STS_OHCI_WAIT_CYCLE_CONTROL                         7
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_WAIT_CYCLE_CONTROL                    0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_WAIT_CYCLE_CONTROL                 0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_SERR_ENABLE                                0x00000100U
++#define SRT_USB_HOST_CMND_STS_OHCI_SERR_ENABLE                                8
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_SERR_ENABLE                           0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_SERR_ENABLE                        0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_FAST_BACK_TO_BACK_ENABLE                   0x00000200U
++#define SRT_USB_HOST_CMND_STS_OHCI_FAST_BACK_TO_BACK_ENABLE                   9
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_FAST_BACK_TO_BACK_ENABLE              0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_FAST_BACK_TO_BACK_ENABLE           0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_RESERVED01                                 0x000ffc00U
++#define SRT_USB_HOST_CMND_STS_OHCI_RESERVED01                                 10
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_RESERVED01                            0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_RESERVED01                         0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_CAPABILITIES_LIST                          0x00100000U
++#define SRT_USB_HOST_CMND_STS_OHCI_CAPABILITIES_LIST                          20
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_CAPABILITIES_LIST                     0x00100000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_CAPABILITIES_LIST                  0x00000001U
++#define MSK_USB_HOST_CMND_STS_OHCI_RESERVED1                                  0x00600000U
++#define SRT_USB_HOST_CMND_STS_OHCI_RESERVED1                                  21
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_RESERVED1                             0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_RESERVED1                          0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_FAST_BACK_TO_BACK_CAPABLE                  0x00800000U
++#define SRT_USB_HOST_CMND_STS_OHCI_FAST_BACK_TO_BACK_CAPABLE                  23
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_FAST_BACK_TO_BACK_CAPABLE             0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_FAST_BACK_TO_BACK_CAPABLE          0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_DATA_PARITY_ERROR_DETECTED                 0x01000000U
++#define SRT_USB_HOST_CMND_STS_OHCI_DATA_PARITY_ERROR_DETECTED                 24
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_DATA_PARITY_ERROR_DETECTED            0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_DATA_PARITY_ERROR_DETECTED         0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_DEVSEL_TIMING                              0x06000000U
++#define SRT_USB_HOST_CMND_STS_OHCI_DEVSEL_TIMING                              25
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_DEVSEL_TIMING                         0x02000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_DEVSEL_TIMING                      0x00000001U
++#define MSK_USB_HOST_CMND_STS_OHCI_SIGNALED_TARGET_ABORT                      0x08000000U
++#define SRT_USB_HOST_CMND_STS_OHCI_SIGNALED_TARGET_ABORT                      27
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_SIGNALED_TARGET_ABORT                 0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_SIGNALED_TARGET_ABORT              0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_RECEIVED_TARGET_ABORT                      0x10000000U
++#define SRT_USB_HOST_CMND_STS_OHCI_RECEIVED_TARGET_ABORT                      28
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_RECEIVED_TARGET_ABORT                 0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_RECEIVED_TARGET_ABORT              0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_RECEIVED_MASTER_ABORT                      0x20000000U
++#define SRT_USB_HOST_CMND_STS_OHCI_RECEIVED_MASTER_ABORT                      29
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_RECEIVED_MASTER_ABORT                 0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_RECEIVED_MASTER_ABORT              0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_SIGNALED_SYSTEM_ERROR                      0x40000000U
++#define SRT_USB_HOST_CMND_STS_OHCI_SIGNALED_SYSTEM_ERROR                      30
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_SIGNALED_SYSTEM_ERROR                 0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_SIGNALED_SYSTEM_ERROR              0x00000000U
++#define MSK_USB_HOST_CMND_STS_OHCI_DETECTED_PARITY_ERROR                      0x80000000U
++#define SRT_USB_HOST_CMND_STS_OHCI_DETECTED_PARITY_ERROR                      31
++#define DFLT_VAL_USB_HOST_CMND_STS_OHCI_DETECTED_PARITY_ERROR                 0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CMND_STS_OHCI_DETECTED_PARITY_ERROR              0x00000000U
++
++#define MSK_USB_HOST_UTMICTRL_EHCI_RESERVED0         0x0000ffffU
++#define SRT_USB_HOST_UTMICTRL_EHCI_RESERVED0         0
++#define DFLT_VAL_USB_HOST_UTMICTRL_EHCI_RESERVED0    0x00000000U
++#define DFLT_BF_VAL_USB_HOST_UTMICTRL_EHCI_RESERVED0 0x00000000U
++#define MSK_USB_HOST_UTMICTRL_EHCI_REPSEL            0x00030000U
++#define SRT_USB_HOST_UTMICTRL_EHCI_REPSEL            16
++#define DFLT_VAL_USB_HOST_UTMICTRL_EHCI_REPSEL       0x00030000U
++#define DFLT_BF_VAL_USB_HOST_UTMICTRL_EHCI_REPSEL    0x00000003U
++#define MSK_USB_HOST_UTMICTRL_EHCI_RESERVED1         0xfffc0000U
++#define SRT_USB_HOST_UTMICTRL_EHCI_RESERVED1         18
++#define DFLT_VAL_USB_HOST_UTMICTRL_EHCI_RESERVED1    0x00000000U
++#define DFLT_BF_VAL_USB_HOST_UTMICTRL_EHCI_RESERVED1 0x00000000U
++
++#define MSK_USB_HOST_PMC_STS_PMCSR_OHCI_POWER_STATE         0x00000003U
++#define SRT_USB_HOST_PMC_STS_PMCSR_OHCI_POWER_STATE         0
++#define DFLT_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_POWER_STATE    0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_POWER_STATE 0x00000000U
++#define MSK_USB_HOST_PMC_STS_PMCSR_OHCI_RESERVED0           0x000000fcU
++#define SRT_USB_HOST_PMC_STS_PMCSR_OHCI_RESERVED0           2
++#define DFLT_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_RESERVED0      0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_RESERVED0   0x00000000U
++#define MSK_USB_HOST_PMC_STS_PMCSR_OHCI_PME_ENABLE          0x00000100U
++#define SRT_USB_HOST_PMC_STS_PMCSR_OHCI_PME_ENABLE          8
++#define DFLT_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_PME_ENABLE     0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_PME_ENABLE  0x00000000U
++#define MSK_USB_HOST_PMC_STS_PMCSR_OHCI_DATA_SCALE          0x00007e00U
++#define SRT_USB_HOST_PMC_STS_PMCSR_OHCI_DATA_SCALE          9
++#define DFLT_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_DATA_SCALE     0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_DATA_SCALE  0x00000000U
++#define MSK_USB_HOST_PMC_STS_PMCSR_OHCI_PME_STATUS          0x00008000U
++#define SRT_USB_HOST_PMC_STS_PMCSR_OHCI_PME_STATUS          15
++#define DFLT_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_PME_STATUS     0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_PME_STATUS  0x00000000U
++#define MSK_USB_HOST_PMC_STS_PMCSR_OHCI_RESERVED1           0x003f0000U
++#define SRT_USB_HOST_PMC_STS_PMCSR_OHCI_RESERVED1           16
++#define DFLT_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_RESERVED1      0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_RESERVED1   0x00000000U
++#define MSK_USB_HOST_PMC_STS_PMCSR_OHCI_B2_B3               0x00400000U
++#define SRT_USB_HOST_PMC_STS_PMCSR_OHCI_B2_B3               22
++#define DFLT_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_B2_B3          0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_B2_B3       0x00000000U
++#define MSK_USB_HOST_PMC_STS_PMCSR_OHCI_BPCC_ENABLE         0x00800000U
++#define SRT_USB_HOST_PMC_STS_PMCSR_OHCI_BPCC_ENABLE         23
++#define DFLT_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_BPCC_ENABLE    0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_BPCC_ENABLE 0x00000000U
++#define MSK_USB_HOST_PMC_STS_PMCSR_OHCI_DATA                0xff000000U
++#define SRT_USB_HOST_PMC_STS_PMCSR_OHCI_DATA                24
++#define DFLT_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_DATA           0x00000000U
++#define DFLT_BF_VAL_USB_HOST_PMC_STS_PMCSR_OHCI_DATA        0x00000000U
++
++#define MSK_USB_HOST_CONFIGFLAG_CF                0x00000001U
++#define SRT_USB_HOST_CONFIGFLAG_CF                0
++#define DFLT_VAL_USB_HOST_CONFIGFLAG_CF           0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CONFIGFLAG_CF        0x00000000U
++#define MSK_USB_HOST_CONFIGFLAG_RESERVED0         0xfffffffeU
++#define SRT_USB_HOST_CONFIGFLAG_RESERVED0         1
++#define DFLT_VAL_USB_HOST_CONFIGFLAG_RESERVED0    0x00000000U
++#define DFLT_BF_VAL_USB_HOST_CONFIGFLAG_RESERVED0 0x00000000U
++
++
++
++typedef struct USB_HOST_AREA_Ttag
++{
++	volatile uint32_t  ulUSB_HOST_HCREVISION;
++	volatile uint32_t  ulUSB_HOST_HCCONTROL;
++	volatile uint32_t  ulUSB_HOST_HCCOMMANDSTATUS;
++	volatile uint32_t  ulUSB_HOST_HCINTERRUPTSTATUS;
++	volatile uint32_t  ulUSB_HOST_HCINTERRUPTENABLE;
++	volatile uint32_t  ulUSB_HOST_HCINTERRUPTDISABLE;
++	volatile uint32_t  ulUSB_HOST_HCHCCA;
++	volatile uint32_t  ulUSB_HOST_HCPERIODCURRENTED;
++	volatile uint32_t  ulUSB_HOST_HCCONTROLHEADED;
++	volatile uint32_t  ulUSB_HOST_HCCONTROLCURRENTED;
++	volatile uint32_t  ulUSB_HOST_HCBULKHEADED;
++	volatile uint32_t  ulUSB_HOST_HCBULKCURRENTED;
++	volatile uint32_t  ulUSB_HOST_HCDONEHEAD;
++	volatile uint32_t  ulUSB_HOST_HCFMINTERVAL;
++	volatile uint32_t  ulUSB_HOST_HCFMREMAINING;
++	volatile uint32_t  ulUSB_HOST_HCFMNUMBER;
++	volatile uint32_t  ulUSB_HOST_HCPERIODICSTART;
++	volatile uint32_t  ulUSB_HOST_HCLSTHRESHOLD;
++	volatile uint32_t  ulUSB_HOST_HCRHDESCRIPTORA;
++	volatile uint32_t  ulUSB_HOST_HCRHDESCRIPTORB;
++	volatile uint32_t  ulUSB_HOST_HCRHSTATUS;
++	volatile uint32_t  ulUSB_HOST_HCRHPORTSTATUS1;
++	volatile uint32_t  ulUSB_HOST_HCRHPORTSTATUS2;
++	volatile uint32_t aulReserved0[1001];
++	volatile uint32_t  ulUSB_HOST_CAPL_VERSION;
++	volatile uint32_t  ulUSB_HOST_HCSPARAMS;
++	volatile uint32_t  ulUSB_HOST_HCCPARAMS;
++	volatile uint32_t  ulUSB_HOST_HCSP_PORTROUTE;
++	volatile uint32_t aulReserved1[4];
++	volatile uint32_t  ulUSB_HOST_USBCMD;
++	volatile uint32_t  ulUSB_HOST_USBSTS;
++	volatile uint32_t  ulUSB_HOST_USBINTR;
++	volatile uint32_t  ulUSB_HOST_FRINDEX;
++	volatile uint32_t  ulUSB_HOST_CTRLDSSEGMENT;
++	volatile uint32_t  ulUSB_HOST_PERIODICLISTBASE;
++	volatile uint32_t  ulUSB_HOST_ASYNCLISTADDR;
++	volatile uint32_t aulReserved2[9];
++	volatile uint32_t  ulUSB_HOST_CONFIGFLAG;
++	volatile uint32_t  ulUSB_HOST_PORTSC1;
++	volatile uint32_t  ulUSB_HOST_PORTSC2;
++	volatile uint32_t aulReserved3[15333];
++	volatile uint32_t  ulUSB_HOST_VID_DID_OHCI;
++	volatile uint32_t  ulUSB_HOST_CMND_STS_OHCI;
++	volatile uint32_t  ulUSB_HOST_REVID_CC_OHCI;
++	volatile uint32_t  ulUSB_HOST_CLS_LT_HT_BIST_OHCI;
++	volatile uint32_t  ulUSB_HOST_BASEAD_OHCI;
++	volatile uint32_t  ulUSB_HOST_WIN1_BASEAD;
++	volatile uint32_t  ulUSB_HOST_WIN2_BASEAD;
++	volatile uint32_t aulReserved4[4];
++	volatile uint32_t  ulUSB_HOST_SSVID_SSID_OHCI;
++	volatile uint32_t  ulUSB_HOST_EROM_BASEAD_OHCI;
++	volatile uint32_t  ulUSB_HOST_CAPPTR_OHCI;
++	volatile uint32_t aulReserved5[1];
++	volatile uint32_t  ulUSB_HOST_INTR_LINE_PIN_OHCI;
++	volatile uint32_t  ulUSB_HOST_CAPID_NIP_PMCAP_OHCI;
++	volatile uint32_t  ulUSB_HOST_PMC_STS_PMCSR_OHCI;
++	volatile uint32_t aulReserved6[38];
++	volatile uint32_t  ulUSB_HOST_EXT1_OHCI;
++	volatile uint32_t  ulUSB_HOST_EXT2_OHCI;
++	volatile uint32_t aulReserved7[3];
++	volatile uint32_t  ulUSB_HOST_UTMICTRL_OHCI;
++	volatile uint32_t aulReserved8[2];
++	volatile uint32_t  ulUSB_HOST_VID_DID_EHCI;
++	volatile uint32_t  ulUSB_HOST_CMND_STS_EHCI;
++	volatile uint32_t  ulUSB_HOST_REVID_CC_EHCI;
++	volatile uint32_t  ulUSB_HOST_CLS_LT_HT_BIST_EHCI;
++	volatile uint32_t  ulUSB_HOST_BASEAD_EHCI;
++	volatile uint32_t aulReserved9[6];
++	volatile uint32_t  ulUSB_HOST_SSVID_SSID_EHCI;
++	volatile uint32_t  ulUSB_HOST_EROM_BASEAD_EHCI;
++	volatile uint32_t  ulUSB_HOST_CAPPTR_EHCI;
++	volatile uint32_t aulReserved10[1];
++	volatile uint32_t  ulUSB_HOST_INTR_LINE_PIN_EHCI;
++	volatile uint32_t  ulUSB_HOST_CAPID_NIP_PMCAP_EHCI;
++	volatile uint32_t  ulUSB_HOST_PMC_STS_PMCSR_EHCI;
++	volatile uint32_t aulReserved11[6];
++	volatile uint32_t  ulUSB_HOST_SBRN_FLADJ_PW;
++	volatile uint32_t aulReserved12[31];
++	volatile uint32_t  ulUSB_HOST_EXT1_EHCI;
++	volatile uint32_t  ulUSB_HOST_EXT2_EHCI;
++	volatile uint32_t aulReserved13[3];
++	volatile uint32_t  ulUSB_HOST_UTMICTRL_EHCI;
++	volatile uint32_t aulReserved14[386];
++	volatile uint32_t  ulUSB_HOST_PCIAHB_WIN1_CTR;
++	volatile uint32_t  ulUSB_HOST_PCIAHB_WIN2_CTR;
++	volatile uint32_t aulReserved15[2];
++	volatile uint32_t  ulUSB_HOST_AHBPCI_WIN1_CTR;
++	volatile uint32_t  ulUSB_HOST_AHBPCI_WIN2_CTR;
++	volatile uint32_t aulReserved16[2];
++	volatile uint32_t  ulUSB_HOST_PCI_INT_ENABLE;
++	volatile uint32_t  ulUSB_HOST_PCI_INT_STATUS;
++	volatile uint32_t aulReserved17[2];
++	volatile uint32_t  ulUSB_HOST_AHB_BUS_CTR;
++	volatile uint32_t  ulUSB_HOST_USBCTR;
++	volatile uint32_t aulReserved18[2];
++	volatile uint32_t  ulUSB_HOST_PCI_ARBITER_CTR;
++	volatile uint32_t aulReserved19[1];
++	volatile uint32_t  ulUSB_HOST_PCI_UNIT_REV;
++} USB_HOST_AREA_T;
++
++#endif /* __NETX4000_OHCI_ */
+-- 
+2.17.1
+

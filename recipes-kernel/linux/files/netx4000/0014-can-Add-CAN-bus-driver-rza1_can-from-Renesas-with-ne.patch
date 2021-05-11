@@ -1,0 +1,1230 @@
+From 56cccb985db9a0c03b570b753f587ee2df7ccaae Mon Sep 17 00:00:00 2001
+From: Michael Trensch <mtrensch@hilscher.com>
+Date: Mon, 10 May 2021 10:06:18 +0200
+Subject: [PATCH 14/20] can: Add CAN bus driver rza1_can from Renesas with
+ netX4000 support.
+
+https://github.com/renesas-rz/linux-3.14/commit/fd1df38643075dfcdd6cd0b97859916f8690c9b9
+---
+ arch/arm/boot/dts/netx4000/overlays/can0.dts  |   14 +
+ .../arm/boot/dts/netx4000/overlays/can0_1.dts |   14 +
+ .../boot/dts/netx4000/overlays/can0_1_2.dts   |   14 +
+ drivers/net/can/Kconfig                       |    6 +
+ drivers/net/can/Makefile                      |    1 +
+ drivers/net/can/rza1_can.c                    | 1089 +++++++++++++++++
+ include/linux/can/platform/rza1_can.h         |   15 +
+ 7 files changed, 1153 insertions(+)
+ create mode 100644 arch/arm/boot/dts/netx4000/overlays/can0.dts
+ create mode 100644 arch/arm/boot/dts/netx4000/overlays/can0_1.dts
+ create mode 100644 arch/arm/boot/dts/netx4000/overlays/can0_1_2.dts
+ create mode 100644 drivers/net/can/rza1_can.c
+ create mode 100644 include/linux/can/platform/rza1_can.h
+
+diff --git a/arch/arm/boot/dts/netx4000/overlays/can0.dts b/arch/arm/boot/dts/netx4000/overlays/can0.dts
+new file mode 100644
+index 000000000000..ca4ef7437b52
+--- /dev/null
++++ b/arch/arm/boot/dts/netx4000/overlays/can0.dts
+@@ -0,0 +1,14 @@
++/dts-v1/;
++/plugin/;
++
++/ {
++	fragment@0 {
++		target = <&can0>;
++		__overlay__ {
++			status = "okay";
++			channels = <0>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&can0_0_pins>;
++		};
++	};
++};
+diff --git a/arch/arm/boot/dts/netx4000/overlays/can0_1.dts b/arch/arm/boot/dts/netx4000/overlays/can0_1.dts
+new file mode 100644
+index 000000000000..61e1258166a7
+--- /dev/null
++++ b/arch/arm/boot/dts/netx4000/overlays/can0_1.dts
+@@ -0,0 +1,14 @@
++/dts-v1/;
++/plugin/;
++
++/ {
++	fragment@0 {
++		target = <&can0>;
++		__overlay__ {
++			status = "okay";
++			channels = <0 1>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&can0_0_pins &can0_1_pins>;
++		};
++	};
++};
+diff --git a/arch/arm/boot/dts/netx4000/overlays/can0_1_2.dts b/arch/arm/boot/dts/netx4000/overlays/can0_1_2.dts
+new file mode 100644
+index 000000000000..fbbd9a443f1a
+--- /dev/null
++++ b/arch/arm/boot/dts/netx4000/overlays/can0_1_2.dts
+@@ -0,0 +1,14 @@
++/dts-v1/;
++/plugin/;
++
++/ {
++	fragment@0 {
++		target = <&can0>;
++		__overlay__ {
++			status = "okay";
++			channels = <0 1 2>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&can0_0_pins &can0_1_pins &can0_2_pins>;
++		};
++	};
++};
+diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
+index 1c28eade6bec..cf502161249c 100644
+--- a/drivers/net/can/Kconfig
++++ b/drivers/net/can/Kconfig
+@@ -167,6 +167,12 @@ config PCH_CAN
+ 	  is an IOH for x86 embedded processor (Intel Atom E6xx series).
+ 	  This driver can access CAN bus.
+ 
++config CAN_RZA1
++	depends on CAN_DEV
++	tristate "RZ/A1 onchip RS-CAN controller"
++	help
++	  Driver for RZ/A1 onchip RS-CAN controller and Hilscher netX4000 based platforms.
++
+ source "drivers/net/can/c_can/Kconfig"
+ source "drivers/net/can/cc770/Kconfig"
+ source "drivers/net/can/ifi_canfd/Kconfig"
+diff --git a/drivers/net/can/Makefile b/drivers/net/can/Makefile
+index a2b4463d8480..3d613554fcde 100644
+--- a/drivers/net/can/Makefile
++++ b/drivers/net/can/Makefile
+@@ -29,5 +29,6 @@ obj-$(CONFIG_CAN_SUN4I)		+= sun4i_can.o
+ obj-$(CONFIG_CAN_TI_HECC)	+= ti_hecc.o
+ obj-$(CONFIG_CAN_XILINXCAN)	+= xilinx_can.o
+ obj-$(CONFIG_PCH_CAN)		+= pch_can.o
++obj-$(CONFIG_CAN_RZA1)		+= rza1_can.o
+ 
+ subdir-ccflags-$(CONFIG_CAN_DEBUG_DEVICES) += -DDEBUG
+diff --git a/drivers/net/can/rza1_can.c b/drivers/net/can/rza1_can.c
+new file mode 100644
+index 000000000000..5404eb217b5e
+--- /dev/null
++++ b/drivers/net/can/rza1_can.c
+@@ -0,0 +1,1089 @@
++/*
++ * rza1_can.c - CAN network driver for RZ/A1 SoC CAN controller
++ *
++ * (C) 2014 by Carlo Caione <carlo@caione.org>
++ *
++ * This software may be distributed under the terms of the GNU General
++ * Public License ("GPL") version 2 as distributed in the 'COPYING'
++ * file from the main directory of the linux kernel source.
++ *
++ * (C) 2017 by Hilscher Gesellschaft fuer Systemautomation mbH
++ *
++ * - Adapted to Hilscher netx4000 SoC
++ */
++
++#include <linux/bitops.h>
++#include <linux/clk.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/errno.h>
++#include <linux/module.h>
++#include <linux/netdevice.h>
++#include <linux/skbuff.h>
++#include <linux/platform_device.h>
++#include <linux/can/error.h>
++#include <linux/can/dev.h>
++#include <linux/can/platform/rza1_can.h>
++//asdf #include <mach/rza1.h>
++
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/of_device.h>
++
++enum {
++	CFM_RX_MODE = 0,
++	CFM_TX_MODE,
++	CFM_GW_MODE
++};
++
++enum {
++	OP_MODE = 0,
++	RST_MODE,
++	TEST_MODE
++};
++
++#define DRV_NAME			"rz_can"
++#define RZ_CAN_TX_ECHO_SKB_MAX		128
++#define RZ_CAN_INC_BUF_ID(x)		(((x) + 1) % RZ_CAN_TX_ECHO_SKB_MAX)
++
++#define RZ_CAN_CFCD_FULL		0x07
++#define RZ_CAN_CFTML			0
++
++#define RZ_CAN_RX_FIFO			0
++#define RZ_CAN_TX_FIFO			1
++
++#define RZ_CAN_FIFO_K(m,n)		(((m) * 3) + (n))
++
++#define RZ_CAN_GAFLID_FIFO_M(x)		BIT(x)
++#define RZ_CAN_GAFLID_TXRX_FIFO_M(x)	BIT(((x) + 8))
++
++#define RZ_CAN_RSCAN0GCFG		0x0084
++#define RZ_CAN_RSCAN0GCFG_DCS(x)	((x) << 4)
++
++#define RZ_CAN_RSCAN0GSTS		0x008c
++#define RZ_CAN_RSCAN0GSTS_GRAMINIT	BIT(3)
++
++#define RZ_CAN_RSCAN0CmCFG(m)		(0x0000 + (m * 0x0010))
++#define RZ_CAN_RSCAN0CmCFG_SJW(x)	(((x) & 0x03) << 24)
++#define RZ_CAN_RSCAN0CmCFG_TSEG2(x)	(((x) & 0x07) << 20)
++#define RZ_CAN_RSCAN0CmCFG_TSEG1(x)	(((x) & 0x0f) << 16)
++#define RZ_CAN_RSCAN0CmCFG_BRP(x)	(((x) & 0x3ff) << 0)
++
++#define RZ_CAN_RSCAN0GCTR		0x0088
++#define RZ_CAN_RSCAN0GCTR_GSLPR		BIT(2)
++#define RZ_CAN_RSCAN0GCTR_MEIE		BIT(9)
++
++#define RZ_CAN_RSCAN0GCTR_GMDC_M	0x00000003
++#define RZ_CAN_RSCAN0GCTR_GMDC(x)	(((x) & 0x03) << 0)
++
++#define RZ_CAN_RSCAN0CmCTR(m)		(0x0004 + ((m) * 0x0010))
++#define RZ_CAN_RSCAN0CmCTR_CSLPR	BIT(2)
++#define RZ_CAN_RSCAN0CmCTR_BEIE		BIT(8)
++#define RZ_CAN_RSCAN0CmCTR_EWIE		BIT(9)
++#define RZ_CAN_RSCAN0CmCTR_EPIE		BIT(10)
++#define RZ_CAN_RSCAN0CmCTR_BOEIE	BIT(11)
++#define RZ_CAN_RSCAN0CmCTR_OLIE		BIT(13)
++
++#define RZ_CAN_RSCAN0CmCTR_CHMDC_M	0x00000003
++#define RZ_CAN_RSCAN0CmCTR_CHMDC(x)	(((x) & 0x03) << 0)
++
++#define RZ_CAN_RSCAN0GAFLCFG0		0x009c
++#define RZ_CAN_RSCAN0GAFLCFG0_RNC(m,x)	(((x) & 0xff) << (8 * (3 - (m))))
++#define RZ_CAN_RSCAN0GAFLCFG1		0x00a0
++#define RZ_CAN_RSCAN0GAFLCFG1_RNC(m,x)	(((x) & 0xff) << (8 * (3 - (m))))
++
++#define RZ_CAN_RSCAN0GAFLECTR		0x0098
++#define RZ_CAN_RSCAN0GAFLECTR_AFLDAE	BIT(8)
++#define RZ_CAN_RSCAN0GAFLECTR_AFLPN(x)	(((x) & 0x1f) << 0)
++
++#define RZ_CAN_RSCAN0GAFLIDj(j)		(0x0500 + ((j) * 0x0010))
++#define RZ_CAN_RSCAN0GAFLMj(j)		(0x0504 + ((j) * 0x0010))
++#define RZ_CAN_RSCAN0GAFLP0j(j)		(0x0508 + ((j) * 0x0010))
++#define RZ_CAN_RSCAN0GAFLP1j(j)		(0x050c + ((j) * 0x0010))
++
++#define RZ_CAN_RSCAN0CFCCk(k)		(0x0118 + ((k) * 0x0004))
++#define RZ_CAN_RSCAN0CFCCk_CFE		BIT(0)
++#define RZ_CAN_RSCAN0CFCCk_CFRXIE	BIT(1)
++#define RZ_CAN_RSCAN0CFCCk_CFTXIE	BIT(2)
++#define RZ_CAN_RSCAN0CFCCk_CFIM		BIT(12)
++#define RZ_CAN_RSCAN0CFCCk_CFITSS	BIT(18)
++#define RZ_CAN_RSCAN0CFCCk_CFITR	BIT(19)
++#define RZ_CAN_RSCAN0CFCCk_CFDC(x)	(((x) & 0x07) << 8)
++#define RZ_CAN_RSCAN0CFCCk_CFIGCV(x)	(((x) & 0x07) << 13)
++#define RZ_CAN_RSCAN0CFCCk_CFM(x)	(((x) & 0x03) << 16)
++#define RZ_CAN_RSCAN0CFCCk_CFTML(x)	(((x) & 0x0f) << 20)
++#define RZ_CAN_RSCAN0CFCCk_CFITT(x)	(((x) & 0xff) << 24)
++
++#define RZ_CAN_RSCAN0CmSTS(m)		(0x0008 + ((m) * 0x0010))
++#define RZ_CAN_RSCAN0CmSTS_TEC(x)	(((x) & 0xff000000) >> 24)
++#define RZ_CAN_RSCAN0CmSTS_REC(x)	(((x) & 0x00ff0000) >> 16)
++
++#define RZ_CAN_RSCAN0CmERFL(m)		(0x000c + ((m) * 0x0010))
++#define RZ_CAN_RSCAN0CmERFL_BEF		BIT(0)
++#define RZ_CAN_RSCAN0CmERFL_EWF		BIT(1)
++#define RZ_CAN_RSCAN0CmERFL_EPF		BIT(2)
++#define RZ_CAN_RSCAN0CmERFL_BOEF	BIT(3)
++#define RZ_CAN_RSCAN0CmERFL_OVLF	BIT(5)
++#define RZ_CAN_RSCAN0CmERFL_SERR	BIT(8)
++#define RZ_CAN_RSCAN0CmERFL_FERR	BIT(9)
++#define RZ_CAN_RSCAN0CmERFL_AERR	BIT(10)
++#define RZ_CAN_RSCAN0CmERFL_CERR	BIT(11)
++#define RZ_CAN_RSCAN0CmERFL_B1ERR	BIT(12)
++#define RZ_CAN_RSCAN0CmERFL_B0ERR	BIT(13)
++#define RZ_CAN_RSCAN0CmERFL_ADERR	BIT(14)
++
++#define RZ_CAN_RSCAN0CFSTSk(k)		(0x0178 + ((k) * 0x0004))
++#define RZ_CAN_RSCAN0CFSTSk_CFEMP	BIT(0)
++#define RZ_CAN_RSCAN0CFSTSk_CFFLL	BIT(1)
++#define RZ_CAN_RSCAN0CFSTSk_CFMLT	BIT(2)
++#define RZ_CAN_RSCAN0CFSTSk_CFRXIF	BIT(3)
++#define RZ_CAN_RSCAN0CFSTSk_CFTXIF	BIT(4)
++
++#define RZ_CAN_RSCAN0CFIDk(k)		(0x0e80 + ((k) * 0x0010))
++#define RZ_CAN_RSCAN0CFIDk_CFID_M	0x1fffffff
++#define RZ_CAN_RSCAN0CFIDk_CFRTR	BIT(30)
++#define RZ_CAN_RSCAN0CFIDk_CFIDE	BIT(31)
++
++#define RZ_CAN_RSCAN0CFPTRk(k)		(0x0e84 + ((k) * 0x0010))
++#define RZ_CAN_RSCAN0CFPTRk_CFDLC(x)	(((x) & 0x0f) << 28)
++#define RZ_CAN_RSCAN0CFPTRk_CFDLC_G(x)	(((x) & 0xf0000000) >> 28)
++
++#define RZ_CAN_RSCAN0CFDFbk(k,b)	((0x0e88 + ((b) * 0x04)) + ((k) * 0x0010))
++#define RZ_CAN_RSCAN0CFDFbk_CFDB(x,s)	(((x) & 0xff) << ((s) * 8))
++
++#define RZ_CAN_RSCAN0CFPCTRk(k)		(0x01d8 + ((k) * 0x0004))
++
++struct rza_can_caps {
++	uint32_t num_channels;
++};
++
++struct priv_data {
++	struct rza_can_caps *caps;
++	void __iomem *base;
++	struct clk *clk;
++	uint32_t clock_select;
++	uint32_t num_channels; /* enabled channels */
++	struct net_device *ndev[6];
++	uint32_t refcount; /* active channels */
++	uint32_t refcount_rules; /* active rules */
++};
++
++struct rza_can_rx_rules {
++	uint32_t rscan0gaflid;
++	uint32_t rscan0gaflm;
++	uint32_t rscan0gaflp0;
++	uint32_t rscan0gaflp1;
++};
++
++struct rz_can_channel_priv {
++	struct can_priv can;	/* must be the first member */
++	struct priv_data *priv;
++	spinlock_t skb_lock;
++	unsigned int bytes_queued;
++	int frames_queued;
++	int m;
++	int k_rx;
++	int k_tx;
++	int rx_irq;
++	int tx_irq;
++	int err_irq_m;
++	int err_irq_g;
++	int rx_cfdc;
++	int tx_cfdc;
++	uint32_t num_rules;
++	struct rza_can_rx_rules *rules;
++};
++
++static const struct can_bittiming_const rz_can_bittiming_const = {
++	.name = DRV_NAME,
++	.tseg1_min = 4,
++	.tseg1_max = 16,
++	.tseg2_min = 2,
++	.tseg2_max = 8,
++	.sjw_max = 4,
++	.brp_min = 4,
++	.brp_max = 1024,
++	.brp_inc = 1,
++};
++
++static void rz_can_write(struct priv_data *priv, unsigned long reg_offs, u32 data)
++{
++	iowrite32(data, priv->base + reg_offs);
++}
++
++static u32 rz_can_read(struct priv_data *priv, unsigned long reg_offs)
++{
++	return ioread32(priv->base + reg_offs);
++}
++
++static int rz_can_set_bittiming(struct net_device *ndev)
++{
++	struct rz_can_channel_priv *chpriv = netdev_priv(ndev);
++	struct priv_data *priv = chpriv->priv;
++	struct can_bittiming *bt = &chpriv->can.bittiming;
++	u32 cfg, dcs;
++
++	dcs = RZ_CAN_RSCAN0GCFG_DCS(priv->clock_select);
++	rz_can_write(priv, RZ_CAN_RSCAN0GCFG, dcs);
++
++	cfg = RZ_CAN_RSCAN0CmCFG_SJW(bt->sjw - 1);
++	cfg |= RZ_CAN_RSCAN0CmCFG_BRP(bt->brp - 1);
++	cfg |= RZ_CAN_RSCAN0CmCFG_TSEG1(bt->phase_seg1 + bt->prop_seg - 1);
++	cfg |= RZ_CAN_RSCAN0CmCFG_TSEG2(bt->phase_seg2 - 1);
++	rz_can_write(priv, RZ_CAN_RSCAN0CmCFG(chpriv->m), cfg);
++
++	return 0;
++}
++
++static int rz_can_get_berr_counter(const struct net_device *ndev,
++				   struct can_berr_counter *bec)
++{
++	struct rz_can_channel_priv *chpriv = netdev_priv(ndev);
++	struct priv_data *priv = chpriv->priv;
++	u32 reg;
++
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0CmSTS(chpriv->m));
++	bec->txerr = RZ_CAN_RSCAN0CmSTS_TEC(reg);
++	bec->rxerr = RZ_CAN_RSCAN0CmSTS_REC(reg);
++
++	return 0;
++}
++
++static int rz_can_start_xmit(struct sk_buff *skb, struct net_device *ndev)
++{
++	struct rz_can_channel_priv *chpriv = netdev_priv(ndev);
++	struct priv_data *priv = chpriv->priv;
++	struct can_frame *cf = (struct can_frame *)skb->data;
++	unsigned long flags;
++	u8 dlc = cf->can_dlc;
++	canid_t id = cf->can_id;
++	u8 *data = cf->data;
++	u32 reg;
++	int b, s;
++
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0CFCCk(chpriv->k_tx));
++	reg |= RZ_CAN_RSCAN0CFCCk_CFE;
++	rz_can_write(priv, RZ_CAN_RSCAN0CFCCk(chpriv->k_tx), reg);
++
++	if (can_dropped_invalid_skb(ndev, skb))
++		return NETDEV_TX_OK;
++
++	/* Check if the TX fifo buffer is full */
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0CFSTSk(chpriv->k_tx));
++	if (reg & RZ_CAN_RSCAN0CFSTSk_CFFLL) {
++		netif_stop_queue(ndev);
++		netdev_err(ndev, "BUG! TX fifo buffer full when queue awake!\n");
++		return NETDEV_TX_BUSY;
++	}
++
++	if (id & CAN_EFF_FLAG) {
++		/* Extended frame format */
++		reg = (id & CAN_EFF_MASK) | RZ_CAN_RSCAN0CFIDk_CFIDE;
++	} else {
++		/* Standard frame format */
++		reg = (id & CAN_SFF_MASK);
++	}
++
++	if (id & CAN_RTR_FLAG) {
++		/* Remote transmission request */
++		reg |= RZ_CAN_RSCAN0CFIDk_CFRTR;
++	}
++
++	rz_can_write(priv, RZ_CAN_RSCAN0CFIDk(chpriv->k_tx), reg);
++
++	rz_can_write(priv, RZ_CAN_RSCAN0CFPTRk(chpriv->k_tx),
++		     RZ_CAN_RSCAN0CFPTRk_CFDLC(dlc));
++
++	for (b = 0; b < 2; b++) {
++		reg = 0;
++		for (s = 0; s < 4; s++)
++			reg |= RZ_CAN_RSCAN0CFDFbk_CFDB(data[(b * 4) + s], s);
++		rz_can_write(priv, RZ_CAN_RSCAN0CFDFbk(chpriv->k_tx, b), reg);
++	}
++
++	spin_lock_irqsave(&chpriv->skb_lock, flags);
++	can_put_echo_skb(skb, ndev, chpriv->frames_queued++);
++	chpriv->bytes_queued += dlc;
++	spin_unlock_irqrestore(&chpriv->skb_lock, flags);
++
++	rz_can_write(priv, RZ_CAN_RSCAN0CFPCTRk(chpriv->k_tx), 0xff);
++
++	/* Check if the TX fifo buffer is full */
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0CFSTSk(chpriv->k_tx));
++	if (reg & RZ_CAN_RSCAN0CFSTSk_CFFLL)
++		netif_stop_queue(ndev);
++
++	return 0;
++}
++
++static void rz_can_rx_pkt(struct net_device *ndev)
++{
++	struct rz_can_channel_priv *chpriv = netdev_priv(ndev);
++	struct priv_data *priv = chpriv->priv;
++	struct net_device_stats *stats = &ndev->stats;
++	struct sk_buff *skb;
++	struct can_frame *cf;
++	int b, s;
++	u32 reg;
++
++	while (!(rz_can_read(priv, RZ_CAN_RSCAN0CFSTSk(chpriv->k_rx)) & RZ_CAN_RSCAN0CFSTSk_CFEMP)) {
++
++		skb = alloc_can_skb(ndev, &cf);
++		if (!skb) {
++			stats->rx_dropped++;
++			return;
++		}
++
++		reg = rz_can_read(priv, RZ_CAN_RSCAN0CFIDk(chpriv->k_rx));
++
++		if (reg & RZ_CAN_RSCAN0CFIDk_CFIDE) {
++			/* Extended ID */
++			cf->can_id = (reg & CAN_EFF_MASK) | CAN_EFF_FLAG;
++		} else {
++			/* Standard ID */
++			cf->can_id = (reg & CAN_SFF_MASK);
++		}
++
++		if (reg & RZ_CAN_RSCAN0CFIDk_CFRTR)
++			cf->can_id |= CAN_RTR_FLAG;
++
++		for (b = 0; b < 2; b++) {
++			reg = rz_can_read(priv, RZ_CAN_RSCAN0CFDFbk(chpriv->k_rx, b));
++//			printk(KERN_EMERG "[CAN-rx-pkt] 0x%08X\n", reg);
++			for (s = 0; s < 4; s++)	{
++				cf->data[(b * 4) + s] = reg & 0x000000ff;
++				reg >>= 8;
++			}
++		}
++
++		reg = rz_can_read(priv, RZ_CAN_RSCAN0CFPTRk(chpriv->k_rx));
++		cf->can_dlc = RZ_CAN_RSCAN0CFPTRk_CFDLC_G(reg);
++
++		rz_can_write(priv, RZ_CAN_RSCAN0CFPCTRk(chpriv->k_rx), 0xff);
++		netif_rx(skb);
++
++		stats->rx_packets++;
++		stats->rx_bytes += cf->can_dlc;
++	}
++}
++
++static void rz_can_tx_failure_cleanup(struct net_device *ndev)
++{
++	int i;
++
++	for (i = 0; i < RZ_CAN_TX_ECHO_SKB_MAX; i++)
++		can_free_echo_skb(ndev, i);	//asdf BUG: Can't call from ISR
++}
++
++irqreturn_t rz_can_tx_isr(int irq, void *dev_id)
++{
++	struct net_device *ndev = dev_id;
++	struct rz_can_channel_priv *chpriv = netdev_priv(ndev);
++	struct priv_data *priv = chpriv->priv;
++	struct net_device_stats *stats = &ndev->stats;
++	u32 reg;
++	int i;
++
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0CFSTSk(chpriv->k_tx));
++
++	if (reg & RZ_CAN_RSCAN0CFSTSk_CFTXIF) {
++		spin_lock(&chpriv->skb_lock);
++		for (i = 0; i < chpriv->frames_queued; i++)
++			can_get_echo_skb(ndev, i);
++		stats->tx_bytes += chpriv->bytes_queued;
++		stats->tx_packets += chpriv->frames_queued;
++		chpriv->bytes_queued = 0;
++		chpriv->frames_queued = 0;
++		spin_unlock(&chpriv->skb_lock);
++
++		netif_wake_queue(ndev);
++
++		reg &= ~RZ_CAN_RSCAN0CFSTSk_CFTXIF;
++		rz_can_write(priv, RZ_CAN_RSCAN0CFSTSk(chpriv->k_tx), reg);
++	}
++
++	return IRQ_HANDLED;
++}
++
++irqreturn_t rz_can_rx_isr(int irq, void *dev_id)
++{
++	struct net_device *ndev = dev_id;
++	struct rz_can_channel_priv *chpriv = netdev_priv(ndev);
++	struct priv_data *priv = chpriv->priv;
++	u32 reg;
++
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0CFSTSk(chpriv->k_rx));
++
++	if (reg & RZ_CAN_RSCAN0CFSTSk_CFRXIF) {
++		rz_can_rx_pkt(ndev);
++		reg &= ~RZ_CAN_RSCAN0CFSTSk_CFRXIF;
++		rz_can_write(priv, RZ_CAN_RSCAN0CFSTSk(chpriv->k_rx), reg);
++	}
++
++	return IRQ_HANDLED;
++}
++
++irqreturn_t rz_can_err_isr_m(int irq, void *dev_id)
++{
++	struct net_device *ndev = dev_id;
++	struct rz_can_channel_priv *chpriv = netdev_priv(ndev);
++	struct priv_data *priv = chpriv->priv;
++	struct net_device_stats *stats = &ndev->stats;
++	struct can_frame *cf;
++	struct sk_buff *skb;
++	u8 txerr = 0, rxerr = 0;
++	u32 reg;
++
++	skb = alloc_can_err_skb(ndev, &cf);
++	if (!skb)
++		return IRQ_HANDLED;
++
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0CmERFL(chpriv->m));
++	if (reg & (RZ_CAN_RSCAN0CmERFL_EPF | RZ_CAN_RSCAN0CmERFL_EWF)) {
++		u32 sts = rz_can_read(priv, RZ_CAN_RSCAN0CmSTS(chpriv->m));
++		cf->can_id |= CAN_ERR_CRTL;
++		txerr = RZ_CAN_RSCAN0CmSTS_TEC(sts);
++		rxerr = RZ_CAN_RSCAN0CmSTS_REC(sts);
++		cf->data[6] = txerr;
++		cf->data[7] = rxerr;
++	}
++
++	if (reg & RZ_CAN_RSCAN0CmERFL_BEF) {
++		int rx_errors = 0, tx_errors = 0;
++
++		netdev_dbg(ndev, "Bus error interrupt:\n");
++		cf->can_id |= CAN_ERR_BUSERROR | CAN_ERR_PROT;
++		cf->data[2] = CAN_ERR_PROT_UNSPEC;
++
++		if (reg & RZ_CAN_RSCAN0CmERFL_ADERR) {
++			netdev_dbg(ndev, "ACK Delimiter Error\n");
++			cf->data[3] |= CAN_ERR_PROT_LOC_ACK_DEL;
++			tx_errors++;
++			reg &= ~RZ_CAN_RSCAN0CmERFL_ADERR;
++		}
++
++		if (reg & RZ_CAN_RSCAN0CmERFL_B0ERR) {
++			netdev_dbg(ndev, "Bit Error (dominant)\n");
++			cf->data[2] |= CAN_ERR_PROT_BIT0;
++			tx_errors++;
++			reg &= ~RZ_CAN_RSCAN0CmERFL_B0ERR;
++		}
++
++		if (reg & RZ_CAN_RSCAN0CmERFL_B1ERR) {
++			netdev_dbg(ndev, "Bit Error (recessive)\n");
++			cf->data[2] |= CAN_ERR_PROT_BIT1;
++			tx_errors++;
++			reg &= ~RZ_CAN_RSCAN0CmERFL_B1ERR;
++		}
++
++		if (reg & RZ_CAN_RSCAN0CmERFL_CERR) {
++			netdev_dbg(ndev, "CRC Error\n");
++			cf->data[3] |= CAN_ERR_PROT_LOC_CRC_SEQ;
++			rx_errors++;
++			reg &= ~RZ_CAN_RSCAN0CmERFL_CERR;
++		}
++
++		if (reg & RZ_CAN_RSCAN0CmERFL_AERR) {
++			netdev_dbg(ndev, "ACK Error\n");
++			cf->can_id |= CAN_ERR_ACK;
++			cf->data[3] |= CAN_ERR_PROT_LOC_ACK;
++			tx_errors++;
++			reg &= ~RZ_CAN_RSCAN0CmERFL_AERR;
++		}
++
++		if (reg & RZ_CAN_RSCAN0CmERFL_FERR) {
++			netdev_dbg(ndev, "Form Error\n");
++			cf->data[2] |= CAN_ERR_PROT_FORM;
++			rx_errors++;
++			reg &= ~RZ_CAN_RSCAN0CmERFL_FERR;
++		}
++
++		if (reg & RZ_CAN_RSCAN0CmERFL_SERR) {
++			netdev_dbg(ndev, "Stuff Error\n");
++			cf->data[2] |= CAN_ERR_PROT_STUFF;
++			rx_errors++;
++			reg &= ~RZ_CAN_RSCAN0CmERFL_SERR;
++		}
++
++		chpriv->can.can_stats.bus_error++;
++		ndev->stats.rx_errors += rx_errors;
++		ndev->stats.tx_errors += tx_errors;
++
++		reg &= ~RZ_CAN_RSCAN0CmERFL_BEF;
++		rz_can_write(priv, RZ_CAN_RSCAN0CmERFL(chpriv->m), reg);
++	}
++
++	if (reg & RZ_CAN_RSCAN0CmERFL_EWF) {
++		netdev_dbg(ndev, "Error warning interrupt\n");
++		chpriv->can.state = CAN_STATE_ERROR_WARNING;
++		chpriv->can.can_stats.error_warning++;
++		cf->data[1] |= txerr > rxerr ? CAN_ERR_CRTL_TX_WARNING :
++					       CAN_ERR_CRTL_RX_WARNING;
++		reg &= ~RZ_CAN_RSCAN0CmERFL_EWF;
++		rz_can_write(priv, RZ_CAN_RSCAN0CmERFL(chpriv->m), reg);
++	}
++
++	if (reg & RZ_CAN_RSCAN0CmERFL_EPF) {
++		netdev_dbg(ndev, "Error passive interrupt\n");
++		chpriv->can.state = CAN_STATE_ERROR_PASSIVE;
++		chpriv->can.can_stats.error_passive++;
++		cf->data[1] |= txerr > rxerr ? CAN_ERR_CRTL_TX_PASSIVE :
++					       CAN_ERR_CRTL_RX_PASSIVE;
++		reg &= ~RZ_CAN_RSCAN0CmERFL_EPF;
++		rz_can_write(priv, RZ_CAN_RSCAN0CmERFL(chpriv->m), reg);
++	}
++
++	if (reg & RZ_CAN_RSCAN0CmERFL_BOEF) {
++		netdev_dbg(ndev, "Bus-off entry interrupt\n");
++		rz_can_tx_failure_cleanup(ndev);
++		chpriv->can.state = CAN_STATE_BUS_OFF;
++		cf->can_id |= CAN_ERR_BUSOFF;
++		reg &= ~RZ_CAN_RSCAN0CmERFL_BOEF;
++		rz_can_write(priv, RZ_CAN_RSCAN0CmERFL(chpriv->m), reg);
++		can_bus_off(ndev);
++	}
++
++	if (reg & RZ_CAN_RSCAN0CmERFL_OVLF) {
++		netdev_dbg(ndev, "Overload Frame Transmission error interrupt\n");
++		cf->can_id |= CAN_ERR_PROT;
++		cf->data[2] |= CAN_ERR_PROT_OVERLOAD;
++		ndev->stats.rx_over_errors++;
++		ndev->stats.rx_errors++;
++		reg &= RZ_CAN_RSCAN0CmERFL_OVLF;
++		rz_can_write(priv, RZ_CAN_RSCAN0CmERFL(chpriv->m), reg);
++	}
++
++	netif_rx(skb);
++	stats->rx_packets++;
++	stats->rx_bytes += cf->can_dlc;
++
++	return IRQ_HANDLED;
++}
++
++/* Note: This is a shared IRQ! */
++irqreturn_t rz_can_err_isr_g(int irq, void *dev_id)
++{
++	struct net_device *ndev = dev_id;
++	struct rz_can_channel_priv *chpriv = netdev_priv(ndev);
++	struct priv_data *priv = chpriv->priv;
++	u32 reg_tx, reg_rx;
++
++	reg_tx = rz_can_read(priv, RZ_CAN_RSCAN0CFSTSk(chpriv->k_tx));
++	reg_rx = rz_can_read(priv, RZ_CAN_RSCAN0CFSTSk(chpriv->k_rx));
++
++	/* Note: This is a shared IRQ */
++	if ((reg_tx & RZ_CAN_RSCAN0CFSTSk_CFMLT) || (reg_rx & RZ_CAN_RSCAN0CFSTSk_CFMLT)) {
++		reg_tx &= ~RZ_CAN_RSCAN0CFSTSk_CFMLT;
++		reg_rx &= ~RZ_CAN_RSCAN0CFSTSk_CFMLT;
++
++		rz_can_write(priv, RZ_CAN_RSCAN0CFSTSk(chpriv->k_tx), reg_tx);
++		rz_can_write(priv, RZ_CAN_RSCAN0CFSTSk(chpriv->k_rx), reg_rx);
++
++		netdev_dbg(ndev, "A transmit/receive FIFO message is lost.\n");
++		return IRQ_HANDLED;
++	}
++
++	return IRQ_NONE;
++}
++
++static int rz_can_wait(struct priv_data *priv, unsigned long offset,
++		       unsigned int mask, unsigned int ms_timeout)
++{
++	const unsigned long timeout = jiffies + msecs_to_jiffies(ms_timeout);
++	u32 reg;
++
++	do {
++		reg = rz_can_read(priv, offset);
++		reg = ~reg;
++		reg &= mask;
++
++		if (reg == mask)
++			return 0;
++
++	} while (time_before(jiffies, timeout));
++
++	return -ETIMEDOUT;
++}
++
++static int rz_can_global_start(struct priv_data *priv)
++{
++	u32 reg;
++	int err;
++
++	err = clk_enable(priv->clk);
++	if (err < 0)
++		return err;
++
++	if (rz_can_wait(priv, RZ_CAN_RSCAN0GSTS, RZ_CAN_RSCAN0GSTS_GRAMINIT, 50))
++		return -ETIMEDOUT;
++
++	/* Go to global reset mode */
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0GCTR);
++	reg &= ~RZ_CAN_RSCAN0GCTR_GSLPR;
++	reg &= ~RZ_CAN_RSCAN0GCTR_GMDC_M;
++	reg |= RZ_CAN_RSCAN0GCTR_GMDC(RST_MODE);
++	rz_can_write(priv, RZ_CAN_RSCAN0GCTR, reg);
++
++	/* FIFO Message Lost Interrupt Enable */
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0GCTR);
++	reg |= RZ_CAN_RSCAN0GCTR_MEIE;
++	rz_can_write(priv, RZ_CAN_RSCAN0GCTR, reg);
++
++	return 0;
++}
++
++static int rz_can_global_stop(struct priv_data *priv)
++{
++	u32 reg;
++
++	/* Go to global stop mode */
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0GCTR);
++	reg |= RZ_CAN_RSCAN0GCTR_GSLPR;
++	rz_can_write(priv, RZ_CAN_RSCAN0GCTR, reg);
++
++	clk_disable(priv->clk);
++
++	return 0;
++}
++
++
++
++static int rza_can_buf2cfdc(int num_buffer)
++{
++	int cfdclist[] = {0, 4, 8, 16, 32, 48, 64, 128}, n = sizeof(cfdclist)/sizeof(cfdclist[0])-1;
++
++	do {
++		if (num_buffer >= cfdclist[n])
++			break;
++	} while (--n);
++
++	return n;
++}
++
++static int rza_can_cfdc2buf(int cfdc)
++{
++	int cfdclist[] = {0, 4, 8, 16, 32, 48, 64, 128},  n = sizeof(cfdclist)/sizeof(cfdclist[0])-1;
++
++	if ((cfdc < 0) || (cfdc > n))
++		return -1;
++
++	return cfdclist[cfdc];
++}
++
++static int rz_can_buffer_init(struct net_device *ndev)
++{
++	struct rz_can_channel_priv *chpriv = netdev_priv(ndev);
++	struct priv_data *priv = chpriv->priv;
++	u32 reg;
++
++	/* RX: transmit/receive FIFO buffer (IRQ for each ptk) */
++	reg = RZ_CAN_RSCAN0CFCCk_CFM(CFM_RX_MODE);
++	reg |= RZ_CAN_RSCAN0CFCCk_CFIM;
++	reg |= RZ_CAN_RSCAN0CFCCk_CFDC(chpriv->rx_cfdc);
++	reg |= RZ_CAN_RSCAN0CFCCk_CFRXIE;
++//	reg |= RZ_CAN_RSCAN0CFCCk_CFE;
++	rz_can_write(priv, RZ_CAN_RSCAN0CFCCk(chpriv->k_rx), reg);
++
++	/* TX: transmit/receive FIFO buffer (IRQ for each ptk) */
++	reg = RZ_CAN_RSCAN0CFCCk_CFM(CFM_TX_MODE);
++	reg |= RZ_CAN_RSCAN0CFCCk_CFIM;
++	reg |= RZ_CAN_RSCAN0CFCCk_CFDC(chpriv->tx_cfdc);
++	reg |= RZ_CAN_RSCAN0CFCCk_CFTML(RZ_CAN_CFTML);
++	reg |= RZ_CAN_RSCAN0CFCCk_CFTXIE;
++	rz_can_write(priv, RZ_CAN_RSCAN0CFCCk(chpriv->k_tx), reg);
++
++	return 0;
++}
++
++static int rz_can_rx_rules_init(struct net_device *ndev)
++{
++	struct rz_can_channel_priv *chpriv = netdev_priv(ndev);
++	struct priv_data *priv = chpriv->priv;
++	struct rza_can_rx_rules *rules = chpriv->rules;
++	u32 reg, page, pagerule, n;
++
++	if (chpriv->num_rules > 128)
++		return -EINVAL;
++
++	if ((priv->refcount_rules + chpriv->num_rules) > (64 * priv->num_channels))
++		return -EINVAL;
++	
++	/* num rules for channel m */
++	if (chpriv->m < 4) {
++		reg = rz_can_read(priv, RZ_CAN_RSCAN0GAFLCFG0);
++		reg &= ~RZ_CAN_RSCAN0GAFLCFG0_RNC(chpriv->m, 0xff);
++		reg |= RZ_CAN_RSCAN0GAFLCFG0_RNC(chpriv->m, chpriv->num_rules);
++		rz_can_write(priv, RZ_CAN_RSCAN0GAFLCFG0, reg);
++	}
++	else {
++		reg = rz_can_read(priv, RZ_CAN_RSCAN0GAFLCFG1);
++		reg &= ~RZ_CAN_RSCAN0GAFLCFG1_RNC(chpriv->m, 0xff);
++		reg |= RZ_CAN_RSCAN0GAFLCFG1_RNC(chpriv->m, chpriv->num_rules);
++		rz_can_write(priv, RZ_CAN_RSCAN0GAFLCFG1, reg);
++	}
++
++	for (n = 0; n < chpriv->num_rules; n++, rules++) {
++		priv->refcount_rules++;
++		page = priv->refcount_rules / 24;
++		pagerule = (priv->refcount_rules % 24) - 1;
++		
++		/* Set page */
++		reg = RZ_CAN_RSCAN0GAFLECTR_AFLDAE;
++		reg |= RZ_CAN_RSCAN0GAFLECTR_AFLPN(page);
++		rz_can_write(priv, RZ_CAN_RSCAN0GAFLECTR, reg);
++
++		rz_can_write(priv, RZ_CAN_RSCAN0GAFLIDj(pagerule), rules->rscan0gaflid);
++		rz_can_write(priv, RZ_CAN_RSCAN0GAFLMj(pagerule), rules->rscan0gaflm);
++		rz_can_write(priv, RZ_CAN_RSCAN0GAFLP0j(pagerule), rules->rscan0gaflp0);
++		if (rules->rscan0gaflp1 == 0)
++			rz_can_write(priv, RZ_CAN_RSCAN0GAFLP1j(pagerule), RZ_CAN_GAFLID_TXRX_FIFO_M(chpriv->k_rx));
++		else
++			rz_can_write(priv, RZ_CAN_RSCAN0GAFLP1j(pagerule), rules->rscan0gaflp1);
++	}
++
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0GAFLECTR);
++	reg &= ~RZ_CAN_RSCAN0GAFLECTR_AFLDAE;
++	rz_can_write(priv, RZ_CAN_RSCAN0GAFLECTR, reg);
++
++	return 0;
++}
++
++static int rz_can_start(struct net_device *ndev)
++{
++	struct rz_can_channel_priv *chpriv = netdev_priv(ndev);
++	struct priv_data *priv = chpriv->priv;
++	u32 reg;
++
++	netdev_dbg(ndev, "Transition to channel reset mode\n");
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0CmCTR(chpriv->m));
++	reg &= ~RZ_CAN_RSCAN0CmCTR_CSLPR;
++	rz_can_write(priv, RZ_CAN_RSCAN0CmCTR(chpriv->m), reg);
++
++	/* Clock and bittiming */
++	rz_can_set_bittiming(ndev);
++
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0CmCTR(chpriv->m));
++	reg |= (RZ_CAN_RSCAN0CmCTR_EPIE | RZ_CAN_RSCAN0CmCTR_EWIE);
++	reg |= (RZ_CAN_RSCAN0CmCTR_BOEIE | RZ_CAN_RSCAN0CmCTR_BEIE);
++	reg |= RZ_CAN_RSCAN0CmCTR_OLIE;
++	rz_can_write(priv, RZ_CAN_RSCAN0CmCTR(chpriv->m), reg);
++
++	if (priv->refcount++ == 0) {
++		netdev_dbg(ndev, "Transition to global operating mode\n");
++		reg = rz_can_read(priv, RZ_CAN_RSCAN0GCTR);
++		reg &= ~RZ_CAN_RSCAN0GCTR_GMDC_M;
++		reg |= RZ_CAN_RSCAN0GCTR_GMDC(OP_MODE);
++		rz_can_write(priv, RZ_CAN_RSCAN0GCTR, reg);
++	}
++
++	netdev_dbg(ndev, "Transition to channel operating mode\n");
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0CmCTR(chpriv->m));
++	reg &= ~RZ_CAN_RSCAN0CmCTR_CHMDC_M;
++	reg |= RZ_CAN_RSCAN0CmCTR_CHMDC(OP_MODE);
++	rz_can_write(priv, RZ_CAN_RSCAN0CmCTR(chpriv->m), reg);
++
++	chpriv->can.state = CAN_STATE_ERROR_ACTIVE;
++
++	/* Transmit/Receive FIFO Buffer Enable */
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0CFCCk(chpriv->k_rx));
++	reg |= RZ_CAN_RSCAN0CFCCk_CFE;
++	rz_can_write(priv, RZ_CAN_RSCAN0CFCCk(chpriv->k_rx), reg);
++
++	return 0;
++}
++
++static int rz_can_open(struct net_device *ndev)
++{
++	struct rz_can_channel_priv *chpriv = netdev_priv(ndev);
++	int err;
++
++	/* common open */
++	err = open_candev(ndev);
++	if (err)
++		goto exit_open;
++
++	/* register interrupt handler */
++	err = request_irq(chpriv->rx_irq, &rz_can_rx_isr, 0, "rz-can-rx", ndev);
++	if (err)
++		goto exit_rx_irq;
++
++	err = request_irq(chpriv->tx_irq, &rz_can_tx_isr, 0, "rz-can-tx", ndev);
++	if (err)
++		goto exit_tx_irq;
++
++	err = request_irq(chpriv->err_irq_m, &rz_can_err_isr_m, 0, "rz-can-err-m", ndev);
++	if (err)
++		goto exit_err_irq_m;
++
++	err = request_irq(chpriv->err_irq_g, &rz_can_err_isr_g, IRQF_SHARED, "rz-can-err-g", ndev);
++	if (err)
++		goto exit_err_irq_g;
++
++	err = rz_can_start(ndev);
++	if (err)
++		goto exit_err_irq_g;
++
++	netif_start_queue(ndev);
++
++	return 0;
++
++exit_err_irq_g:
++	free_irq(chpriv->err_irq_m, ndev);
++exit_err_irq_m:
++	free_irq(chpriv->tx_irq, ndev);
++exit_tx_irq:
++	free_irq(chpriv->rx_irq, ndev);
++exit_rx_irq:
++	close_candev(ndev);
++exit_open:
++	return err;
++}
++
++static void rz_can_stop(struct net_device *ndev)
++{
++	struct rz_can_channel_priv *chpriv = netdev_priv(ndev);
++	struct priv_data *priv = chpriv->priv;
++	u32 reg;
++
++	netdev_dbg(ndev, "Transition to channel reset mode\n");
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0CmCTR(chpriv->m));
++	reg &= ~RZ_CAN_RSCAN0CmCTR_CHMDC_M;
++	reg |= RZ_CAN_RSCAN0CmCTR_CHMDC(RST_MODE);
++	rz_can_write(priv, RZ_CAN_RSCAN0CmCTR(chpriv->m), reg);
++
++	if (priv->refcount-- == 1) {
++		netdev_dbg(ndev, "Transition to global reset mode\n");
++		reg = rz_can_read(priv, RZ_CAN_RSCAN0GCTR);
++		reg &= ~RZ_CAN_RSCAN0GCTR_GMDC_M;
++		reg |= RZ_CAN_RSCAN0GCTR_GMDC(RST_MODE);
++		rz_can_write(priv, RZ_CAN_RSCAN0GCTR, reg);
++	}
++
++	netdev_dbg(ndev, "Transition to channel stop mode\n");
++	reg = rz_can_read(priv, RZ_CAN_RSCAN0CmCTR(chpriv->m));
++	reg |= RZ_CAN_RSCAN0CmCTR_CSLPR;
++	rz_can_write(priv, RZ_CAN_RSCAN0CmCTR(chpriv->m), reg);
++}
++
++static int rz_can_close(struct net_device *ndev)
++{
++	struct rz_can_channel_priv *chpriv = netdev_priv(ndev);
++
++	netif_stop_queue(ndev);
++	rz_can_stop(ndev);
++	free_irq(chpriv->tx_irq, ndev);
++	free_irq(chpriv->rx_irq, ndev);
++	free_irq(chpriv->err_irq_m, ndev);
++	free_irq(chpriv->err_irq_g, ndev);
++	close_candev(ndev);
++
++	return 0;
++}
++
++static int rz_can_do_set_mode(struct net_device *ndev, enum can_mode mode)
++{
++	switch (mode) {
++	case CAN_MODE_START:
++		rz_can_start(ndev);
++		if (netif_queue_stopped(ndev))
++			netif_wake_queue(ndev);
++		break;
++
++	default:
++		return -EOPNOTSUPP;
++	}
++
++	return 0;
++}
++
++static const struct net_device_ops rz_can_netdev_ops = {
++	.ndo_open               = rz_can_open,
++	.ndo_stop               = rz_can_close,
++	.ndo_start_xmit         = rz_can_start_xmit,
++};
++
++static const struct of_device_id rza_can_of_match[];
++
++static int rz_can_probe(struct platform_device *pdev)
++{
++	struct priv_data *priv;
++	struct rz_can_channel_priv *chpriv;
++	uint32_t channel[6], n;
++	int rx_irq, tx_irq, err_irq_m, err_irq_g, err = -ENODEV;
++
++	/* Allocate memory for private data */
++	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
++	if (priv == NULL) {
++		dev_err(&pdev->dev, "devm_kzalloc() failed\n");
++		return -ENOMEM;
++	}
++	platform_set_drvdata(pdev, priv);
++
++	priv->caps = (struct rza_can_caps *) of_match_device(rza_can_of_match, &pdev->dev)->data;
++
++	/* Read the register base address from DT and map it */
++	priv->base = of_iomap(pdev->dev.of_node, 0);
++	if (priv->base == NULL) {
++		dev_err(&pdev->dev, "Invalid or missing memory resource in DT\n");
++		return -ENODEV;
++	}
++
++	priv->clk = devm_clk_get(&pdev->dev, NULL);
++	if (IS_ERR(priv->clk)) {
++		dev_err(&pdev->dev, "Invalid or missing clock resource in DT\n");
++		return -ENODEV;
++	}
++
++	n = of_property_read_u32(pdev->dev.of_node, "clock_select", &priv->clock_select);
++	if (n) {
++		dev_info(&pdev->dev, "clock_select not provided by DT => defaulting to clkc\n");
++		priv->clock_select = CLKR_CLKC;
++	}
++
++	n = of_property_read_variable_u32_array(pdev->dev.of_node, "channels", channel, 0, sizeof(channel)/sizeof(channel[0]));
++	if ((n <= 0) || (n > priv->caps->num_channels) || (n > 6)) {
++		dev_err(&pdev->dev, "Invalid or missing channel resource in DT\n");
++		return -ENODEV;
++	}
++	priv->num_channels = n;
++
++	err_irq_g = of_irq_get_byname(pdev->dev.of_node, "glerrint");
++
++	rz_can_global_start(priv);
++
++	for (n = 0; n < priv->num_channels; n++) {
++		char irqname[16];
++
++		snprintf(irqname, sizeof(irqname), "cherrint%d", channel[n]);
++		err_irq_m = of_irq_get_byname(pdev->dev.of_node, irqname);
++
++		snprintf(irqname, sizeof(irqname), "comfrxint%d", channel[n]);
++		rx_irq = of_irq_get_byname(pdev->dev.of_node, irqname);
++
++		snprintf(irqname, sizeof(irqname), "txint%d", channel[n]);
++		tx_irq = of_irq_get_byname(pdev->dev.of_node, irqname);
++
++		if (!rx_irq || !tx_irq || !err_irq_m || !err_irq_g) {
++			dev_err(&pdev->dev, "Invalid or missing IRQ resource in DT\n");
++			goto err_out;
++		}
++
++		priv->ndev[n] = alloc_candev(sizeof(struct rz_can_channel_priv), RZ_CAN_TX_ECHO_SKB_MAX);
++		if (!priv->ndev[n]) {
++			dev_err(&pdev->dev, "alloc_candev failed\n");
++			err = -ENOMEM;
++			goto err_out;
++		}
++
++		chpriv = netdev_priv(priv->ndev[n]);
++
++		/* FIXME:
++		 * To reduce the system load in cases of heavy loaded CAN busses,
++		 * add a possibility to configure some receive rules from outside (e.g. DT). */
++		chpriv->num_rules = 1;
++		chpriv->rules = devm_kzalloc(&pdev->dev, sizeof(struct rza_can_rx_rules) * chpriv->num_rules, GFP_KERNEL);
++		if (chpriv->rules == NULL) {
++			dev_err(&pdev->dev, "devm_kzalloc() failed\n");
++			err = -ENOMEM;
++			goto err_out;
++		}
++		/* Note: An empty rule set will configure a promisc mode (dafault)!  */
++
++		priv->ndev[n]->netdev_ops = &rz_can_netdev_ops;
++		priv->ndev[n]->flags |= IFF_ECHO;
++		chpriv->priv = priv;
++		chpriv->m = channel[n];
++		chpriv->tx_irq = tx_irq;
++		chpriv->rx_irq = rx_irq;
++		chpriv->err_irq_m = err_irq_m;
++		chpriv->err_irq_g = err_irq_g;
++		chpriv->k_tx = RZ_CAN_FIFO_K(chpriv->m, RZ_CAN_TX_FIFO);
++		chpriv->k_rx = RZ_CAN_FIFO_K(chpriv->m, RZ_CAN_RX_FIFO);
++
++		/* FIXME:
++		 * Add a possibility to configure the rx/tx fifo depth of each channel from outside (e.g. DT).
++		 * This could be useful in cases where CAN channels have different workload.
++		 * Currently the available buffer are shared symmetrically.*/
++		chpriv->rx_cfdc = rza_can_buf2cfdc((64 * priv->caps->num_channels) / priv->num_channels / 2);
++		chpriv->tx_cfdc = rza_can_buf2cfdc((64 * priv->caps->num_channels) / priv->num_channels / 2);
++
++		chpriv->can.clock.freq = clk_get_rate(priv->clk);
++		chpriv->can.bittiming_const = &rz_can_bittiming_const;
++		chpriv->can.do_set_mode = rz_can_do_set_mode;
++		chpriv->can.do_get_berr_counter = rz_can_get_berr_counter;
++		chpriv->can.ctrlmode_supported = CAN_CTRLMODE_BERR_REPORTING;
++
++		SET_NETDEV_DEV(priv->ndev[n], &pdev->dev);
++		spin_lock_init(&chpriv->skb_lock);
++
++		rz_can_buffer_init(priv->ndev[n]);
++		rz_can_rx_rules_init(priv->ndev[n]);
++	}
++
++	for (n = 0; n < priv->num_channels; n++) {
++		chpriv = netdev_priv(priv->ndev[n]);
++		err = register_candev(priv->ndev[n]);
++		if (err) {
++			dev_err(&pdev->dev, "register_candev() failed\n");
++			goto err_out;
++		}
++		netdev_info(priv->ndev[n], "device registered (clock: %d, channel: %d, k_tx/rx: %d/%d, fifo-depth-tx/rx: %d/%d)\n",
++			chpriv->can.clock.freq, chpriv->m, chpriv->k_tx, chpriv->k_rx, rza_can_cfdc2buf(chpriv->tx_cfdc), rza_can_cfdc2buf(chpriv->rx_cfdc));
++	}
++
++	return 0;
++
++err_out:
++	for (n = 0; n < priv->num_channels; n++) {
++		unregister_candev(priv->ndev[n]);
++		free_candev(priv->ndev[n]);
++	}
++
++	rz_can_global_stop(priv);
++
++	return err;
++}
++
++static int rz_can_remove(struct platform_device *pdev)
++{
++	struct priv_data *priv = dev_get_drvdata(&pdev->dev);
++	uint32_t n;
++
++	for (n = 0; n < priv->num_channels; n++) {
++		unregister_candev(priv->ndev[n]);
++		free_candev(priv->ndev[n]);
++	}
++
++	rz_can_global_stop(priv);
++
++	return 0;
++}
++
++struct rza_can_caps netx4000_caps = {
++	.num_channels = 3,
++};
++
++static const struct of_device_id rza_can_of_match[] = {
++	{ .compatible = "hilscher,netx4000-can", .data = &netx4000_caps },
++	{ /* sentinel */ },
++};
++MODULE_DEVICE_TABLE(of, rza_can_of_match);
++
++static struct platform_driver rz_can_driver = {
++	.probe = rz_can_probe,
++	.remove = rz_can_remove,
++	.driver = {
++		.name = DRV_NAME,
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(rza_can_of_match),
++	},
++};
++
++module_platform_driver(rz_can_driver);
++
++MODULE_AUTHOR("Carlo Caione <carlo@caione.org>");
++MODULE_AUTHOR("Hilscher Gesellschaft fuer Systemautomation mbH");
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("RZ/A1 on-chip CAN netdevice driver");
++MODULE_DESCRIPTION("CAN bus driver for Hilscher netx4000 based platforms");
++MODULE_ALIAS("platform:" DRV_NAME);
+diff --git a/include/linux/can/platform/rza1_can.h b/include/linux/can/platform/rza1_can.h
+new file mode 100644
+index 000000000000..bb9b9ea0bdcc
+--- /dev/null
++++ b/include/linux/can/platform/rza1_can.h
+@@ -0,0 +1,15 @@
++#ifndef _CAN_PLATFORM_RZA1_CAN_H_
++#define _CAN_PLATFORM_RZA1_CAN_H_
++
++#include <linux/types.h>
++
++/* Clock Select Register settings */
++#define CLKR_CLKC		0
++#define CLKR_CLK_XINCAN		1
++
++struct rz_can_platform_data {
++	int clock_select;	/* Clock source select */
++	int channel;
++};
++
++#endif	/* !_CAN_PLATFORM_RZA1_CAN_H_ */
+\ No newline at end of file
+-- 
+2.17.1
+

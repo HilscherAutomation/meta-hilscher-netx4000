@@ -94,7 +94,7 @@ chroot rootfs apt-get dist-upgrade -y
 chroot rootfs apt-get clean
 
 # Install kernel and cifX packages
-cp /usr/share/kernel-package/examples/etc/kernel/postinst.d/symlink_hook rootfs/etc/kernel/postinst.d
+cp ../symlink_hook rootfs/etc/kernel/postinst.d
 cp kernel/*.deb rootfs
 cp ../cifx/*.deb rootfs
 packages=$(find rootfs -maxdepth 1 -name '*.deb' -exec basename {} \; | tr "\n" " ")

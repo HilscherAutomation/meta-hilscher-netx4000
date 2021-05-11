@@ -308,6 +308,7 @@
 			reg = <0xfb100000 0x800>;
 			pinctrl-single,register-width = <32>;
 			pinctrl-single,function-mask = <0xffff>;
+			#pinctrl-cells = <1>;
 		};
 
 		/* cifX */
@@ -395,7 +396,7 @@
 			#gpio-cells = <2>;
 
 			gpio-ranges = <&pinctrl 0 (MUX_PIN(10,10)/4) 1>,
-			              // <&pinctrl 1 (MUX_PIN(3,5)/4) 15>, // Use this line instead to use all pins as GPIOs
+			              // <&pinctrl 1 (MUX_PIN(3,1)/4) 15>, // Use this line instead to use all pins as GPIOs
 			              <&pinctrl 5 (MUX_PIN(3,5)/4) 11>,    // Use this line when using xc port
 			              <&pinctrl 16 (MUX_PIN(7,1)/4) 8>;
 		};
@@ -853,6 +854,7 @@
 			reg = <0xf4080400 0x400>;
 			pinctrl-single,register-width = <32>;
 			pinctrl-single,function-mask = <0xffff>;
+			#pinctrl-cells = <1>;
 
 			#address-cells = <1>;
 			#size-cells = <1>;
@@ -865,12 +867,6 @@
 };
 
 &pinctrl {
-	/* Default pin control used by GPIO requests ---> */
-	pinctrl-single,gpio-range = <
-		&range (MUX_PIN(15,0)/4) 1 (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_PULLUP50K | REEMUX_CTL(0x8)) // gpio4[0] / mdio (gpio-bitbang)
-		&range (MUX_PIN(15,1)/4) 1 (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))      // gpio4[1] / mdc (gpio-bitbang)
-	>;
-
 	range: gpio-range {
 		#pinctrl-single,gpio-range-cells = <3>;
 	};

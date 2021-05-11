@@ -3,6 +3,9 @@
 export ARCH=arm
 export CROSS_COMPILE=arm-linux-gnueabihf-
 
+git config --global user.email "build@localhost"
+git config --global user.name "build"
+
 echo Using the following parameters ...
 echo ----------------------------------
 cat ./ubuntu.cfg
@@ -17,15 +20,23 @@ do_build_uboot() {
 	echo "Building bootloader"
 
 	if [ ! -d "netx4000-uboot" ]; then
-		git clone https://github.com/Hilscher/netx4000-uboot.git
+		git clone https://source.denx.de/u-boot/u-boot.git netx4000-uboot
+	else
+		cd netx4000-uboot
+		git fetch
+		cd -
 	fi
 
 	# u-boot destination
 	export UBOOT_DEST=$(pwd)/build/uboot
 
 	pushd netx4000-uboot
-	git checkout $UBOOT_BRANCH
-	git pull
+	git checkout master
+	if git show-ref --verify --quiet refs/heads/build; then
+		git branch -D build
+	fi
+	git checkout $UBOOT_VERSION -b build
+	git am ../../../meta-hilscher-netx4000/recipes-bsp/u-boot/files/netx4000/*.patch
 
 	# Copy DTS files
 	cp -r ../../../meta-hilscher-netx4000/recipes-bsp/device-tree/files/src/* arch/arm/dts/
@@ -33,6 +44,10 @@ do_build_uboot() {
 	# Create default config if neccessary
 	if [ ! -e .config ]; then
 		make netx4000_defconfig
+
+		# Enable legacy format for boot.scr and uImage
+		sed -e 's/.*CONFIG_LEGACY_IMAGE_FORMAT.*/CONFIG_LEGACY_IMAGE_FORMAT=y/g' \
+		    -i .config
 
 		# Select correct machine device tree file
 		sed -i -e "s,\(CONFIG_BUILTIN_DTB_NAME=\).*,\1\"${DEVICE_TREE}\",g" .config
@@ -42,7 +57,8 @@ do_build_uboot() {
 
 	# Create boot script
 	cat <<EOF>boot.cmd
-load mmc 0:1 \${loadaddr} zImage
+setenv fdt_addr "0x60000000"
+load mmc 0:2 \${loadaddr} uImage
 load mmc 0:1 \${fdt_addr} oftree
 setenv bootargs "root=/dev/mmcblk0p2 rw rootwait console=ttyAMA0,115200 earlyprintk"
 bootm \${loadaddr} - \${fdt_addr}
@@ -70,11 +86,19 @@ do_build_kernel() {
 	echo "Building kernel package"
 
 	if [ ! -d "netx4000-linux" ]; then
-		git clone https://github.com/Hilscher/netx4000-linux.git
+		git clone https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git netx4000-linux
+	else
+		cd netx4000-linux
+		git fetch
+		cd -
 	fi
 
 	if [ ! -d "yocto-kernel-cache" ]; then
 		git clone https://git.yoctoproject.org/git/yocto-kernel-cache
+	else
+		cd yocto-kernel-cache
+		git fetch
+		cd -
 	fi
 
 	# Kernel destination
@@ -82,12 +106,15 @@ do_build_kernel() {
 
 	pushd yocto-kernel-cache
 	git checkout $KERNEL_CACHE_BRANCH
-	git pull
 	popd
 
 	pushd netx4000-linux
-	git checkout $KERNEL_BRANCH
-	git pull
+	git checkout master
+	if git show-ref --verify --quiet refs/heads/build; then
+		git branch -D build
+	fi
+	git checkout $KERNEL_VERSION -b build
+	git am ../../../meta-hilscher-netx4000/recipes-kernel/linux/files/netx4000/*.patch
 
 	# Copy DTS files
 	cp -r ../../../meta-hilscher-netx4000/recipes-bsp/device-tree/files/src/* arch/arm/boot/dts/netx4000/

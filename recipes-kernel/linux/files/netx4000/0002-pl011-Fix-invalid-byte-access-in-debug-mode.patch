@@ -1,0 +1,25 @@
+From 1d18402f48c5ce5a521bf7c6d95ae3ba420a17bd Mon Sep 17 00:00:00 2001
+From: Michael Trensch <mtrensch@hilscher.com>
+Date: Mon, 10 May 2021 10:01:07 +0200
+Subject: [PATCH 02/20] pl011: Fix invalid byte access in debug mode
+
+---
+ arch/arm/include/debug/pl01x.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/include/debug/pl01x.S b/arch/arm/include/debug/pl01x.S
+index 0c7bfa4c10db..e9dd76ca40f1 100644
+--- a/arch/arm/include/debug/pl01x.S
++++ b/arch/arm/include/debug/pl01x.S
+@@ -23,7 +23,7 @@
+ #endif
+ 
+ 		.macro	senduart,rd,rx
+-		strb	\rd, [\rx, #UART01x_DR]
++		strh	\rd, [\rx, #UART01x_DR]
+ 		.endm
+ 
+ 		.macro	waituartcts,rd,rx
+-- 
+2.17.1
+

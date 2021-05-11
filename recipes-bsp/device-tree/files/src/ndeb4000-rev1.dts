@@ -48,7 +48,7 @@
 
 /* Static platform gpio pins */
 &pinctrl {
-	pinctrl-single,gpio-range0 = <
+	pinctrl-single,gpio-range = <
 		/* LEDs */
 		&range (MUX_PIN(3,2)/4) 4 (REEMUX_1 | REEMUX_DRV_08MA | REEMUX_UDC_NONE)         // gpio0[2..5] / mmio[2..5] / led p[300..303]
 

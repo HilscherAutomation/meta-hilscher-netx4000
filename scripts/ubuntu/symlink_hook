@@ -1,0 +1,60 @@
+#!/bin/sh -
+
+set -e
+
+# The dir where symlinks are managed
+SYMLINKDIR=/
+
+if [ $# -ne 2 ]; then
+    echo Usage: $0 version location
+    exit 2
+fi
+
+version="$1"
+uimage_location="$2"
+uimage_dir="$(dirname "$2")"
+
+cd $SYMLINKDIR || exit 1
+
+if [ -n "$DEB_MAINT_PARAMS" ]; then
+    eval set -- "$DEB_MAINT_PARAMS"
+    if [ -z "$1" ] || [ "$1" != "configure" -a "$1" != "remove" ]; then
+        exit 0;
+    fi
+fi
+
+# Create a temporary file safely
+if [ -x /bin/tempfile ]; then
+    outfile=$(tempfile -p outp -m 0600);
+else
+    set -e
+    mkdir /tmp/kernel-image-$version-$$
+    outfile=/tmp/kernel-image-$version-$$/output
+fi
+
+(cd "$uimage_dir" && ls -ct uImage-*) > $outfile
+
+STD="$(head -n 1 $outfile |             sed 's/uImage-//')"
+OLD="$(head -n 2 $outfile | tail -n 1 | sed 's/uImage-//')"
+
+if [ "X$STD" = "X" ]; then
+    exit 0;
+fi
+
+echo Booting $STD, old is $OLD
+
+rm -f uImage
+ln -s "$uimage_dir/"uImage-$STD uImage
+
+# Don't create old link if STD and OLD are the same
+if [ "X$OLD" != "X" -a "$STD" != "$OLD" ]; then
+    rm -f uImage.old
+    ln -s "$uimage_dir/"uImage-$OLD uImage.old
+fi
+
+rm -f $outfile
+if [ -d /tmp/kernel-image-$version-$$ ]; then
+    rmdir /tmp/kernel-image-$version-$$
+fi
+
+exit 0
