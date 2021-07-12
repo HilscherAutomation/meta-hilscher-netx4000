@@ -1,4 +1,4 @@
-From 1b6d40a6a0874a0c2c0d61674710f9739c5e3a74 Mon Sep 17 00:00:00 2001
+From 2c8414e0f55abce6e5a9c9ee7e8d6c06548ff328 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:45:28 +0200
 Subject: [PATCH 5/5] netx4000: Add GPIO driver.
@@ -11,10 +11,10 @@ Subject: [PATCH 5/5] netx4000: Add GPIO driver.
  create mode 100644 drivers/gpio/netx4000-gpio.c
 
 diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 202fcc6f47..e9de6cbb45 100644
+index d24884739b..d6d030253b 100644
 --- a/drivers/gpio/Kconfig
 +++ b/drivers/gpio/Kconfig
-@@ -478,6 +478,13 @@ config MT7621_GPIO
+@@ -486,6 +486,13 @@ config MT7621_GPIO
  	help
  	  Say yes here to support MediaTek MT7621 compatible GPIOs.
  
@@ -29,11 +29,11 @@ index 202fcc6f47..e9de6cbb45 100644
  	bool "Nexell GPIO driver"
  	depends on DM_GPIO
 diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index d3d0d3cacf..e026a677d5 100644
+index 8541ba0b0a..07ccb0ed86 100644
 --- a/drivers/gpio/Makefile
 +++ b/drivers/gpio/Makefile
-@@ -66,5 +66,6 @@ obj-$(CONFIG_$(SPL_)PCF8575_GPIO)	+= pcf8575_gpio.o
- obj-$(CONFIG_PM8916_GPIO)	+= pm8916_gpio.o
+@@ -67,5 +67,6 @@ obj-$(CONFIG_PM8916_GPIO)	+= pm8916_gpio.o
+ obj-$(CONFIG_MT7620_GPIO)	+= mt7620_gpio.o
  obj-$(CONFIG_MT7621_GPIO)	+= mt7621_gpio.o
  obj-$(CONFIG_MSCC_SGPIO)	+= mscc_sgpio.o
 +obj-$(CONFIG_NETX4000_GPIO)	+= netx4000-gpio.o
@@ -41,7 +41,7 @@ index d3d0d3cacf..e026a677d5 100644
  obj-$(CONFIG_SIFIVE_GPIO)	+= sifive-gpio.o
 diff --git a/drivers/gpio/netx4000-gpio.c b/drivers/gpio/netx4000-gpio.c
 new file mode 100644
-index 0000000000..3ee5a532eb
+index 0000000000..e2f30bc335
 --- /dev/null
 +++ b/drivers/gpio/netx4000-gpio.c
 @@ -0,0 +1,170 @@
@@ -212,7 +212,7 @@ index 0000000000..3ee5a532eb
 +	.id	= UCLASS_GPIO,
 +	.of_match = netx4000_gpio_ids,
 +	.ops	= &netx4000_gpio_ops,
-+	.priv_auto_alloc_size = sizeof(struct priv_data),
++	.priv_auto = sizeof(struct priv_data),
 +	.probe	= netx4000_gpio_probe,
 +};
 -- 

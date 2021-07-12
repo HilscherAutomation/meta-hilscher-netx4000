@@ -1,4 +1,4 @@
-From 158d93d55571c8a46db2ce1ccba1e935661f9651 Mon Sep 17 00:00:00 2001
+From d41876e44ba56520d3542dc4e4f5304a4c329e5d Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:43:56 +0200
 Subject: [PATCH 1/5] netx4000: Basic architecture support
@@ -27,9 +27,9 @@ Subject: [PATCH 1/5] netx4000: Basic architecture support
  .../mach-netx4000/include/mach/netx4000_dma.h |   39 +
  .../include/mach/netx4000_regs.h              |   54 +
  arch/arm/mach-netx4000/reset.c                |   19 +
- arch/arm/mach-netx4000/timer.c                |   54 +
+ arch/arm/mach-netx4000/timer.c                |   55 +
  board/hilscher/netx4000/Makefile              |    5 +
- board/hilscher/netx4000/board.c               |   51 +
+ board/hilscher/netx4000/board.c               |   52 +
  board/hilscher/netx4000/device-label.c        |  123 +
  board/hilscher/netx4000/device-label.h        |   77 +
  configs/netx4000_defconfig                    |   59 +
@@ -58,7 +58,7 @@ Subject: [PATCH 1/5] netx4000: Basic architecture support
  .../hboot_image_compiler/snippet_library.py   |  351 +
  tools/netx4000/hboot_netx4000_patch_table.xml | 7129 +++++++++++++++++
  tools/netx4000/netx4000_cr7_openfirewalls.elf |  Bin 0 -> 34631 bytes
- 54 files changed, 18767 insertions(+)
+ 54 files changed, 18769 insertions(+)
  create mode 100644 arch/arm/dts/netx4000-common.dtsi
  create mode 100644 arch/arm/dts/netx4000-nxhx4000-jtag-plus-rev4.dts
  create mode 100644 arch/arm/dts/nxhx4000-jtag-plus-revx.dts
@@ -116,10 +116,10 @@ index e66aa864da..c58a2da3b3 100644
  *.su
  *.swp
 diff --git a/Makefile b/Makefile
-index b4f1cbcf9b..c743b3fe1b 100644
+index 2ab9c53192..6490d7b5e3 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -929,6 +929,8 @@ ifeq ($(CONFIG_SPL),)
+@@ -960,6 +960,8 @@ ifeq ($(CONFIG_SPL),)
  INPUTS-$(CONFIG_ARCH_MEDIATEK) += u-boot-mtk.bin
  endif
  
@@ -128,7 +128,7 @@ index b4f1cbcf9b..c743b3fe1b 100644
  # Add optional build target if defined in board/cpu/soc headers
  ifneq ($(CONFIG_BUILD_TARGET),)
  INPUTS-y += $(CONFIG_BUILD_TARGET:"%"=%)
-@@ -1622,6 +1624,19 @@ u-boot-br.bin: u-boot FORCE
+@@ -1617,6 +1619,19 @@ u-boot-br.bin: u-boot FORCE
  endif
  endif
  
@@ -149,10 +149,10 @@ index b4f1cbcf9b..c743b3fe1b 100644
  cmd_ldr = $(LD) $(LDFLAGS_$(@F)) \
  	       $(filter-out FORCE,$^) -o $@
 diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index fbe90875ae..538d2257e9 100644
+index 0448787b8b..4341cd3420 100644
 --- a/arch/arm/Kconfig
 +++ b/arch/arm/Kconfig
-@@ -833,6 +833,19 @@ config ARCH_LPC32XX
+@@ -801,6 +801,19 @@ config ARCH_LPC32XX
  	select SUPPORT_SPL
  	imply CMD_DM
  
@@ -172,7 +172,7 @@ index fbe90875ae..538d2257e9 100644
  config ARCH_IMX8
  	bool "NXP i.MX8 platform"
  	select ARM64
-@@ -1913,6 +1926,8 @@ source "arch/arm/mach-imx/imxrt/Kconfig"
+@@ -1927,6 +1940,8 @@ source "arch/arm/mach-imx/imxrt/Kconfig"
  
  source "arch/arm/mach-imx/mxs/Kconfig"
  
@@ -194,12 +194,12 @@ index 28b523b37c..d3bb69bf54 100644
  machine-$(CONFIG_ARCH_OMAP2PLUS)	+= omap2
  machine-$(CONFIG_ARCH_ORION5X)		+= orion5x
 diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
-index fd47e408f8..9cc025ad76 100644
+index 9fb38682e6..1e06b28719 100644
 --- a/arch/arm/dts/Makefile
 +++ b/arch/arm/dts/Makefile
-@@ -233,6 +233,9 @@ dtb-$(CONFIG_ARCH_MVEBU) +=			\
- 	armada-xp-synology-ds414.dtb		\
- 	armada-xp-theadorable.dtb
+@@ -246,6 +246,9 @@ dtb-$(CONFIG_ARCH_MVEBU) +=			\
+ 	cn9130-crb-A.dtb			\
+ 	cn9130-crb-B.dtb
  
 +dtb-$(CONFIG_ARCH_NETX4000) +=			\
 +	netx4000-nxhx4000-jtag-plus-rev4.dtb
@@ -3796,10 +3796,10 @@ index 0000000000..cef9502e34
 +}
 diff --git a/arch/arm/mach-netx4000/timer.c b/arch/arm/mach-netx4000/timer.c
 new file mode 100644
-index 0000000000..4fcf3adf1a
+index 0000000000..c21d51cbb2
 --- /dev/null
 +++ b/arch/arm/mach-netx4000/timer.c
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,55 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright (C) 2019 Hilscher Gesellschaft fuer Systemautomation mbH
@@ -3807,6 +3807,7 @@ index 0000000000..4fcf3adf1a
 +
 +#include <common.h>
 +#include <linux/io.h>
++#include <asm/global_data.h>
 +
 +DECLARE_GLOBAL_DATA_PTR;
 +
@@ -3867,16 +3868,17 @@ index 0000000000..ef37063bd9
 +obj-y	+= board.o device-label.o
 diff --git a/board/hilscher/netx4000/board.c b/board/hilscher/netx4000/board.c
 new file mode 100644
-index 0000000000..6a1e3e2e90
+index 0000000000..e2a3e7921b
 --- /dev/null
 +++ b/board/hilscher/netx4000/board.c
-@@ -0,0 +1,51 @@
+@@ -0,0 +1,52 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright 2019 Hilscher Gesellschaft fuer Systemautomation mbH
 + */
 +
 +#include <common.h>
++#include <asm/global_data.h>
 +#include <asm/io.h>
 +#include <config.h>
 +#include "device-label.h"
@@ -4200,20 +4202,20 @@ index 0000000000..f29face800
 +CONFIG_MENU=y
 +CONFIG_CMD_BOOTMENU=y
 diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index d1e295ac7c..f582a0e048 100644
+index 645709b855..e6773de5e3 100644
 --- a/drivers/clk/Makefile
 +++ b/drivers/clk/Makefile
-@@ -29,6 +29,7 @@ obj-$(CONFIG_$(SPL_TPL_)CLK_INTEL) += intel/
- obj-$(CONFIG_CLK_HSDK) += clk-hsdk-cgu.o
+@@ -31,6 +31,7 @@ obj-$(CONFIG_CLK_HSDK) += clk-hsdk-cgu.o
  obj-$(CONFIG_CLK_K210) += kendryte/
  obj-$(CONFIG_CLK_MPC83XX) += mpc83xx_clk.o
+ obj-$(CONFIG_CLK_MPFS) += microchip/
 +obj-$(CONFIG_ARCH_NETX4000) += clk-netx4000.o
  obj-$(CONFIG_CLK_OCTEON) += clk_octeon.o
  obj-$(CONFIG_CLK_OWL) += owl/
  obj-$(CONFIG_CLK_RENESAS) += renesas/
 diff --git a/drivers/clk/clk-netx4000.c b/drivers/clk/clk-netx4000.c
 new file mode 100644
-index 0000000000..f5db7c878b
+index 0000000000..06d5951e6a
 --- /dev/null
 +++ b/drivers/clk/clk-netx4000.c
 @@ -0,0 +1,169 @@
@@ -4338,7 +4340,7 @@ index 0000000000..f5db7c878b
 +	.id = UCLASS_CLK,
 +	.of_match = netx4000_periph_clk_id,
 +	.probe = netx4000_periph_clk_probe,
-+	.priv_auto_alloc_size = sizeof(struct netx4000_periph_clk),
++	.priv_auto = sizeof(struct netx4000_periph_clk),
 +	.ops = &netx4000_periph_ops,
 +	.flags = DM_FLAG_PRE_RELOC,
 +};
@@ -4382,15 +4384,15 @@ index 0000000000..f5db7c878b
 +	.id = UCLASS_CLK,
 +	.of_match = netx4000_cpu_clk_id,
 +	.probe = netx4000_cpu_clk_probe,
-+	.priv_auto_alloc_size = sizeof(struct netx4000_cpu_clk),
++	.priv_auto = sizeof(struct netx4000_cpu_clk),
 +	.ops = &netx4000_cpu_ops,
 +	.flags = DM_FLAG_PRE_RELOC,
 +};
 diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index 3a5e036880..cf04df77df 100644
+index 9fc28b149d..049506253b 100644
 --- a/drivers/net/Kconfig
 +++ b/drivers/net/Kconfig
-@@ -165,6 +165,14 @@ config DWC_ETH_QOS_IMX
+@@ -203,6 +203,14 @@ config DWC_ETH_QOS_IMX
  	  The Synopsys Designware Ethernet QOS IP block with the specific
  	  configuration used in IMX soc.
  
@@ -4406,10 +4408,10 @@ index 3a5e036880..cf04df77df 100644
  	bool "Synopsys DWC Ethernet QOS device support for STM32"
  	depends on DWC_ETH_QOS
 diff --git a/drivers/net/dwc_eth_qos.c b/drivers/net/dwc_eth_qos.c
-index db1102562f..3583a75d86 100644
+index b012bed517..133fa0770d 100644
 --- a/drivers/net/dwc_eth_qos.c
 +++ b/drivers/net/dwc_eth_qos.c
-@@ -654,6 +654,31 @@ err:
+@@ -616,6 +616,31 @@ err:
  #endif
  }
  
@@ -4441,7 +4443,7 @@ index db1102562f..3583a75d86 100644
  static int eqos_start_clks_imx(struct udevice *dev)
  {
  	return 0;
-@@ -693,6 +718,19 @@ static void eqos_stop_clks_stm32(struct udevice *dev)
+@@ -653,6 +678,19 @@ static void eqos_stop_clks_stm32(struct udevice *dev)
  	debug("%s: OK\n", __func__);
  }
  
@@ -4461,7 +4463,7 @@ index db1102562f..3583a75d86 100644
  static void eqos_stop_clks_imx(struct udevice *dev)
  {
  	/* empty */
-@@ -765,6 +803,11 @@ static int eqos_start_resets_stm32(struct udevice *dev)
+@@ -725,6 +763,11 @@ static int eqos_start_resets_stm32(struct udevice *dev)
  	return 0;
  }
  
@@ -4473,7 +4475,7 @@ index db1102562f..3583a75d86 100644
  static int eqos_start_resets_imx(struct udevice *dev)
  {
  	return 0;
-@@ -797,6 +840,11 @@ static int eqos_stop_resets_stm32(struct udevice *dev)
+@@ -757,6 +800,11 @@ static int eqos_stop_resets_stm32(struct udevice *dev)
  	return 0;
  }
  
@@ -4485,7 +4487,7 @@ index db1102562f..3583a75d86 100644
  static int eqos_stop_resets_imx(struct udevice *dev)
  {
  	return 0;
-@@ -876,6 +924,17 @@ static ulong eqos_get_tick_clk_rate_stm32(struct udevice *dev)
+@@ -836,6 +884,17 @@ static ulong eqos_get_tick_clk_rate_stm32(struct udevice *dev)
  #endif
  }
  
@@ -4503,7 +4505,7 @@ index db1102562f..3583a75d86 100644
  __weak u32 imx_get_eqos_csr_clk(void)
  {
  	return 100 * 1000000;
-@@ -895,6 +954,11 @@ static int eqos_calibrate_pads_stm32(struct udevice *dev)
+@@ -855,6 +914,11 @@ static int eqos_calibrate_pads_stm32(struct udevice *dev)
  	return 0;
  }
  
@@ -4515,7 +4517,7 @@ index db1102562f..3583a75d86 100644
  static int eqos_calibrate_pads_imx(struct udevice *dev)
  {
  	return 0;
-@@ -905,6 +969,11 @@ static int eqos_disable_calibration_stm32(struct udevice *dev)
+@@ -865,6 +929,11 @@ static int eqos_disable_calibration_stm32(struct udevice *dev)
  	return 0;
  }
  
@@ -4527,7 +4529,7 @@ index db1102562f..3583a75d86 100644
  static int eqos_disable_calibration_imx(struct udevice *dev)
  {
  	return 0;
-@@ -1011,6 +1080,11 @@ static int eqos_set_tx_clk_speed_stm32(struct udevice *dev)
+@@ -971,6 +1040,11 @@ static int eqos_set_tx_clk_speed_stm32(struct udevice *dev)
  	return 0;
  }
  
@@ -4539,7 +4541,7 @@ index db1102562f..3583a75d86 100644
  static int eqos_set_tx_clk_speed_imx(struct udevice *dev)
  {
  	struct eqos_priv *eqos = dev_get_priv(dev);
-@@ -1887,6 +1961,61 @@ err_probe:
+@@ -1846,6 +1920,61 @@ err_probe:
  	return ret;
  }
  
@@ -4601,7 +4603,7 @@ index db1102562f..3583a75d86 100644
  static phy_interface_t eqos_get_interface_stm32(struct udevice *dev)
  {
  	const char *phy_mode;
-@@ -1901,6 +2030,20 @@ static phy_interface_t eqos_get_interface_stm32(struct udevice *dev)
+@@ -1860,6 +1989,20 @@ static phy_interface_t eqos_get_interface_stm32(struct udevice *dev)
  	return interface;
  }
  
@@ -4622,7 +4624,7 @@ index db1102562f..3583a75d86 100644
  static phy_interface_t eqos_get_interface_tegra186(struct udevice *dev)
  {
  	return PHY_INTERFACE_MODE_MII;
-@@ -1979,6 +2122,23 @@ static int eqos_remove_resources_stm32(struct udevice *dev)
+@@ -1938,6 +2081,23 @@ static int eqos_remove_resources_stm32(struct udevice *dev)
  	return 0;
  }
  
@@ -4646,7 +4648,7 @@ index db1102562f..3583a75d86 100644
  static int eqos_remove_resources_imx(struct udevice *dev)
  {
  	return 0;
-@@ -2163,6 +2323,33 @@ struct eqos_config __maybe_unused eqos_imx_config = {
+@@ -2125,6 +2285,33 @@ struct eqos_config __maybe_unused eqos_imx_config = {
  	.ops = &eqos_imx_ops
  };
  
@@ -4680,7 +4682,7 @@ index db1102562f..3583a75d86 100644
  static const struct udevice_id eqos_ids[] = {
  #if IS_ENABLED(CONFIG_DWC_ETH_QOS_TEGRA186)
  	{
-@@ -2182,6 +2369,12 @@ static const struct udevice_id eqos_ids[] = {
+@@ -2144,6 +2331,12 @@ static const struct udevice_id eqos_ids[] = {
  		.data = (ulong)&eqos_imx_config
  	},
  #endif
@@ -4694,7 +4696,7 @@ index db1102562f..3583a75d86 100644
  	{ }
  };
 diff --git a/drivers/net/phy/Kconfig b/drivers/net/phy/Kconfig
-index 51733dd123..fd7b7b0db0 100644
+index 070ffa82cb..19fc502ea3 100644
 --- a/drivers/net/phy/Kconfig
 +++ b/drivers/net/phy/Kconfig
 @@ -2,6 +2,12 @@
@@ -4711,10 +4713,10 @@ index 51733dd123..fd7b7b0db0 100644
  	bool "Marvell 88E6352 switch support"
  
 diff --git a/drivers/net/phy/Makefile b/drivers/net/phy/Makefile
-index 6e722331f1..fb4efde832 100644
+index e967f82201..806b96d5ba 100644
 --- a/drivers/net/phy/Makefile
 +++ b/drivers/net/phy/Makefile
-@@ -33,3 +33,5 @@ obj-$(CONFIG_PHY_VITESSE) += vitesse.o
+@@ -34,3 +34,5 @@ obj-$(CONFIG_PHY_VITESSE) += vitesse.o
  obj-$(CONFIG_PHY_MSCC) += mscc.o
  obj-$(CONFIG_PHY_FIXED) += fixed.o
  obj-$(CONFIG_PHY_NCSI) += ncsi.o
@@ -4722,7 +4724,7 @@ index 6e722331f1..fb4efde832 100644
 +obj-$(CONFIG_MDIO_GPIO_BITBANG) += mdio-gpio-bb.o
 diff --git a/drivers/net/phy/mdio-gpio-bb.c b/drivers/net/phy/mdio-gpio-bb.c
 new file mode 100644
-index 0000000000..222f7f9185
+index 0000000000..181e36b143
 --- /dev/null
 +++ b/drivers/net/phy/mdio-gpio-bb.c
 @@ -0,0 +1,291 @@
@@ -5014,21 +5016,21 @@ index 0000000000..222f7f9185
 +	.name = "mdio-gpio-bb",
 +	.id = UCLASS_SIMPLE_BUS,
 +	.of_match = mdio_gpio_bb_ids,
-+	.priv_auto_alloc_size = sizeof(struct priv_data),
++	.priv_auto = sizeof(struct priv_data),
 +	.probe = mdio_gpio_bb_probe,
 +};
 diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
-index 738f5bd636..69b901c6c2 100644
+index 7af6c5f0b0..20f9ac2366 100644
 --- a/drivers/pinctrl/pinctrl-single.c
 +++ b/drivers/pinctrl/pinctrl-single.c
-@@ -148,6 +148,48 @@ static int single_set_state(struct udevice *dev,
- 	return len;
+@@ -529,15 +529,59 @@ static int single_of_to_plat(struct udevice *dev)
+ 	return 0;
  }
  
 +/* TODO: Implement a mechanism to lock/unlock pins already requested by hardware or a GPIO driver. */
 +static int single_gpio_request_enable(struct udevice *dev, unsigned pin_selector)
 +{
-+	struct single_pdata *pdata = dev->platdata;
++	struct single_pdata *pdata = dev_get_plat(dev);
 +	struct single_fdt_pin_cfg prop[1];
 +	struct ofnode_phandle_args args;
 +	char *propname = "pinctrl-single,gpio-rangeX";
@@ -5062,18 +5064,16 @@ index 738f5bd636..69b901c6c2 100644
 +	prop->reg = cpu_to_fdt32(prop->reg);
 +	prop->val = cpu_to_fdt32(prop->val);
 +
-+	single_configure_pins(dev, prop, sizeof(prop));
++	single_configure_pins(dev, prop, sizeof(prop), "gpio");
 +
 +	return 0;
 +}
 +
- static int single_ofdata_to_platdata(struct udevice *dev)
- {
- 	fdt_addr_t addr;
-@@ -179,10 +221,12 @@ static int single_ofdata_to_platdata(struct udevice *dev)
- 
  const struct pinctrl_ops single_pinctrl_ops = {
+ 	.get_pins_count	= single_get_pins_count,
+ 	.get_pin_name = single_get_pin_name,
  	.set_state = single_set_state,
+ 	.get_pin_muxing	= single_get_pin_muxing,
 +	.gpio_request_enable	= single_gpio_request_enable,
  };
  
@@ -5084,10 +5084,10 @@ index 738f5bd636..69b901c6c2 100644
  };
  
 diff --git a/drivers/serial/serial_pl01x.c b/drivers/serial/serial_pl01x.c
-index d9e35c6a2b..39ab64bca7 100644
+index 5283d5ed11..6fab959db3 100644
 --- a/drivers/serial/serial_pl01x.c
 +++ b/drivers/serial/serial_pl01x.c
-@@ -35,6 +35,13 @@ static struct pl01x_regs *base_regs __attribute__ ((section(".data")));
+@@ -36,6 +36,13 @@ static struct pl01x_regs *base_regs __section(".data");
  
  #endif
  

@@ -1,4 +1,4 @@
-From 431491352416c0bb58060a0be1d93f8170bc9187 Mon Sep 17 00:00:00 2001
+From 984792f1c6007489a8b0356f0f86b91a0dbc7b1d Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:45:00 +0200
 Subject: [PATCH 3/5] netx4000: Add USB ehci controller driver
@@ -6,17 +6,17 @@ Subject: [PATCH 3/5] netx4000: Add USB ehci controller driver
 ---
  drivers/usb/host/Kconfig         |   8 +
  drivers/usb/host/Makefile        |   1 +
- drivers/usb/host/ehci-netx4000.c | 255 +++++++++++++++++++
+ drivers/usb/host/ehci-netx4000.c | 253 +++++++++++++++++++
  drivers/usb/host/ehci-netx4000.h | 415 +++++++++++++++++++++++++++++++
- 4 files changed, 679 insertions(+)
+ 4 files changed, 677 insertions(+)
  create mode 100644 drivers/usb/host/ehci-netx4000.c
  create mode 100644 drivers/usb/host/ehci-netx4000.h
 
 diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 0971a7c813..285fa47bab 100644
+index f34cba2395..c7403be2a1 100644
 --- a/drivers/usb/host/Kconfig
 +++ b/drivers/usb/host/Kconfig
-@@ -161,6 +161,14 @@ config USB_EHCI_MX7
+@@ -163,6 +163,14 @@ config USB_EHCI_MX7
  	---help---
  	  Enables support for the on-chip EHCI controller on i.MX7 SoCs.
  
@@ -45,10 +45,10 @@ index a12e8f2702..bd37bf5b6f 100644
  obj-$(CONFIG_USB_EHCI_MSM) += ehci-msm.o
 diff --git a/drivers/usb/host/ehci-netx4000.c b/drivers/usb/host/ehci-netx4000.c
 new file mode 100644
-index 0000000000..8edb07cd61
+index 0000000000..536efcd4c3
 --- /dev/null
 +++ b/drivers/usb/host/ehci-netx4000.c
-@@ -0,0 +1,255 @@
+@@ -0,0 +1,253 @@
 +/*
 +* USB EHCI driver for Hilscher netx4000 based platforms
 +*
@@ -229,6 +229,16 @@ index 0000000000..8edb07cd61
 +	u32 num_ports;
 +	struct ehci_hccr *hccr;
 +	struct ehci_hcor *hcor;
++	fdt_addr_t addr;
++
++	addr = dev_read_addr(dev);
++	if(addr == FDT_ADDR_T_NONE)
++		return -EINVAL;
++
++	priv->regbase = (void*)addr;
++
++	if(clk_get_by_index(dev, 0, &priv->clk))
++		return -EINVAL;
 +
 +	rc = ofnode_read_u32(dev_ofnode(dev), "num-ports", &num_ports);
 +	if (rc) {
@@ -274,16 +284,6 @@ index 0000000000..8edb07cd61
 +static int netx4000_ehci_ofdata_to_platdata(struct udevice *dev)
 +{
 +	struct netx4000_ehci_priv *priv = dev_get_priv(dev);
-+	fdt_addr_t addr;
-+
-+	addr = dev_read_addr(dev);
-+	if(addr == FDT_ADDR_T_NONE)
-+		return -EINVAL;
-+
-+	priv->regbase = (void*)addr;
-+
-+	if(clk_get_by_index(dev, 0, &priv->clk))
-+		return -EINVAL;
 +
 +	return 0;
 +}
@@ -296,12 +296,10 @@ index 0000000000..8edb07cd61
 +U_BOOT_DRIVER(netx4000_ehci_host) = {
 +	.name = "netx4000-ehci-host",
 +	.id = UCLASS_USB,
-+	.ofdata_to_platdata = netx4000_ehci_ofdata_to_platdata,
 +	.of_match = netx4000_ehci_ids,
 +	.probe = netx4000_ehci_probe,
 +	.ops = &ehci_usb_ops,
-+	.platdata_auto_alloc_size = sizeof(struct usb_platdata),
-+	.priv_auto_alloc_size = sizeof(struct netx4000_ehci_priv),
++	.priv_auto = sizeof(struct netx4000_ehci_priv),
 +	.flags = DM_FLAG_ALLOC_PRIV_DMA,
 +};
 diff --git a/drivers/usb/host/ehci-netx4000.h b/drivers/usb/host/ehci-netx4000.h
