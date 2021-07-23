@@ -1,6 +1,10 @@
 # Use v2021.01 from netx4000 repository
 SRC_URI_remove += "git://git.denx.de/u-boot.git \
-                   file://remove-redundant-yyloc-global.patch"
+                   file://remove-redundant-yyloc-global.patch \
+                   file://CVE-2020-8432.patch \
+                   file://CVE-2020-10648-1.patch \
+                   file://CVE-2020-10648-2.patch \
+"
 
 GIT_UBOOT_REPO ?= "github.com/HilscherAutomation/netx4000-uboot.git;protocol=https"
 
