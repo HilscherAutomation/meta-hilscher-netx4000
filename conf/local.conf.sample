@@ -1,4 +1,4 @@
-CONF_VERSION = "1"
+CONF_VERSION = "2"
 PATCHRESOLVE = "noop"
 
 BB_NUMBER_THREADS ?= "${@oe.utils.cpu_count()*2}"
