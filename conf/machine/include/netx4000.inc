@@ -1,5 +1,5 @@
 DEFAULTTUNE ?= "cortexa9hf-neon"
-require conf/machine/include/tune-cortexa9.inc
+require conf/machine/include/arm/armv7a/tune-cortexa9.inc
 
 SOC_FAMILY="netx4000"
 require conf/machine/include/soc-family.inc
