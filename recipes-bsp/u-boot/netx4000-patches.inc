@@ -1,6 +1,6 @@
 # We have a binary patch which is only supported by git (not by quilt which is default)
-PATCHTOOL_netx4000 = "git"
-SRC_URI_append_netx4000 += " \
+PATCHTOOL:netx4000 = "git"
+SRC_URI:append:netx4000 += " \
     file://0001-netx4000-Basic-architecture-support.patch \
     file://0002-netx4000-Add-MMC-driver.patch \
     file://0003-netx4000-Add-USB-ehci-controller-driver.patch \

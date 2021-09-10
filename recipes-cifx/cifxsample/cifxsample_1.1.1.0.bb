@@ -9,11 +9,11 @@ SRC_URI = "file://cifxlinuxsample.c"
 inherit useradd
 
 USERADD_PACKAGES = "${PN}"
-GROUPADD_PARAM_${PN} = "-r cifx"
+GROUPADD_PARAM:${PN} = "-r cifx"
 
 S = "${WORKDIR}"
 
-FILES_${PN} = "/opt/cifx/demo"
+FILES:${PN} = "/opt/cifx/demo"
 
 do_compile() {
   ${CC} ${LDFLAGS} cifxlinuxsample.c -o cifxsample -I=/usr/include/cifx -lcifx
@@ -27,4 +27,4 @@ do_install() {
   chmod 0775 ${D}/opt/cifx
 }
 
-FILES_${PN} = "/opt/cifx"
+FILES:${PN} = "/opt/cifx"

@@ -13,7 +13,7 @@ SRC_URI = " \
 	file://etc-default-dto \
 "
 
-RDEPENDS_${PN} = "dtc"
+RDEPENDS:${PN} = "dtc"
 
 S = "${WORKDIR}"
 
@@ -36,9 +36,9 @@ do_install () {
 	fi
 }
 
-CONFFILES_${PN} += "${sysconfdir}/default/dto"
+CONFFILES:${PN} += "${sysconfdir}/default/dto"
 
-FILES_${PN} = "\
+FILES:${PN} = "\
 	${sbindir} \
 	${sysconfdir} \
 	${systemd_unitdir} \
@@ -52,4 +52,4 @@ inherit systemd update-rc.d
 INITSCRIPT_NAME   = "dto"
 INITSCRIPT_PARAMS = "defaults 0 99"
 
-SYSTEMD_SERVICE_${PN} = "dto.service"
+SYSTEMD_SERVICE:${PN} = "dto.service"

@@ -16,14 +16,14 @@ UBOOT_ENTRYPOINT ?= "0x40008000"
 PREFERRED_PROVIDER_virtual/kernel ??= "linux-yocto"
 
 PREFERRED_PROVIDER_virtual/dtb ??= "device-tree"
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append += "device-tree"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append += "device-tree"
 
 #############################################################################
 # Kernel
 #############################################################################
 KERNEL_CLASSES += "kernel-fitimage"
-KERNEL_IMAGETYPES_append += "fitImage"
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append +=" \
+KERNEL_IMAGETYPES:append += "fitImage"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append +=" \
 	kernel-modules \
 	libcifx cifxsample \
 	dto-utils \
@@ -31,7 +31,7 @@ MACHINE_ESSENTIAL_EXTRA_RDEPENDS_append +=" \
 "
 
 # poky-lsb requires nfsd in kernel
-KERNEL_EXTRA_FEATURES_append += " \
+KERNEL_EXTRA_FEATURES:append += " \
 	${@ 'features/nfsd/nfsd-enable.scc' if '${DISTRO}' == 'poky-lsb' else '' } \
 	features/firmware/firmware.scc \
 	cfg/usb-mass-storage.scc \

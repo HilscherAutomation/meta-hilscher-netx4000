@@ -13,7 +13,7 @@ inherit devicetree
 
 S = "${WORKDIR}/src"
 
-devicetree_do_install_append() {
+devicetree_do_install:append() {
 	default_dtb=${KERNEL_DEVICETREE:-${MACHINE}}
 
 	install -d ${D}/boot/dt-overlays
@@ -28,12 +28,12 @@ devicetree_do_deploy() {
 	cp -a ${D}/boot/* ${DEPLOYDIR}
 }
 
-FILES_${PN} += "boot/dt-overlays"
+FILES:${PN} += "boot/dt-overlays"
 
 # --------------------------------------
 # common include files
 
-SRC_URI_netx4000 = " \
+SRC_URI:netx4000 = " \
 	file://src/netx4000-common.dtsi \
 	file://src/dt-bindings/pinctrl/netx4000.h \
 	file://src/dt-bindings/video/netx4000.h \
@@ -43,8 +43,8 @@ SRC_URI_netx4000 = " \
 # --------------------------------------
 # nxhx4000-jtag-plus-revx boards
 
-COMPATIBLE_MACHINE_nxhx4000-jtag-plus-revx = ".*"
-DTS_BASE_nxhx4000-jtag-plus-revx += " \
+COMPATIBLE_MACHINE:nxhx4000-jtag-plus-revx = ".*"
+DTS_BASE:nxhx4000-jtag-plus-revx += " \
 	file://src/nxhx4000-jtag-plus-revx.dts \
 	file://src/adc0.dtso \
 	file://src/adc1.dtso \
@@ -57,19 +57,19 @@ DTS_BASE_nxhx4000-jtag-plus-revx += " \
 	file://src/xceth1.dtso \
 "
 
-SRC_URI_append_nxhx4000-jtag-plus-rev4 += " \
+SRC_URI:append:nxhx4000-jtag-plus-rev4 += " \
 	file://src/nxhx4000-jtag-plus-rev4.dts \
 "
 
-SRC_URI_append_nxhx4000-jtag-plus-rev5 += "\
+SRC_URI:append:nxhx4000-jtag-plus-rev5 += "\
 	file://src/nxhx4000-jtag-plus-rev5.dts \
 "
 
 # --------------------------------------
 # ndeb4000-revx based boards
 
-COMPATIBLE_MACHINE_ndeb4000-revx = ".*"
-DTS_BASE_ndeb4000-revx += " \
+COMPATIBLE_MACHINE:ndeb4000-revx = ".*"
+DTS_BASE:ndeb4000-revx += " \
 	file://src/uart1.dtso \
 	file://src/can0.dtso \
 	file://src/gmac0.dtso \
@@ -81,7 +81,7 @@ DTS_BASE_ndeb4000-revx += " \
 	file://src/xceth1.dtso \
 "
 
-SRC_URI_append_ndeb4000-rev1 = "\
+SRC_URI:append:ndeb4000-rev1 = "\
 	file://src/ndcm4000-rev1.dts \
 	file://src/ndeb4000-rev1.dts \
 "
@@ -89,8 +89,8 @@ SRC_URI_append_ndeb4000-rev1 = "\
 # --------------------------------------
 # ndcm4000-revx based boards
 
-COMPATIBLE_MACHINE_ndcm4000-revx = ".*"
-DTS_BASE_ndcm4000-revx += " \
+COMPATIBLE_MACHINE:ndcm4000-revx = ".*"
+DTS_BASE:ndcm4000-revx += " \
         file://src/uart1.dtso \
         file://src/can0.dtso \
         file://src/gmac0.dtso \
@@ -102,6 +102,6 @@ DTS_BASE_ndcm4000-revx += " \
         file://src/xceth1.dtso \
 "
 
-SRC_URI_append_ndcm4000-rev1 = "\
+SRC_URI:append:ndcm4000-rev1 = "\
 	file://src/ndcm4000-rev1.dts \
 "

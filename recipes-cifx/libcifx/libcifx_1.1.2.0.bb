@@ -5,7 +5,7 @@ LICENSE = "CLOSED"
 inherit useradd
 
 USERADD_PACKAGES = "${PN}"
-GROUPADD_PARAM_${PN} = "-r cifx"
+GROUPADD_PARAM:${PN} = "-r cifx"
 
 SRC_URI = "file://libcifx-${TCLIBC}-${PV}.tar.bz2"
 
@@ -20,5 +20,5 @@ do_install() {
   chmod 0775 ${D}/opt/cifx
 }
 
-FILES_${PN} += "/opt/cifx/deviceconfig /opt/cifx/*.bin"
-INSANE_SKIP_${PN} = "already-stripped"
+FILES:${PN} += "/opt/cifx/deviceconfig /opt/cifx/*.bin"
+INSANE_SKIP:${PN} = "already-stripped"

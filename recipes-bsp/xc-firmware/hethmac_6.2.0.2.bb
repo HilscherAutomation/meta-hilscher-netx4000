@@ -62,7 +62,7 @@ do_compile_firmware() {
 	dtc ${WORKDIR}/${PN}-xc${xc}_${PV}.dts -O dtb -o ${WORKDIR}/${PN}-xc${xc}_${PV}.bin
 }
 
-do_compile_append() {
+do_compile:append() {
 	for xc in 0 1 2 3; do
 		do_compile_firmware $xc
 	done
@@ -81,4 +81,4 @@ do_install() {
   done
 }
 
-FILES_${PN} = "${nonarch_base_libdir}/firmware/*.bin"
+FILES:${PN} = "${nonarch_base_libdir}/firmware/*.bin"
