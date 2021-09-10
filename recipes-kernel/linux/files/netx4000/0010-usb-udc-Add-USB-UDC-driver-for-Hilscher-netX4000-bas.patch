@@ -1,4 +1,4 @@
-From a3474bb912d2e55b5f4ec04df4e1011d502b494d Mon Sep 17 00:00:00 2001
+From 015d42392000783194b00f72c5f8a5d0991d8d22 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:03:46 +0200
 Subject: [PATCH 10/20] usb-udc: Add USB UDC driver for Hilscher netX4000 based
@@ -12,7 +12,7 @@ Subject: [PATCH 10/20] usb-udc: Add USB UDC driver for Hilscher netX4000 based
  create mode 100644 drivers/usb/gadget/udc/udc-netx4000.c
 
 diff --git a/drivers/usb/gadget/udc/Kconfig b/drivers/usb/gadget/udc/Kconfig
-index 1a12aab208b4..daa70d08ab49 100644
+index 8c614bb86c66..303705cd89ab 100644
 --- a/drivers/usb/gadget/udc/Kconfig
 +++ b/drivers/usb/gadget/udc/Kconfig
 @@ -464,6 +464,17 @@ config USB_TEGRA_XUDC
@@ -34,10 +34,10 @@ index 1a12aab208b4..daa70d08ab49 100644
  # LAST -- dummy/emulated controller
  #
 diff --git a/drivers/usb/gadget/udc/Makefile b/drivers/usb/gadget/udc/Makefile
-index f5a7ce28aecd..b2b865d46b5b 100644
+index a21f2224e7eb..4c0cb00dd027 100644
 --- a/drivers/usb/gadget/udc/Makefile
 +++ b/drivers/usb/gadget/udc/Makefile
-@@ -41,5 +41,6 @@ obj-$(CONFIG_USB_GR_UDC)	+= gr_udc.o
+@@ -40,5 +40,6 @@ obj-$(CONFIG_USB_GR_UDC)	+= gr_udc.o
  obj-$(CONFIG_USB_GADGET_XILINX)	+= udc-xilinx.o
  obj-$(CONFIG_USB_SNP_UDC_PLAT) += snps_udc_plat.o
  obj-$(CONFIG_USB_ASPEED_VHUB)	+= aspeed-vhub/
@@ -1535,5 +1535,5 @@ index 000000000000..6f691a5517cb
 +MODULE_LICENSE("GPL v2");
 +
 -- 
-2.17.1
+2.25.1
 

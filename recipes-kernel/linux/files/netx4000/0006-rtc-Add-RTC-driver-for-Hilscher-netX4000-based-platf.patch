@@ -1,6 +1,6 @@
-From fdbfbacb98e8a89866c0db4b52f65a35baa0b07c Mon Sep 17 00:00:00 2001
+From 9e59bc746d375cd607a5df514d049c806ce6dc46 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
-Date: Mon, 10 May 2021 10:02:32 +0200
+Date: Fri, 10 Sep 2021 11:08:57 +0000
 Subject: [PATCH 06/20] rtc: Add RTC driver for Hilscher netX4000 based
  platforms.
 
@@ -12,12 +12,12 @@ Subject: [PATCH 06/20] rtc: Add RTC driver for Hilscher netX4000 based
  create mode 100644 drivers/rtc/rtc-netx4000.c
 
 diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 33e4ecd6c665..8da20dfe0225 100644
+index 914497abeef9..1721543fcba4 100644
 --- a/drivers/rtc/Kconfig
 +++ b/drivers/rtc/Kconfig
-@@ -1312,6 +1312,16 @@ config RTC_DRV_CROS_EC
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-cros-ec.
+@@ -1305,6 +1305,16 @@ config RTC_DRV_NTXEC
+ 	  embedded controller found in certain e-book readers designed by the
+ 	  original design manufacturer Netronix.
  
 +config RTC_DRV_NETX4000
 +	tristate "RTC driver for netX4000 based platforms"
@@ -33,17 +33,17 @@ index 33e4ecd6c665..8da20dfe0225 100644
  
  config RTC_DRV_ASM9260
 diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index bfb57464118d..f0bda1769df7 100644
+index 2dd0dd956b0e..3bbf838172c5 100644
 --- a/drivers/rtc/Makefile
 +++ b/drivers/rtc/Makefile
-@@ -111,6 +111,7 @@ obj-$(CONFIG_RTC_DRV_MT7622)	+= rtc-mt7622.o
+@@ -108,6 +108,7 @@ obj-$(CONFIG_RTC_DRV_MT7622)	+= rtc-mt7622.o
  obj-$(CONFIG_RTC_DRV_MV)	+= rtc-mv.o
  obj-$(CONFIG_RTC_DRV_MXC)	+= rtc-mxc.o
  obj-$(CONFIG_RTC_DRV_MXC_V2)	+= rtc-mxc_v2.o
 +obj-$(CONFIG_RTC_DRV_NETX4000)	+= rtc-netx4000.o
+ obj-$(CONFIG_RTC_DRV_NTXEC)	+= rtc-ntxec.o
  obj-$(CONFIG_RTC_DRV_OMAP)	+= rtc-omap.o
  obj-$(CONFIG_RTC_DRV_OPAL)	+= rtc-opal.o
- obj-$(CONFIG_RTC_DRV_PALMAS)	+= rtc-palmas.o
 diff --git a/drivers/rtc/rtc-netx4000.c b/drivers/rtc/rtc-netx4000.c
 new file mode 100644
 index 000000000000..5a71b2b9c84a
@@ -367,5 +367,5 @@ index 000000000000..5a71b2b9c84a
 +MODULE_LICENSE("GPL v2");
 +
 -- 
-2.17.1
+2.25.1
 

@@ -1,4 +1,4 @@
-From c6665357dba2fb65d554ad1061064a84a6deb90d Mon Sep 17 00:00:00 2001
+From 913769ce35e2709ce6863d98ea33fd6ffdc16bde Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:10:59 +0200
 Subject: [PATCH 19/20] amba-pl011: Add RS485 support (ioctl and devicetree).
@@ -12,7 +12,7 @@ This patch is based on https://patchwork.kernel.org/patch/9874525.
 diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
 old mode 100644
 new mode 100755
-index 87dc3fc15694..f9cf856384ff
+index 78682c12156a..0e2a348678ef
 --- a/drivers/tty/serial/amba-pl011.c
 +++ b/drivers/tty/serial/amba-pl011.c
 @@ -41,6 +41,7 @@
@@ -33,7 +33,7 @@ index 87dc3fc15694..f9cf856384ff
  };
  
  static unsigned int pl011_reg_to_offset(const struct uart_amba_port *uap,
-@@ -1286,12 +1290,35 @@ static inline bool pl011_dma_rx_running(struct uart_amba_port *uap)
+@@ -1284,12 +1288,35 @@ static inline bool pl011_dma_rx_running(struct uart_amba_port *uap)
  
  static void pl011_stop_tx(struct uart_port *port)
  {
@@ -69,7 +69,7 @@ index 87dc3fc15694..f9cf856384ff
  }
  
  static bool pl011_tx_chars(struct uart_amba_port *uap, bool from_irq);
-@@ -1307,9 +1334,30 @@ static void pl011_start_tx_pio(struct uart_amba_port *uap)
+@@ -1305,9 +1332,30 @@ static void pl011_start_tx_pio(struct uart_amba_port *uap)
  
  static void pl011_start_tx(struct uart_port *port)
  {
@@ -100,7 +100,7 @@ index 87dc3fc15694..f9cf856384ff
  	if (!pl011_dma_tx_start(uap))
  		pl011_start_tx_pio(uap);
  }
-@@ -2590,6 +2638,42 @@ static int pl011_find_free_port(void)
+@@ -2588,6 +2636,42 @@ static int pl011_find_free_port(void)
  	return -EBUSY;
  }
  
@@ -143,7 +143,7 @@ index 87dc3fc15694..f9cf856384ff
  static int pl011_setup_port(struct device *dev, struct uart_amba_port *uap,
  			    struct resource *mmiobase, int index)
  {
-@@ -2601,6 +2685,24 @@ static int pl011_setup_port(struct device *dev, struct uart_amba_port *uap,
+@@ -2599,6 +2683,24 @@ static int pl011_setup_port(struct device *dev, struct uart_amba_port *uap,
  
  	index = pl011_probe_dt_alias(index, dev);
  
@@ -168,7 +168,7 @@ index 87dc3fc15694..f9cf856384ff
  	uap->old_cr = 0;
  	uap->port.dev = dev;
  	uap->port.mapbase = mmiobase->start;
-@@ -2610,6 +2712,9 @@ static int pl011_setup_port(struct device *dev, struct uart_amba_port *uap,
+@@ -2608,6 +2710,9 @@ static int pl011_setup_port(struct device *dev, struct uart_amba_port *uap,
  	uap->port.flags = UPF_BOOT_AUTOCONF;
  	uap->port.line = index;
  
@@ -179,5 +179,5 @@ index 87dc3fc15694..f9cf856384ff
  
  	return 0;
 -- 
-2.17.1
+2.25.1
 

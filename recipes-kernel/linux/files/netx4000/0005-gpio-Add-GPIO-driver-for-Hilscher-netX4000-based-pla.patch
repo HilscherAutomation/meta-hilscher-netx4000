@@ -1,25 +1,24 @@
-From 2781de74589fc0685cc84d12186f65e82d1c5949 Mon Sep 17 00:00:00 2001
+From 552ee60fb60590154e9763745160a1d731ddb9d5 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
-Date: Mon, 10 May 2021 10:02:21 +0200
+Date: Fri, 10 Sep 2021 11:07:18 +0000
 Subject: [PATCH 05/20] gpio: Add GPIO driver for Hilscher netX4000 based
  platforms.
 
 ---
- drivers/gpio/Kconfig         |  12 ++
+ drivers/gpio/Kconfig         |  11 ++
  drivers/gpio/Makefile        |   1 +
  drivers/gpio/gpio-netx4000.c | 316 +++++++++++++++++++++++++++++++++++
- 3 files changed, 329 insertions(+)
+ 3 files changed, 328 insertions(+)
  create mode 100644 drivers/gpio/gpio-netx4000.c
 
 diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 14751c7ccd1f..0c4dc9d9da08 100644
+index 3c69b785cb79..5abda8ec87fd 100644
 --- a/drivers/gpio/Kconfig
 +++ b/drivers/gpio/Kconfig
-@@ -739,6 +739,18 @@ config GPIO_AMD_FCH
- 	  Note: This driver doesn't registers itself automatically, as it
- 	  needs to be provided with platform specific configuration.
- 	  (See eg. CONFIG_PCENGINES_APU2.)
-+
+@@ -446,6 +446,17 @@ config GPIO_MXS
+ 	select GPIO_GENERIC
+ 	select GENERIC_IRQ_CHIP
+ 
 +config GPIO_NETX4000
 +	tristate "GPIO driver for netX4000 based platforms"
 +	depends on ARCH_NETX4000
@@ -31,14 +30,14 @@ index 14751c7ccd1f..0c4dc9d9da08 100644
 +	  To compile this driver as a module, choose M here:
 +	  the module will be called gpio-netx4000.
 +
- endmenu
- 
- menu "Port-mapped I/O GPIO drivers"
+ config GPIO_OCTEON
+ 	tristate "Cavium OCTEON GPIO"
+ 	depends on CAVIUM_OCTEON_SOC
 diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 09dada80ac34..3cadb851450b 100644
+index d7c81e1611a4..851d80fedc2a 100644
 --- a/drivers/gpio/Makefile
 +++ b/drivers/gpio/Makefile
-@@ -106,6 +106,7 @@ obj-$(CONFIG_GPIO_MT7621)		+= gpio-mt7621.o
+@@ -107,6 +107,7 @@ obj-$(CONFIG_GPIO_MT7621)		+= gpio-mt7621.o
  obj-$(CONFIG_GPIO_MVEBU)		+= gpio-mvebu.o
  obj-$(CONFIG_GPIO_MXC)			+= gpio-mxc.o
  obj-$(CONFIG_GPIO_MXS)			+= gpio-mxs.o
@@ -369,5 +368,5 @@ index 000000000000..1bd3886dbea3
 +MODULE_LICENSE("GPL v2");
 +
 -- 
-2.17.1
+2.25.1
 

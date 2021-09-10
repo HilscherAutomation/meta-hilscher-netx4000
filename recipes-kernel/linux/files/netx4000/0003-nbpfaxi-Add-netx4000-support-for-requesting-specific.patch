@@ -1,4 +1,4 @@
-From 9f6dea08a0ff58ef3b309fee7d56579ea8bb0a78 Mon Sep 17 00:00:00 2001
+From d65247da8bbe4bfca7a1ac2c5a846ec7ed4cba93 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:01:38 +0200
 Subject: [PATCH 03/20] nbpfaxi: Add netx4000 support for requesting specific
@@ -36,5 +36,5 @@ index 9c52c57919c6..83819a1eca68 100644
  		return NULL;
  
 -- 
-2.17.1
+2.25.1
 

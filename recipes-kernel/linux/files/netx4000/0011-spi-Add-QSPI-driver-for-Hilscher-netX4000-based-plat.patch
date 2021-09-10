@@ -1,4 +1,4 @@
-From 4835b28bf2ebb45f6828a6abc6b2aea5ce8b9064 Mon Sep 17 00:00:00 2001
+From 9a6a6937dfbf20940b119f1ad7fd24cc22aae7d9 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:04:08 +0200
 Subject: [PATCH 11/20] spi: Add QSPI driver for Hilscher netX4000 based
@@ -40,10 +40,10 @@ index 000000000000..8007b3f62ca8
 +	};
 +};
 diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index aadaea052f51..e0487f2ca80a 100644
+index f4481fe48bf0..226320e9a577 100644
 --- a/drivers/spi/Kconfig
 +++ b/drivers/spi/Kconfig
-@@ -967,6 +967,16 @@ config SPI_AMD
+@@ -981,6 +981,16 @@ config SPI_AMD
  	help
  	  Enables SPI controller driver for AMD SoC.
  
@@ -61,10 +61,10 @@ index aadaea052f51..e0487f2ca80a 100644
  # Add new SPI master controllers in alphabetical order above this line
  #
 diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-index 6fea5821662e..15d19ef31f9f 100644
+index 13e54c45e9df..72494299b7f2 100644
 --- a/drivers/spi/Makefile
 +++ b/drivers/spi/Makefile
-@@ -131,6 +131,7 @@ obj-$(CONFIG_SPI_XTENSA_XTFPGA)		+= spi-xtensa-xtfpga.o
+@@ -133,6 +133,7 @@ obj-$(CONFIG_SPI_XTENSA_XTFPGA)		+= spi-xtensa-xtfpga.o
  obj-$(CONFIG_SPI_ZYNQ_QSPI)		+= spi-zynq-qspi.o
  obj-$(CONFIG_SPI_ZYNQMP_GQSPI)		+= spi-zynqmp-gqspi.o
  obj-$(CONFIG_SPI_AMD)			+= spi-amd.o
@@ -1137,5 +1137,5 @@ index 000000000000..4d3063782add
 +MODULE_LICENSE("GPL v2");
 +
 -- 
-2.17.1
+2.25.1
 

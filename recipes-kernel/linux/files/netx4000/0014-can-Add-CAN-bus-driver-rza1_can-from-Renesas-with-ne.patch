@@ -1,4 +1,4 @@
-From 56cccb985db9a0c03b570b753f587ee2df7ccaae Mon Sep 17 00:00:00 2001
+From 3af5d54e83e4a68f1d07c02908d5b25f60b8561b Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:06:18 +0200
 Subject: [PATCH 14/20] can: Add CAN bus driver rza1_can from Renesas with
@@ -81,7 +81,7 @@ index 000000000000..fbbd9a443f1a
 +	};
 +};
 diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
-index 1c28eade6bec..cf502161249c 100644
+index e355d3974977..b67c641d4cc2 100644
 --- a/drivers/net/can/Kconfig
 +++ b/drivers/net/can/Kconfig
 @@ -167,6 +167,12 @@ config PCH_CAN
@@ -418,7 +418,7 @@ index 000000000000..5404eb217b5e
 +	}
 +
 +	spin_lock_irqsave(&chpriv->skb_lock, flags);
-+	can_put_echo_skb(skb, ndev, chpriv->frames_queued++);
++	can_put_echo_skb(skb, ndev, chpriv->frames_queued++, 0);
 +	chpriv->bytes_queued += dlc;
 +	spin_unlock_irqrestore(&chpriv->skb_lock, flags);
 +
@@ -488,7 +488,7 @@ index 000000000000..5404eb217b5e
 +	int i;
 +
 +	for (i = 0; i < RZ_CAN_TX_ECHO_SKB_MAX; i++)
-+		can_free_echo_skb(ndev, i);	//asdf BUG: Can't call from ISR
++		can_free_echo_skb(ndev, i, NULL);	//asdf BUG: Can't call from ISR
 +}
 +
 +irqreturn_t rz_can_tx_isr(int irq, void *dev_id)
@@ -505,7 +505,7 @@ index 000000000000..5404eb217b5e
 +	if (reg & RZ_CAN_RSCAN0CFSTSk_CFTXIF) {
 +		spin_lock(&chpriv->skb_lock);
 +		for (i = 0; i < chpriv->frames_queued; i++)
-+			can_get_echo_skb(ndev, i);
++			can_get_echo_skb(ndev, i, NULL);
 +		stats->tx_bytes += chpriv->bytes_queued;
 +		stats->tx_packets += chpriv->frames_queued;
 +		chpriv->bytes_queued = 0;
@@ -1226,5 +1226,5 @@ index 000000000000..bb9b9ea0bdcc
 +#endif	/* !_CAN_PLATFORM_RZA1_CAN_H_ */
 \ No newline at end of file
 -- 
-2.17.1
+2.25.1
 
