@@ -40,15 +40,15 @@ do_create_dts_file() {
 	echo "/dts-v1/;"
 	echo ""
 	echo "/ {"
-	echo "\tfirmware = \"${PN}-xc${xc}\";"
-	echo "\tversion = \"${PV}\";"
+	echo "    firmware = \"${PN}-xc${xc}\";"
+	echo "    version = \"${PV}\";"
 	echo ""
-	echo "\txc$xc {"
+	echo "    xc$xc {"
 	for unit in rpec tpec rpu tpu; do
 		binfile="$(ls ${S}/*${xc}.bin | grep $unit)"
-		echo "\t\t$unit$xc = /incbin/(\"$binfile\");"
+		echo "        $unit$xc = /incbin/(\"$binfile\");"
 	done
-	echo "\t};"
+	echo "    };"
 	echo "};"
 }
 
