@@ -11,7 +11,6 @@ pipeline {
 			agent {
 				dockerfile {
 					dir 'meta-hilscher-netx4000/scripts/yocto/docker'
-					args '-v ${WORKSPACE}:/build'
 				}
 			}
 
@@ -23,7 +22,6 @@ pipeline {
 			steps {
 				sh '''
 					# Search all layers for machine configurations
-					cd /build
 					for layer in meta-*; do
 						if [ -d "$layer/conf/machine" ]; then
 							for machine_conf in $(grep -l "@TYPE: Machine" $layer/conf/machine/*.conf); do
