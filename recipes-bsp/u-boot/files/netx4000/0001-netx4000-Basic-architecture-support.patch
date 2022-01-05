@@ -1,4 +1,4 @@
-From d41876e44ba56520d3542dc4e4f5304a4c329e5d Mon Sep 17 00:00:00 2001
+From ca5091cb8e6641af93776bfe669fb73eedaed94c Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:43:56 +0200
 Subject: [PATCH 1/5] netx4000: Basic architecture support
@@ -8,7 +8,7 @@ Subject: [PATCH 1/5] netx4000: Basic architecture support
  Makefile                                      |   15 +
  arch/arm/Kconfig                              |   15 +
  arch/arm/Makefile                             |    1 +
- arch/arm/dts/Makefile                         |    3 +
+ arch/arm/dts/Makefile                         |    2 +
  arch/arm/dts/netx4000-common.dtsi             | 1188 +++
  .../dts/netx4000-nxhx4000-jtag-plus-rev4.dts  |   22 +
  arch/arm/dts/nxhx4000-jtag-plus-revx.dts      |  171 +
@@ -36,7 +36,7 @@ Subject: [PATCH 1/5] netx4000: Basic architecture support
  drivers/clk/Makefile                          |    1 +
  drivers/clk/clk-netx4000.c                    |  169 +
  drivers/net/Kconfig                           |    8 +
- drivers/net/dwc_eth_qos.c                     |  193 +
+ drivers/net/dwc_eth_qos.c                     |  166 +-
  drivers/net/phy/Kconfig                       |    6 +
  drivers/net/phy/Makefile                      |    2 +
  drivers/net/phy/mdio-gpio-bb.c                |  291 +
@@ -58,7 +58,7 @@ Subject: [PATCH 1/5] netx4000: Basic architecture support
  .../hboot_image_compiler/snippet_library.py   |  351 +
  tools/netx4000/hboot_netx4000_patch_table.xml | 7129 +++++++++++++++++
  tools/netx4000/netx4000_cr7_openfirewalls.elf |  Bin 0 -> 34631 bytes
- 54 files changed, 18769 insertions(+)
+ 54 files changed, 18740 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm/dts/netx4000-common.dtsi
  create mode 100644 arch/arm/dts/netx4000-nxhx4000-jtag-plus-rev4.dts
  create mode 100644 arch/arm/dts/nxhx4000-jtag-plus-revx.dts
@@ -116,10 +116,10 @@ index e66aa864da..c58a2da3b3 100644
  *.su
  *.swp
 diff --git a/Makefile b/Makefile
-index 2ab9c53192..6490d7b5e3 100644
+index 20c1aa3f58..7a7a936c11 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -960,6 +960,8 @@ ifeq ($(CONFIG_SPL),)
+@@ -970,6 +970,8 @@ ifeq ($(CONFIG_SPL),)
  INPUTS-$(CONFIG_ARCH_MEDIATEK) += u-boot-mtk.bin
  endif
  
@@ -128,7 +128,7 @@ index 2ab9c53192..6490d7b5e3 100644
  # Add optional build target if defined in board/cpu/soc headers
  ifneq ($(CONFIG_BUILD_TARGET),)
  INPUTS-y += $(CONFIG_BUILD_TARGET:"%"=%)
-@@ -1617,6 +1619,19 @@ u-boot-br.bin: u-boot FORCE
+@@ -1612,6 +1614,19 @@ u-boot-br.bin: u-boot FORCE
  endif
  endif
  
@@ -149,10 +149,10 @@ index 2ab9c53192..6490d7b5e3 100644
  cmd_ldr = $(LD) $(LDFLAGS_$(@F)) \
  	       $(filter-out FORCE,$^) -o $@
 diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 0448787b8b..4341cd3420 100644
+index b5bd3284cd..06687fd080 100644
 --- a/arch/arm/Kconfig
 +++ b/arch/arm/Kconfig
-@@ -801,6 +801,19 @@ config ARCH_LPC32XX
+@@ -782,6 +782,19 @@ config ARCH_LPC32XX
  	select SUPPORT_SPL
  	imply CMD_DM
  
@@ -172,7 +172,7 @@ index 0448787b8b..4341cd3420 100644
  config ARCH_IMX8
  	bool "NXP i.MX8 platform"
  	select ARM64
-@@ -1927,6 +1940,8 @@ source "arch/arm/mach-imx/imxrt/Kconfig"
+@@ -1988,6 +2001,8 @@ source "arch/arm/mach-imx/imxrt/Kconfig"
  
  source "arch/arm/mach-imx/mxs/Kconfig"
  
@@ -182,7 +182,7 @@ index 0448787b8b..4341cd3420 100644
  
  source "arch/arm/cpu/armv8/fsl-layerscape/Kconfig"
 diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index 28b523b37c..d3bb69bf54 100644
+index c68e598a67..d8afe6997e 100644
 --- a/arch/arm/Makefile
 +++ b/arch/arm/Makefile
 @@ -66,6 +66,7 @@ machine-$(CONFIG_ARCH_LPC32XX)		+= lpc32xx
@@ -194,16 +194,15 @@ index 28b523b37c..d3bb69bf54 100644
  machine-$(CONFIG_ARCH_OMAP2PLUS)	+= omap2
  machine-$(CONFIG_ARCH_ORION5X)		+= orion5x
 diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
-index 9fb38682e6..1e06b28719 100644
+index fc16a57e60..7d346ddcab 100644
 --- a/arch/arm/dts/Makefile
 +++ b/arch/arm/dts/Makefile
-@@ -246,6 +246,9 @@ dtb-$(CONFIG_ARCH_MVEBU) +=			\
- 	cn9130-crb-A.dtb			\
+@@ -251,6 +251,8 @@ dtb-$(CONFIG_ARCH_MVEBU) +=			\
  	cn9130-crb-B.dtb
  
-+dtb-$(CONFIG_ARCH_NETX4000) +=			\
+ dtb-$(CONFIG_ARCH_SYNQUACER) += synquacer-sc2a11-developerbox.dtb
++dtb-$(CONFIG_ARCH_NETX4000) += \
 +	netx4000-nxhx4000-jtag-plus-rev4.dtb
-+
  dtb-$(CONFIG_ARCH_UNIPHIER_LD11) += \
  	uniphier-ld11-global.dtb \
  	uniphier-ld11-ref.dtb
@@ -4202,11 +4201,11 @@ index 0000000000..f29face800
 +CONFIG_MENU=y
 +CONFIG_CMD_BOOTMENU=y
 diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 645709b855..e6773de5e3 100644
+index 711ae5bc29..4fd62400b1 100644
 --- a/drivers/clk/Makefile
 +++ b/drivers/clk/Makefile
 @@ -31,6 +31,7 @@ obj-$(CONFIG_CLK_HSDK) += clk-hsdk-cgu.o
- obj-$(CONFIG_CLK_K210) += kendryte/
+ obj-$(CONFIG_CLK_K210) += clk_kendryte.o
  obj-$(CONFIG_CLK_MPC83XX) += mpc83xx_clk.o
  obj-$(CONFIG_CLK_MPFS) += microchip/
 +obj-$(CONFIG_ARCH_NETX4000) += clk-netx4000.o
@@ -4389,7 +4388,7 @@ index 0000000000..06d5951e6a
 +	.flags = DM_FLAG_PRE_RELOC,
 +};
 diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index 9fc28b149d..049506253b 100644
+index d4dc72046c..8454497c58 100644
 --- a/drivers/net/Kconfig
 +++ b/drivers/net/Kconfig
 @@ -203,6 +203,14 @@ config DWC_ETH_QOS_IMX
@@ -4408,13 +4407,14 @@ index 9fc28b149d..049506253b 100644
  	bool "Synopsys DWC Ethernet QOS device support for STM32"
  	depends on DWC_ETH_QOS
 diff --git a/drivers/net/dwc_eth_qos.c b/drivers/net/dwc_eth_qos.c
-index b012bed517..133fa0770d 100644
+index 585101804d..5240a9103b 100644
 --- a/drivers/net/dwc_eth_qos.c
 +++ b/drivers/net/dwc_eth_qos.c
-@@ -616,6 +616,31 @@ err:
+@@ -615,7 +615,32 @@ err:
  #endif
  }
  
+-static int eqos_stop_clks_tegra186(struct udevice *dev)
 +static int eqos_start_clks_netx4000(struct udevice *dev)
 +{
 +#ifdef CONFIG_CLK
@@ -4440,11 +4440,12 @@ index b012bed517..133fa0770d 100644
 +#endif
 +}
 +
- static int eqos_start_clks_imx(struct udevice *dev)
++static void eqos_stop_clks_tegra186(struct udevice *dev)
  {
+ #ifdef CONFIG_CLK
+ 	struct eqos_priv *eqos = dev_get_priv(dev);
+@@ -649,6 +674,19 @@ static int eqos_stop_clks_stm32(struct udevice *dev)
  	return 0;
-@@ -653,6 +678,19 @@ static void eqos_stop_clks_stm32(struct udevice *dev)
- 	debug("%s: OK\n", __func__);
  }
  
 +static void eqos_stop_clks_netx4000(struct udevice *dev)
@@ -4460,34 +4461,10 @@ index b012bed517..133fa0770d 100644
 +	debug("%s: OK\n", __func__);
 +}
 +
- static void eqos_stop_clks_imx(struct udevice *dev)
+ static int eqos_start_resets_tegra186(struct udevice *dev)
  {
- 	/* empty */
-@@ -725,6 +763,11 @@ static int eqos_start_resets_stm32(struct udevice *dev)
- 	return 0;
- }
- 
-+static int eqos_start_resets_netx4000(struct udevice *dev)
-+{
-+	return 0;
-+}
-+
- static int eqos_start_resets_imx(struct udevice *dev)
- {
- 	return 0;
-@@ -757,6 +800,11 @@ static int eqos_stop_resets_stm32(struct udevice *dev)
- 	return 0;
- }
- 
-+static int eqos_stop_resets_netx4000(struct udevice *dev)
-+{
-+	return 0;
-+}
-+
- static int eqos_stop_resets_imx(struct udevice *dev)
- {
- 	return 0;
-@@ -836,6 +884,17 @@ static ulong eqos_get_tick_clk_rate_stm32(struct udevice *dev)
+ 	struct eqos_priv *eqos = dev_get_priv(dev);
+@@ -772,6 +810,17 @@ static ulong eqos_get_tick_clk_rate_stm32(struct udevice *dev)
  #endif
  }
  
@@ -4505,43 +4482,7 @@ index b012bed517..133fa0770d 100644
  __weak u32 imx_get_eqos_csr_clk(void)
  {
  	return 100 * 1000000;
-@@ -855,6 +914,11 @@ static int eqos_calibrate_pads_stm32(struct udevice *dev)
- 	return 0;
- }
- 
-+static int eqos_calibrate_pads_netx4000(struct udevice *dev)
-+{
-+	return 0;
-+}
-+
- static int eqos_calibrate_pads_imx(struct udevice *dev)
- {
- 	return 0;
-@@ -865,6 +929,11 @@ static int eqos_disable_calibration_stm32(struct udevice *dev)
- 	return 0;
- }
- 
-+static int eqos_disable_calibration_netx4000(struct udevice *dev)
-+{
-+	return 0;
-+}
-+
- static int eqos_disable_calibration_imx(struct udevice *dev)
- {
- 	return 0;
-@@ -971,6 +1040,11 @@ static int eqos_set_tx_clk_speed_stm32(struct udevice *dev)
- 	return 0;
- }
- 
-+static int eqos_set_tx_clk_speed_netx4000(struct udevice *dev)
-+{
-+	return 0;
-+}
-+
- static int eqos_set_tx_clk_speed_imx(struct udevice *dev)
- {
- 	struct eqos_priv *eqos = dev_get_priv(dev);
-@@ -1846,6 +1920,61 @@ err_probe:
+@@ -1738,6 +1787,57 @@ err_probe:
  	return ret;
  }
  
@@ -4573,7 +4514,6 @@ index b012bed517..133fa0770d 100644
 +		goto err_probe;
 +	}
 +
-+	eqos->phyaddr = -1;
 +	ret = dev_read_phandle_with_args(dev, "phy-handle", NULL, 0, 0,
 +					 &phandle_args);
 +	if (!ret) {
@@ -4586,9 +4526,6 @@ index b012bed517..133fa0770d 100644
 +		if (ret)
 +			pr_warn("gpio_request_by_name(phy reset) not provided %d",
 +				ret);
-+
-+		eqos->phyaddr = ofnode_read_u32_default(phandle_args.node,
-+							"reg", -1);
 +	}
 +
 +	debug("%s: OK\n", __func__);
@@ -4603,7 +4540,7 @@ index b012bed517..133fa0770d 100644
  static phy_interface_t eqos_get_interface_stm32(struct udevice *dev)
  {
  	const char *phy_mode;
-@@ -1860,6 +1989,20 @@ static phy_interface_t eqos_get_interface_stm32(struct udevice *dev)
+@@ -1752,6 +1852,20 @@ static phy_interface_t eqos_get_interface_stm32(struct udevice *dev)
  	return interface;
  }
  
@@ -4624,7 +4561,7 @@ index b012bed517..133fa0770d 100644
  static phy_interface_t eqos_get_interface_tegra186(struct udevice *dev)
  {
  	return PHY_INTERFACE_MODE_MII;
-@@ -1938,6 +2081,23 @@ static int eqos_remove_resources_stm32(struct udevice *dev)
+@@ -1830,6 +1944,23 @@ static int eqos_remove_resources_stm32(struct udevice *dev)
  	return 0;
  }
  
@@ -4645,10 +4582,10 @@ index b012bed517..133fa0770d 100644
 +	return 0;
 +}
 +
- static int eqos_remove_resources_imx(struct udevice *dev)
+ static int eqos_probe(struct udevice *dev)
  {
- 	return 0;
-@@ -2125,6 +2285,33 @@ struct eqos_config __maybe_unused eqos_imx_config = {
+ 	struct eqos_priv *eqos = dev_get_priv(dev);
+@@ -2017,6 +2148,33 @@ struct eqos_config __maybe_unused eqos_imx_config = {
  	.ops = &eqos_imx_ops
  };
  
@@ -4659,13 +4596,13 @@ index b012bed517..133fa0770d 100644
 +	.eqos_flush_buffer = eqos_flush_buffer_generic,
 +	.eqos_probe_resources = eqos_probe_resources_netx4000,
 +	.eqos_remove_resources = eqos_remove_resources_netx4000,
-+	.eqos_stop_resets = eqos_stop_resets_netx4000,
-+	.eqos_start_resets = eqos_start_resets_netx4000,
++	.eqos_stop_resets = eqos_null_ops,
++	.eqos_start_resets = eqos_null_ops,
 +	.eqos_stop_clks = eqos_stop_clks_netx4000,
 +	.eqos_start_clks = eqos_start_clks_netx4000,
-+	.eqos_calibrate_pads = eqos_calibrate_pads_netx4000,
-+	.eqos_disable_calibration = eqos_disable_calibration_netx4000,
-+	.eqos_set_tx_clk_speed = eqos_set_tx_clk_speed_netx4000,
++	.eqos_calibrate_pads = eqos_null_ops,
++	.eqos_disable_calibration = eqos_null_ops,
++	.eqos_set_tx_clk_speed = eqos_null_ops,
 +	.eqos_get_tick_clk_rate = eqos_get_tick_clk_rate_netx4000
 +};
 +
@@ -4682,7 +4619,7 @@ index b012bed517..133fa0770d 100644
  static const struct udevice_id eqos_ids[] = {
  #if IS_ENABLED(CONFIG_DWC_ETH_QOS_TEGRA186)
  	{
-@@ -2144,6 +2331,12 @@ static const struct udevice_id eqos_ids[] = {
+@@ -2036,6 +2194,12 @@ static const struct udevice_id eqos_ids[] = {
  		.data = (ulong)&eqos_imx_config
  	},
  #endif
@@ -4696,7 +4633,7 @@ index b012bed517..133fa0770d 100644
  	{ }
  };
 diff --git a/drivers/net/phy/Kconfig b/drivers/net/phy/Kconfig
-index 070ffa82cb..19fc502ea3 100644
+index 64d5ddf238..cb836bb659 100644
 --- a/drivers/net/phy/Kconfig
 +++ b/drivers/net/phy/Kconfig
 @@ -2,6 +2,12 @@
@@ -4713,10 +4650,10 @@ index 070ffa82cb..19fc502ea3 100644
  	bool "Marvell 88E6352 switch support"
  
 diff --git a/drivers/net/phy/Makefile b/drivers/net/phy/Makefile
-index e967f82201..806b96d5ba 100644
+index 218b8c7669..99cfe93c24 100644
 --- a/drivers/net/phy/Makefile
 +++ b/drivers/net/phy/Makefile
-@@ -34,3 +34,5 @@ obj-$(CONFIG_PHY_VITESSE) += vitesse.o
+@@ -35,3 +35,5 @@ obj-$(CONFIG_PHY_VITESSE) += vitesse.o
  obj-$(CONFIG_PHY_MSCC) += mscc.o
  obj-$(CONFIG_PHY_FIXED) += fixed.o
  obj-$(CONFIG_PHY_NCSI) += ncsi.o
@@ -5020,10 +4957,10 @@ index 0000000000..181e36b143
 +	.probe = mdio_gpio_bb_probe,
 +};
 diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
-index 7af6c5f0b0..20f9ac2366 100644
+index cf9ad3670f..d2cce04673 100644
 --- a/drivers/pinctrl/pinctrl-single.c
 +++ b/drivers/pinctrl/pinctrl-single.c
-@@ -529,15 +529,59 @@ static int single_of_to_plat(struct udevice *dev)
+@@ -530,15 +530,59 @@ static int single_of_to_plat(struct udevice *dev)
  	return 0;
  }
  
@@ -5084,7 +5021,7 @@ index 7af6c5f0b0..20f9ac2366 100644
  };
  
 diff --git a/drivers/serial/serial_pl01x.c b/drivers/serial/serial_pl01x.c
-index 5283d5ed11..6fab959db3 100644
+index 67caa063c9..9e06b14ac2 100644
 --- a/drivers/serial/serial_pl01x.c
 +++ b/drivers/serial/serial_pl01x.c
 @@ -36,6 +36,13 @@ static struct pl01x_regs *base_regs __section(".data");
@@ -5103,7 +5040,7 @@ index 5283d5ed11..6fab959db3 100644
  	/* Wait until there is space in the FIFO */
 diff --git a/include/configs/netx4000.h b/include/configs/netx4000.h
 new file mode 100644
-index 0000000000..9556b50b01
+index 0000000000..93ee3a7497
 --- /dev/null
 +++ b/include/configs/netx4000.h
 @@ -0,0 +1,47 @@
@@ -19385,5 +19322,5 @@ literal 0
 HcmV?d00001
 
 -- 
-2.17.1
+2.25.1
 

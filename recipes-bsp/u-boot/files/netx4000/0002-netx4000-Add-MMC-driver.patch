@@ -1,4 +1,4 @@
-From c2086cd9bf9f0359f39d1604c26644c47428f142 Mon Sep 17 00:00:00 2001
+From 0d8f82ffe630a1d4a03e93b5986e5e03d3459b02 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:44:10 +0200
 Subject: [PATCH 2/5] netx4000: Add MMC driver
@@ -13,7 +13,7 @@ Subject: [PATCH 2/5] netx4000: Add MMC driver
  create mode 100644 drivers/mmc/netx4000-mci.h
 
 diff --git a/drivers/mmc/Kconfig b/drivers/mmc/Kconfig
-index 0909f502a1..c5c60390f8 100644
+index 1569e8c44a..723e94d088 100644
 --- a/drivers/mmc/Kconfig
 +++ b/drivers/mmc/Kconfig
 @@ -311,6 +311,15 @@ config MMC_MXS
@@ -33,7 +33,7 @@ index 0909f502a1..c5c60390f8 100644
  	bool "Support for MMC controllers on PCI"
  	depends on MMC_SDHCI
 diff --git a/drivers/mmc/Makefile b/drivers/mmc/Makefile
-index 89d6af3db3..605f507545 100644
+index dde6cd563f..dc8949ac55 100644
 --- a/drivers/mmc/Makefile
 +++ b/drivers/mmc/Makefile
 @@ -38,6 +38,7 @@ obj-$(CONFIG_MVEBU_MMC) += mvebu_mmc.o
@@ -889,5 +889,5 @@ index 0000000000..63eea5111e
 +
 +#endif /* __NETX4000_SDIO_H__ */
 -- 
-2.17.1
+2.25.1
 

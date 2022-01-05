@@ -1,4 +1,4 @@
-From 984792f1c6007489a8b0356f0f86b91a0dbc7b1d Mon Sep 17 00:00:00 2001
+From b6c3e7b8f0f547b0a91952a0a0b1971d11306659 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:45:00 +0200
 Subject: [PATCH 3/5] netx4000: Add USB ehci controller driver
@@ -13,10 +13,10 @@ Subject: [PATCH 3/5] netx4000: Add USB ehci controller driver
  create mode 100644 drivers/usb/host/ehci-netx4000.h
 
 diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index f34cba2395..c7403be2a1 100644
+index 427b360af1..68d962e3db 100644
 --- a/drivers/usb/host/Kconfig
 +++ b/drivers/usb/host/Kconfig
-@@ -163,6 +163,14 @@ config USB_EHCI_MX7
+@@ -166,6 +166,14 @@ config USB_EHCI_MX7
  	---help---
  	  Enables support for the on-chip EHCI controller on i.MX7 SoCs.
  
@@ -32,7 +32,7 @@ index f34cba2395..c7403be2a1 100644
  	bool "Support for OMAP3+ on-chip EHCI USB controller"
  	depends on ARCH_OMAP2PLUS
 diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index a12e8f2702..bd37bf5b6f 100644
+index eb6fe9f6b3..1e46dfdcfd 100644
 --- a/drivers/usb/host/Makefile
 +++ b/drivers/usb/host/Makefile
 @@ -32,6 +32,7 @@ obj-$(CONFIG_USB_EHCI_MXS) += ehci-mxs.o
@@ -724,5 +724,5 @@ index 0000000000..6293bf772e
 +
 +#endif /* __NETX4000_OHCI_ */
 -- 
-2.17.1
+2.25.1
 
