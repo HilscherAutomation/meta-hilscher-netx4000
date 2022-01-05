@@ -7,7 +7,7 @@ do_prepatch() {
     check_git_config
 }
 
-SRC_URI:append:netx4000 += " \
+SRC_URI:append:netx4000 = " \
     file://0001-netx4000-Basic-architecture-support.patch \
     file://0002-netx4000-Add-MMC-driver.patch \
     file://0003-netx4000-Add-USB-ehci-controller-driver.patch \

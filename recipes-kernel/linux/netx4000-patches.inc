@@ -1,4 +1,4 @@
-SRC_URI:append:netx4000 += " \
+SRC_URI:append:netx4000 = " \
     file://netx4000/0001-arm-Add-basic-support-for-Hilscher-netX4000-SoC.patch      \
     file://netx4000/0002-pl011-Fix-invalid-byte-access-in-debug-mode.patch          \
     file://netx4000/0003-nbpfaxi-Add-netx4000-support-for-requesting-specific.patch \

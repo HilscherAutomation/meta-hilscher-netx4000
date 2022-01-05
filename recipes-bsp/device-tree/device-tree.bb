@@ -57,11 +57,11 @@ DTS_BASE:nxhx4000-jtag-plus-revx += " \
 	file://src/xceth1.dtso \
 "
 
-SRC_URI:append:nxhx4000-jtag-plus-rev4 += " \
+SRC_URI:append:nxhx4000-jtag-plus-rev4 = " \
 	file://src/nxhx4000-jtag-plus-rev4.dts \
 "
 
-SRC_URI:append:nxhx4000-jtag-plus-rev5 += "\
+SRC_URI:append:nxhx4000-jtag-plus-rev5 = " \
 	file://src/nxhx4000-jtag-plus-rev5.dts \
 "
 

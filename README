@@ -121,7 +121,7 @@ Example machine:
 =================
 
 The netX4000 base machine configuration (netx4000.inc) includes
-IMAGE_FSTYPES:append += "wic wic.bmap" and WKS_FILE:prepend =+ "sdimg-bootpart.wks" lines.
+IMAGE_FSTYPES:append = " wic wic.bmap " and WKS_FILE:prepend = " sdimg-bootpart.wks " lines.
 
 These are responsible for automatically building an SD card image file.
 
