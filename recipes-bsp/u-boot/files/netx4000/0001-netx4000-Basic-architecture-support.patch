@@ -663,7 +663,7 @@ index 0000000000..650dbe3a1c
 +			gpio-controller;
 +			#gpio-cells = <2>;
 +
-+			gpio-ranges = <&pinctrl 0 (MUX_PIN(15,2)/4) 14>,
++			gpio-ranges = <&pinctrl 0 (MUX_PIN(15,0)/4) 14>,
 +			              <&pinctrl 14 (MUX_PIN(16,0)/4) 12>,
 +			              <&pinctrl 26 (MUX_PIN(2,0)/4) 2>;
 +		};
