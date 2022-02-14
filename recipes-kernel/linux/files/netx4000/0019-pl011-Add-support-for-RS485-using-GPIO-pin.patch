@@ -1,0 +1,109 @@
+From e436c1a1584ad251cfb0c02afb5728a9ed9567ca Mon Sep 17 00:00:00 2001
+From: Michael Trensch <mtrensch@hilscher.com>
+Date: Mon, 14 Feb 2022 10:21:22 +0100
+Subject: [PATCH 19/20] pl011: Add support for RS485 using GPIO pin
+
+---
+ drivers/tty/serial/amba-pl011.c | 54 +++++++++++++++++++++++++++------
+ 1 file changed, 45 insertions(+), 9 deletions(-)
+ mode change 100644 => 100755 drivers/tty/serial/amba-pl011.c
+
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+old mode 100644
+new mode 100755
+index da54f827c5ef..5e460ec3acbf
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -41,6 +41,7 @@
+ #include <linux/sizes.h>
+ #include <linux/io.h>
+ #include <linux/acpi.h>
++#include <linux/of_gpio.h>
+ 
+ #include "amba-pl011.h"
+ 
+@@ -275,6 +276,9 @@ struct uart_amba_port {
+ 	struct pl011_dmatx_data	dmatx;
+ 	bool			dma_probed;
+ #endif
++	int rs485_txen_gpio;
++	enum of_gpio_flags rs485_txen_gpio_flags;
++	char rs485_txen_gpio_name[32];
+ };
+ 
+ static unsigned int pl011_tx_empty(struct uart_port *port);
+@@ -1307,12 +1311,19 @@ static void pl011_rs485_tx_stop(struct uart_amba_port *uap)
+ 	if (port->rs485.delay_rts_after_send)
+ 		mdelay(port->rs485.delay_rts_after_send);
+ 
+-	cr = pl011_read(uap, REG_CR);
++	if (uap->rs485_txen_gpio > 0) {
++		if (port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
++			gpio_set_value(uap->rs485_txen_gpio, (uap->rs485_txen_gpio_flags & OF_GPIO_ACTIVE_LOW) ? 0 : 1);
++		else
++			gpio_set_value(uap->rs485_txen_gpio, (uap->rs485_txen_gpio_flags & OF_GPIO_ACTIVE_LOW) ? 1 : 0);
++	} else {
++		cr = pl011_read(uap, REG_CR);
+ 
+-	if (port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
+-		cr &= ~UART011_CR_RTS;
+-	else
+-		cr |= UART011_CR_RTS;
++		if (port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
++			cr &= ~UART011_CR_RTS;
++		else
++			cr |= UART011_CR_RTS;
++	}
+ 
+ 	/* Disable the transmitter and reenable the transceiver */
+ 	cr &= ~UART011_CR_TXE;
+@@ -1436,10 +1447,17 @@ static void pl011_rs485_tx_start(struct uart_amba_port *uap)
+ 	if (!(port->rs485.flags & SER_RS485_RX_DURING_TX))
+ 		cr &= ~UART011_CR_RXE;
+ 
+-	if (port->rs485.flags & SER_RS485_RTS_ON_SEND)
+-		cr &= ~UART011_CR_RTS;
+-	else
+-		cr |= UART011_CR_RTS;
++	if (uap->rs485_txen_gpio > 0) {
++		if (port->rs485.flags & SER_RS485_RTS_ON_SEND)
++			gpio_set_value(uap->rs485_txen_gpio, (uap->rs485_txen_gpio_flags & OF_GPIO_ACTIVE_LOW) ? 0 : 1);
++		else
++			gpio_set_value(uap->rs485_txen_gpio, (uap->rs485_txen_gpio_flags & OF_GPIO_ACTIVE_LOW) ? 1 : 0);
++	} else {
++		if (port->rs485.flags & SER_RS485_RTS_ON_SEND)
++			cr &= ~UART011_CR_RTS;
++		else
++			cr |= UART011_CR_RTS;
++	}
+ 
+ 	pl011_write(cr, uap, REG_CR);
+ 
+@@ -2735,6 +2753,24 @@ static int pl011_setup_port(struct device *dev, struct uart_amba_port *uap,
+ 
+ 	index = pl011_probe_dt_alias(index, dev);
+ 
++	uap->rs485_txen_gpio = of_get_named_gpio_flags(dev->of_node, "rs485-txen-gpio", 0, &uap->rs485_txen_gpio_flags);
++
++	if(uap->rs485_txen_gpio == -EPROBE_DEFER)
++		return -EPROBE_DEFER;
++
++	if (uap->rs485_txen_gpio > 0) {
++		snprintf(uap->rs485_txen_gpio_name, sizeof(uap->rs485_txen_gpio_name), "pl011-rs485-txen%d", index);
++		if (!gpio_is_valid(uap->rs485_txen_gpio)) {
++			dev_err(dev, "Invalid GPIO rs485-txen-gpio (%d).\n", uap->rs485_txen_gpio);
++			return -EINVAL;
++		}
++		if (devm_gpio_request_one(dev, uap->rs485_txen_gpio, (uap->rs485_txen_gpio_flags & OF_GPIO_ACTIVE_LOW) ? (GPIOF_ACTIVE_LOW | GPIOF_OUT_INIT_HIGH) : GPIOF_OUT_INIT_LOW, uap->rs485_txen_gpio_name) < 0) {
++			dev_err(dev, "Error requesting GPIO rs485-txen-gpio (%d).\n", uap->rs485_txen_gpio);
++			return -EINVAL;
++		}
++		dev_info(dev, "gpio%d used as tx-enable for RS485 mode (active-%s)\n", uap->rs485_txen_gpio, (uap->rs485_txen_gpio_flags & OF_GPIO_ACTIVE_LOW) ? "low" : "high");
++	}
++
+ 	uap->old_cr = 0;
+ 	uap->port.dev = dev;
+ 	uap->port.mapbase = mmiobase->start;
+-- 
+2.25.1
+
