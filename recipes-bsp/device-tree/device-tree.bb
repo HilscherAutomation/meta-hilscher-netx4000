@@ -30,6 +30,11 @@ devicetree_do_deploy() {
 
 FILES:${PN} += "boot/dt-overlays"
 
+python() {
+    if not d.getVar("DTS_BASE"):
+        raise bb.parse.SkipRecipe("DTS_BASE is empty")
+}
+
 # --------------------------------------
 # common include files
 
