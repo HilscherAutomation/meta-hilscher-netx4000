@@ -1,6 +1,6 @@
-From d410f03c533083b4066cb7f952af7bc3b6a631e6 Mon Sep 17 00:00:00 2001
+From a2990f1ecb432e98a68a280b71ce7e2793682e93 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
-Date: Fri, 10 Sep 2021 11:04:42 +0000
+Date: Mon, 10 May 2021 10:02:07 +0200
 Subject: [PATCH 04/20] mmc: Add SD/MMC driver for Hilscher netX4000 based
  platforms.
 
@@ -12,10 +12,10 @@ Subject: [PATCH 04/20] mmc: Add SD/MMC driver for Hilscher netX4000 based
  create mode 100644 drivers/mmc/host/sdmmc-netx4000.c
 
 diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index a4d4c757eea0..8877dbe421a3 100644
+index 31481c9fcc2e..a1a8857b9ef6 100644
 --- a/drivers/mmc/host/Kconfig
 +++ b/drivers/mmc/host/Kconfig
-@@ -1091,3 +1091,13 @@ config MMC_OWL
+@@ -1101,3 +1101,13 @@ config MMC_OWL
  
  config MMC_SDHCI_EXTERNAL_DMA
  	bool
@@ -30,12 +30,12 @@ index a4d4c757eea0..8877dbe421a3 100644
 +	  To compile this driver as a module, choose M here:
 +	  the module will be called sdmmc-netx4000.
 diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
-index 14004cc09aaa..6bd0c2f0fd63 100644
+index 451c25fc2c69..600fea3b15f8 100644
 --- a/drivers/mmc/host/Makefile
 +++ b/drivers/mmc/host/Makefile
-@@ -102,6 +102,7 @@ obj-$(CONFIG_MMC_CQHCI)			+= cqhci.o
- cqhci-y					+= cqhci-core.o
- cqhci-$(CONFIG_MMC_CRYPTO)		+= cqhci-crypto.o
+@@ -105,6 +105,7 @@ obj-$(CONFIG_MMC_SDHCI_OMAP)		+= sdhci-omap.o
+ obj-$(CONFIG_MMC_SDHCI_SPRD)		+= sdhci-sprd.o
+ obj-$(CONFIG_MMC_CQHCI)			+= cqhci.o
  obj-$(CONFIG_MMC_HSQ)			+= mmc_hsq.o
 +obj-$(CONFIG_MMC_NETX4000)		+= sdmmc-netx4000.o
  
@@ -934,7 +934,7 @@ index 000000000000..83c7a522ef42
 +	if (ret)
 +		goto err1;
 +
-+	mmc_of_parse_voltage(mmc, &mmc->ocr_avail);
++	mmc_of_parse_voltage(np, &mmc->ocr_avail);
 +	mmc->ops = &netx4000_hsmmc_ops;
 +	//TODO: limits??
 +	mmc->max_segs = 1024;
@@ -1093,5 +1093,5 @@ index 000000000000..83c7a522ef42
 +MODULE_LICENSE("GPL v2");
 +
 -- 
-2.25.1
+2.17.1
 

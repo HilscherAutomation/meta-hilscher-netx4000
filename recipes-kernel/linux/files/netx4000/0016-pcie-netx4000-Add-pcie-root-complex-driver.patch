@@ -1,6 +1,6 @@
-From 158b30ae1e91f6364e4031a1128ef50472abfb20 Mon Sep 17 00:00:00 2001
+From ff3818b3b7d730de9106b8010f0766b777437ef6 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
-Date: Fri, 10 Sep 2021 11:12:01 +0000
+Date: Mon, 10 May 2021 10:08:19 +0200
 Subject: [PATCH 16/20] pcie-netx4000: Add pcie root complex driver
 
 ---
@@ -30,12 +30,12 @@ index 000000000000..9c5019e99d23
 +	};
 +};
 diff --git a/drivers/pci/controller/Kconfig b/drivers/pci/controller/Kconfig
-index 2f2c8a1729f9..0c4d58cb8496 100644
+index 64e2f5e379aa..3e6b39f343b1 100644
 --- a/drivers/pci/controller/Kconfig
 +++ b/drivers/pci/controller/Kconfig
-@@ -244,6 +244,18 @@ config PCIE_MEDIATEK_GEN3
- 	  Say Y here if you want to enable Gen3 PCIe controller support on
- 	  MediaTek SoCs.
+@@ -256,6 +256,18 @@ config PCIE_TANGO_SMP8759
+ 	  This can lead to data corruption if drivers perform concurrent
+ 	  config and MMIO accesses.
  
 +config PCIE_NETX4000
 +	bool "Hilscher netX4000 PCIe controller"
@@ -53,20 +53,20 @@ index 2f2c8a1729f9..0c4d58cb8496 100644
  	depends on PCI_MSI && X86_64 && SRCU
  	tristate "Intel Volume Management Device Driver"
 diff --git a/drivers/pci/controller/Makefile b/drivers/pci/controller/Makefile
-index 63e3880a3e87..aa9efc4e8e78 100644
+index 04c6edc285c5..560ebadbd63f 100644
 --- a/drivers/pci/controller/Makefile
 +++ b/drivers/pci/controller/Makefile
-@@ -26,6 +26,7 @@ obj-$(CONFIG_PCIE_IPROC_PLATFORM) += pcie-iproc-platform.o
- obj-$(CONFIG_PCIE_IPROC_BCMA) += pcie-iproc-bcma.o
- obj-$(CONFIG_PCIE_ALTERA) += pcie-altera.o
- obj-$(CONFIG_PCIE_ALTERA_MSI) += pcie-altera-msi.o
-+obj-$(CONFIG_PCIE_NETX4000) += pcie-netx4000.o
- obj-$(CONFIG_PCIE_ROCKCHIP) += pcie-rockchip.o
- obj-$(CONFIG_PCIE_ROCKCHIP_EP) += pcie-rockchip-ep.o
+@@ -28,6 +28,7 @@ obj-$(CONFIG_PCIE_ROCKCHIP_EP) += pcie-rockchip-ep.o
  obj-$(CONFIG_PCIE_ROCKCHIP_HOST) += pcie-rockchip-host.o
+ obj-$(CONFIG_PCIE_MEDIATEK) += pcie-mediatek.o
+ obj-$(CONFIG_PCIE_TANGO_SMP8759) += pcie-tango.o
++obj-$(CONFIG_PCIE_NETX4000) += pcie-netx4000.o
+ obj-$(CONFIG_VMD) += vmd.o
+ obj-$(CONFIG_PCIE_BRCMSTB) += pcie-brcmstb.o
+ obj-$(CONFIG_PCI_LOONGSON) += pci-loongson.o
 diff --git a/drivers/pci/controller/pcie-netx4000.c b/drivers/pci/controller/pcie-netx4000.c
 new file mode 100644
-index 000000000000..c4fcee704914
+index 000000000000..0938d5a9de7e
 --- /dev/null
 +++ b/drivers/pci/controller/pcie-netx4000.c
 @@ -0,0 +1,921 @@
@@ -992,5 +992,5 @@ index 000000000000..c4fcee704914
 +MODULE_DESCRIPTION(DRIVER_DESC);
 +MODULE_LICENSE("GPL v2");
 -- 
-2.25.1
+2.17.1
 

@@ -13,7 +13,6 @@ SRC_URI:append:netx4000 += " \
     file://netx4000/0012-fbdev-Add-Framebuffer-driver-for-Hilscher-netX4000-b.patch \
     file://netx4000/0013-edac-Add-EDAC-CACHE-DC-and-DDR-MC-driver-for-Hilsche.patch \
     file://netx4000/0014-can-Add-CAN-bus-driver-rza1_can-from-Renesas-with-ne.patch \
-    file://netx4000/0015-of-Add-dt-overlay-configfs-interface-v2.patch              \
     file://netx4000/0016-pcie-netx4000-Add-pcie-root-complex-driver.patch           \
     file://netx4000/0017-eth-xc-stdmac-Add-standard-ethernet-MAC-driver-using.patch \
     file://netx4000/0018-uio_netx-Update-including-device-tree-support-with-n.patch \

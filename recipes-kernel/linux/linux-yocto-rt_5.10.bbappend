@@ -3,7 +3,7 @@ FILESEXTRAPATHS:prepend:="${THISDIR}/files:"
 KERNEL_EXTRA_FEATURES:netx4000 ?= "features/netfilter/netfilter.scc features/leds/leds.scc"
 
 # Prevent automatically inclusion of kernel-image into rootfs/image
-RDEPENDS:${KERNEL_PACKAGE_NAME}-base:netx4000 = ""
+RDEPENDS_${KERNEL_PACKAGE_NAME}-base:netx4000 = ""
 
 KMACHINE:netx4000 = "netx4000"
 SRC_URI:append:netx4000 += " \

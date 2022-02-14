@@ -1,6 +1,6 @@
-From 2f911acb0b464e855d5f804e78b3df224a0a2249 Mon Sep 17 00:00:00 2001
+From ddea306e24d260690ee73b5e45ed9db6bd7515a1 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
-Date: Fri, 10 Sep 2021 11:22:39 +0000
+Date: Mon, 10 May 2021 10:10:15 +0200
 Subject: [PATCH 18/20] uio_netx: Update including device-tree support with
  netx4000 dtso fragment.
 
@@ -9,8 +9,8 @@ Subject: [PATCH 18/20] uio_netx: Update including device-tree support with
  .../boot/dts/netx4000/overlays/cifx-dpm1.dts  |  27 +
  drivers/uio/Kconfig                           |   7 +-
  drivers/uio/Makefile                          |   5 +
- drivers/uio/uio_netx.c                        | 893 ++++++++++++++++--
- 5 files changed, 885 insertions(+), 74 deletions(-)
+ drivers/uio/uio_netx.c                        | 864 ++++++++++++++++--
+ 5 files changed, 858 insertions(+), 72 deletions(-)
  create mode 100644 arch/arm/boot/dts/netx4000/overlays/cifx-dpm0.dts
  create mode 100644 arch/arm/boot/dts/netx4000/overlays/cifx-dpm1.dts
 
@@ -81,7 +81,7 @@ index 000000000000..f0b36dbe2815
 +	};
 +};
 diff --git a/drivers/uio/Kconfig b/drivers/uio/Kconfig
-index 5531f3afeb21..5eac0aef904e 100644
+index 202ee81cfc2b..a3bd35f8e213 100644
 --- a/drivers/uio/Kconfig
 +++ b/drivers/uio/Kconfig
 @@ -96,7 +96,6 @@ config UIO_PCI_GENERIC
@@ -106,7 +106,7 @@ index 5531f3afeb21..5eac0aef904e 100644
  	tristate "eLBC/GPCM driver"
  	depends on FSL_LBC
 diff --git a/drivers/uio/Makefile b/drivers/uio/Makefile
-index f2f416a14228..2449038d40b6 100644
+index c285dd2a4539..4ac0eab4c944 100644
 --- a/drivers/uio/Makefile
 +++ b/drivers/uio/Makefile
 @@ -1,4 +1,9 @@
@@ -120,11 +120,11 @@ index f2f416a14228..2449038d40b6 100644
  obj-$(CONFIG_UIO_CIF)	+= uio_cif.o
  obj-$(CONFIG_UIO_PDRV_GENIRQ)	+= uio_pdrv_genirq.o
 diff --git a/drivers/uio/uio_netx.c b/drivers/uio/uio_netx.c
-index 2319d6de8d04..0dd9ecdd1d0c 100644
+index 9ae29ffde410..9336617ca2a6 100644
 --- a/drivers/uio/uio_netx.c
 +++ b/drivers/uio/uio_netx.c
-@@ -1,130 +1,509 @@
--// SPDX-License-Identifier: GPL-2.0
+@@ -1,117 +1,467 @@
+ // SPDX-License-Identifier: GPL-2.0
  /*
 - * UIO driver for Hilscher NetX based fieldbus cards (cifX, comX).
 - * See http://www.hilscher.com for details.
@@ -137,9 +137,6 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
 + * (C) 2014 Sebastian Doell <sdoell@hilscher.com> Added support for memory mapped
 + * devices given by user via command line (e.g. ISA)
 + * (C) 2017 Sebastian Doell <sdoell@hilscher.com> Added device-tree support
-+ * (C) 2019 Sebastian Doell <sdoell@hilscher.com> Added netx4000 support
-+ *
-+ * Licensed under GPL version 2 only.
   *
   */
  
@@ -161,13 +158,16 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
 +	#include <linux/of_address.h>
 +#endif
 +
-+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0))
-+	#define ioremap_nocache ioremap_uc
-+#endif
-+
 +#define MAX_USER_CARDS 10
 +
-+#define UIO_NETX_VERSION "2.0.0"
++#define UIO_NETX_VERSION "1.1.3"
++
++unsigned long custom_dpm_addr[MAX_USER_CARDS] = {0};
++int           addr_cnt = 0;
++unsigned long custom_dpm_len[MAX_USER_CARDS] = {0};
++int           len_cnt = 0;
++int           custom_irq[MAX_USER_CARDS] = {0};
++int           irq_cnt = 0;
  
 -#define PCI_VENDOR_ID_HILSCHER		0x15CF
 -#define PCI_DEVICE_ID_HILSCHER_NETX	0x0000
@@ -176,13 +176,6 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
 -#define PCI_SUBDEVICE_ID_NETPLC_FLASH	0x0001
 -#define PCI_SUBDEVICE_ID_NXSB_PCA	0x3235
 -#define PCI_SUBDEVICE_ID_NXPCA		0x3335
-+unsigned long custom_dpm_addr[MAX_USER_CARDS] = {0};
-+int           addr_cnt = 0;
-+unsigned long custom_dpm_len[MAX_USER_CARDS] = {0};
-+int           len_cnt = 0;
-+int           custom_irq[MAX_USER_CARDS] = {0};
-+int           irq_cnt = 0;
-+
 +module_param_array(custom_dpm_addr, ulong, &addr_cnt, S_IRUGO);
 +MODULE_PARM_DESC(custom_dpm_addr, "Start address of DPM (array)");
 +module_param_array(custom_dpm_len, ulong, &len_cnt, S_IRUGO);
@@ -206,17 +199,16 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
 +MODULE_PARM_DESC(dma_buffer_size, "Size of a DMA-buffer.");
 +#endif
 +
-+#define PCI_VENDOR_ID_HILSCHER          0x15CF
-+#define PCI_DEVICE_ID_HILSCHER_NETX     0x0000
-+#define PCI_DEVICE_ID_HILSCHER_NETPLC   0x0010
-+#define PCI_DEVICE_ID_HILSCHER_NETJACK  0x0020
-+#define PCI_DEVICE_ID_HILSCHER_NETX4000 0x4000
-+#define PCI_SUBDEVICE_ID_NXSB_PCA       0x3235
-+#define PCI_SUBDEVICE_ID_NXPCA          0x3335
-+#define PCI_SUBDEVICE_ID_NETPLC_RAM     0x0000
-+#define PCI_SUBDEVICE_ID_NETPLC_FLASH   0x0001
-+#define PCI_SUBDEVICE_ID_NETJACK_RAM    0x0000
-+#define PCI_SUBDEVICE_ID_NETJACK_FLASH  0x0001
++#define PCI_VENDOR_ID_HILSCHER         0x15CF
++#define PCI_DEVICE_ID_HILSCHER_NETX    0x0000
++#define PCI_DEVICE_ID_HILSCHER_NETPLC  0x0010
++#define PCI_DEVICE_ID_HILSCHER_NETJACK 0x0020
++#define PCI_SUBDEVICE_ID_NXSB_PCA      0x3235
++#define PCI_SUBDEVICE_ID_NXPCA         0x3335
++#define PCI_SUBDEVICE_ID_NETPLC_RAM    0x0000
++#define PCI_SUBDEVICE_ID_NETPLC_FLASH  0x0001
++#define PCI_SUBDEVICE_ID_NETJACK_RAM   0x0000
++#define PCI_SUBDEVICE_ID_NETJACK_FLASH 0x0001
  
  #define DPM_HOST_INT_EN0	0xfff0
  #define DPM_HOST_INT_STAT0	0xffe0
@@ -454,20 +446,19 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
 +	return ret;
  }
 +#endif
- 
--static int netx_pci_probe(struct pci_dev *dev,
++
 +#ifndef __devinit
 +        #define __devinit
 +#endif
-+
+ 
+-static int netx_pci_probe(struct pci_dev *dev,
 +static int __devinit netx_pci_probe(struct pci_dev *dev,
  					const struct pci_device_id *id)
  {
  	struct uio_info *info;
  	int bar;
 -
--	info = devm_kzalloc(&dev->dev, sizeof(struct uio_info), GFP_KERNEL);
-+	info = kzalloc(sizeof(struct uio_info), GFP_KERNEL);
+ 	info = kzalloc(sizeof(struct uio_info), GFP_KERNEL);
  	if (!info)
  		return -ENOMEM;
  
@@ -475,9 +466,8 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
 +	if (!(info->priv = (struct uio_netx_priv *) kzalloc(sizeof(struct uio_netx_priv), GFP_KERNEL)))
 +		goto out_priv;
  	if (pci_enable_device(dev))
--		return -ENODEV;
+ 		goto out_free;
 -
-+		goto out_free;
  	if (pci_request_regions(dev, "netx"))
  		goto out_disable;
 -
@@ -496,10 +486,6 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
 +		bar = DPM_BAR;
 +		info->name = "netjack";
 +		break;
-+	case PCI_DEVICE_ID_HILSCHER_NETX4000:
-+		bar = DPM_BAR;
-+		info->name = "netx";
-+		break;
  	default:
 -		bar = 2;
 +		bar = PLX_DPM_BAR;
@@ -509,14 +495,14 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
 +	info->mem[DPM_INDEX].addr = pci_resource_start(dev, bar);
 +	if (!info->mem[DPM_INDEX].addr)
 +		goto out_release;
++
++	info->mem[DPM_INDEX].internal_addr = ioremap(
++		pci_resource_start(dev, bar),
++		pci_resource_len(dev, bar));
  
 -	/* BAR0 or 2 points to the card's dual port memory */
 -	info->mem[0].addr = pci_resource_start(dev, bar);
 -	if (!info->mem[0].addr)
-+	info->mem[DPM_INDEX].internal_addr = ioremap_nocache(
-+		pci_resource_start(dev, bar),
-+		pci_resource_len(dev, bar));
-+
 +	if (!info->mem[DPM_INDEX].internal_addr)
  		goto out_release;
 -	info->mem[0].internal_addr = ioremap(pci_resource_start(dev, bar),
@@ -535,7 +521,7 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
 +
 +	/* extended memory is optional, so don't care if it is not present */
 +	if (info->mem[EXT_MEM_INDEX].addr) {
-+		info->mem[EXT_MEM_INDEX].internal_addr = ioremap_nocache(
++		info->mem[EXT_MEM_INDEX].internal_addr = ioremap(
 +		pci_resource_start(dev, EXT_MEM_BAR),
 +		pci_resource_len(dev, EXT_MEM_BAR));
 +
@@ -569,8 +555,7 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
  
 +	if ((id->device == PCI_DEVICE_ID_HILSCHER_NETX) ||
 +		(id->device == PCI_DEVICE_ID_HILSCHER_NETPLC) ||
-+		(id->device == PCI_DEVICE_ID_HILSCHER_NETJACK) ||
-+		(id->device == PCI_DEVICE_ID_HILSCHER_NETX4000)) {
++		(id->device == PCI_DEVICE_ID_HILSCHER_NETJACK)) {
 +		/* make sure all interrupts are disabled */
 +		iowrite32(0, info->mem[DPM_INDEX].internal_addr + DPM_HOST_INT_EN0);
 +		((struct uio_netx_priv*)(info->priv))->pxa_info = NULL;
@@ -582,7 +567,7 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
 +			goto out_unmap;
 +		((struct uio_netx_priv*)(info->priv))->pxa_info = pxa_info;
 +		/* set PXA PLX Timings */
-+		pxa_info->plx = ioremap_nocache(
++		pxa_info->plx = ioremap(
 +			pci_resource_start(dev, PXA_PLX_BAR),
 +			pci_resource_len(dev, PXA_PLX_BAR));
 +		if (!pxa_info->plx)
@@ -617,7 +602,7 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
 -	dev_info(&dev->dev, "Found %s card, registered UIO device.\n",
 -				info->name);
 -
-+	if ((id->device == PCI_DEVICE_ID_HILSCHER_NETX) || (id->device == PCI_DEVICE_ID_HILSCHER_NETX4000))
++	if (id->device == PCI_DEVICE_ID_HILSCHER_NETX)
 +		dev_info(&dev->dev,
 +			"registered CifX card\n");
 +	else if (id->device == PCI_DEVICE_ID_HILSCHER_NETPLC)
@@ -655,11 +640,10 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
  	pci_disable_device(dev);
 +out_priv:
 +	kfree(info->priv);
-+out_free:
-+	kfree(info);
+ out_free:
+ 	kfree(info);
  	return -ENODEV;
- }
- 
+@@ -120,14 +470,27 @@ static int netx_pci_probe(struct pci_dev *dev,
  static void netx_pci_remove(struct pci_dev *dev)
  {
  	struct uio_info *info = pci_get_drvdata(dev);
@@ -682,16 +666,16 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
  	pci_release_regions(dev);
  	pci_disable_device(dev);
 -	iounmap(info->mem[0].internal_addr);
+-
 +	pci_set_drvdata(dev, NULL);
 +	iounmap(info->mem[DPM_INDEX].internal_addr);
 +	if (info->mem[EXT_MEM_INDEX].internal_addr)
 +		iounmap(info->mem[EXT_MEM_INDEX].internal_addr);
 +	kfree(info->priv);
-+	kfree(info);
+ 	kfree(info);
  }
  
- static struct pci_device_id netx_pci_ids[] = {
-@@ -134,18 +513,6 @@ static struct pci_device_id netx_pci_ids[] = {
+@@ -138,18 +501,6 @@ static struct pci_device_id netx_pci_ids[] = {
  		.subvendor =	0,
  		.subdevice =	0,
  	},
@@ -710,7 +694,7 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
  	{
  		.vendor =	PCI_VENDOR_ID_PLX,
  		.device =	PCI_DEVICE_ID_PLX_9030,
-@@ -158,6 +525,36 @@ static struct pci_device_id netx_pci_ids[] = {
+@@ -162,6 +513,30 @@ static struct pci_device_id netx_pci_ids[] = {
  		.subvendor =	PCI_VENDOR_ID_PLX,
  		.subdevice =	PCI_SUBDEVICE_ID_NXPCA,
  	},
@@ -738,16 +722,10 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
 +		.subvendor =  PCI_VENDOR_ID_HILSCHER,
 +		.subdevice =  PCI_SUBDEVICE_ID_NETJACK_FLASH,
 +	},
-+	{
-+		.vendor = PCI_VENDOR_ID_HILSCHER,
-+		.device = PCI_DEVICE_ID_HILSCHER_NETX4000,
-+		.subvendor =  0,
-+		.subdevice =  0,
-+	},
  	{ 0, }
  };
  
-@@ -168,7 +565,357 @@ static struct pci_driver netx_pci_driver = {
+@@ -172,7 +547,357 @@ static struct pci_driver netx_pci_driver = {
  	.remove = netx_pci_remove,
  };
  
@@ -856,7 +834,7 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
 +	ret = 0;
 +	for (i=0;(i<no_of_maps) && (ret == 0);i++) {
 +		info->mem[DPM_INDEX+i].addr = custom->dpm_addr[i];
-+		info->mem[DPM_INDEX+i].internal_addr = ioremap_nocache(custom->dpm_addr[i], custom->dpm_len[i]);
++		info->mem[DPM_INDEX+i].internal_addr = ioremap(custom->dpm_addr[i], custom->dpm_len[i]);
 +		info->mem[DPM_INDEX+i].size = custom->dpm_len[i];
 +		info->mem[DPM_INDEX+i].memtype = UIO_MEM_PHYS;
 +		info->mem[DPM_INDEX+i].name = (i == 0) ? DPM_MEM_NAME : EXT_MEM_NAME;
@@ -995,7 +973,7 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
 +	ptr = of_get_property(custom->dev->of_node, "dma", NULL);
 +	custom->dma_enable = !!!(*(uint32_t*)ptr) ? 1 : 0;
 +#endif
-+	return (sizeof(custom->dpm_addr)/sizeof(custom->dpm_addr[0]));
++	return 1;
 +}
 +
 +static int __devinit netx_dt_probe(struct platform_device *pd)
@@ -1096,7 +1074,7 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
 +{
 +	pci_unregister_driver(&netx_pci_driver);
 +#ifdef CONFIG_OF
-+	platform_driver_unregister(&uio_netx_platform_driver);
++       platform_driver_unregister(&uio_netx_platform_driver);
 +#endif
 +	unmap_custom_cards(NULL);
 +}
@@ -1109,5 +1087,5 @@ index 2319d6de8d04..0dd9ecdd1d0c 100644
 +MODULE_AUTHOR("Hans J. Koch, Manuel Traut, Sebastian Doell");
 +MODULE_DESCRIPTION("Device driver for netX hardware\n\t\tHilscher Gesellschaft fuer Systemautomation mbH");
 -- 
-2.25.1
+2.17.1
 

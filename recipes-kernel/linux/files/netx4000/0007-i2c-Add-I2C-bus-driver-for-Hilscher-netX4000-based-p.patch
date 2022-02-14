@@ -1,6 +1,6 @@
-From 3ba4ca140a68f3242eeb398def77ad9f30c70fb3 Mon Sep 17 00:00:00 2001
+From 8fdf42eb042c45b51bd26cbc71eceb8b61e69f0c Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
-Date: Fri, 10 Sep 2021 11:10:10 +0000
+Date: Mon, 10 May 2021 10:03:01 +0200
 Subject: [PATCH 07/20] i2c: Add I2C bus driver for Hilscher netX4000 based
  platforms.
 
@@ -152,10 +152,10 @@ index 000000000000..f681f5b6f2b3
 +	};
 +};
 diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index 10acece9d7b9..0bb3ff19f645 100644
+index 7e693dcbdd19..e210f2e14291 100644
 --- a/drivers/i2c/busses/Kconfig
 +++ b/drivers/i2c/busses/Kconfig
-@@ -1187,6 +1187,16 @@ config I2C_RCAR
+@@ -1206,6 +1206,16 @@ config I2C_RCAR
  	  This driver can also be built as a module.  If so, the module
  	  will be called i2c-rcar.
  
@@ -173,17 +173,17 @@ index 10acece9d7b9..0bb3ff19f645 100644
  
  config I2C_DIOLAN_U2C
 diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-index 69e9963615f6..615c40c42cc7 100644
+index 683c49faca05..b433b532d426 100644
 --- a/drivers/i2c/busses/Makefile
 +++ b/drivers/i2c/busses/Makefile
-@@ -79,6 +79,7 @@ obj-$(CONFIG_I2C_MT65XX)	+= i2c-mt65xx.o
- obj-$(CONFIG_I2C_MT7621)	+= i2c-mt7621.o
- obj-$(CONFIG_I2C_MV64XXX)	+= i2c-mv64xxx.o
- obj-$(CONFIG_I2C_MXS)		+= i2c-mxs.o
+@@ -123,6 +123,7 @@ obj-$(CONFIG_I2C_XLR)		+= i2c-xlr.o
+ obj-$(CONFIG_I2C_XLP9XX)	+= i2c-xlp9xx.o
+ obj-$(CONFIG_I2C_RCAR)		+= i2c-rcar.o
+ obj-$(CONFIG_I2C_ZX2967)	+= i2c-zx2967.o
 +obj-$(CONFIG_I2C_NETX4000)	+= i2c-netx4000.o
- obj-$(CONFIG_I2C_NOMADIK)	+= i2c-nomadik.o
- obj-$(CONFIG_I2C_NPCM7XX)	+= i2c-npcm7xx.o
- obj-$(CONFIG_I2C_OCORES)	+= i2c-ocores.o
+ 
+ # External I2C/SMBus adapter drivers
+ obj-$(CONFIG_I2C_DIOLAN_U2C)	+= i2c-diolan-u2c.o
 diff --git a/drivers/i2c/busses/i2c-netx4000.c b/drivers/i2c/busses/i2c-netx4000.c
 new file mode 100644
 index 000000000000..e043588f3c5e
@@ -973,5 +973,5 @@ index 000000000000..e043588f3c5e
 +MODULE_DESCRIPTION(DRIVER_DESC);
 +MODULE_LICENSE("GPL v2");
 -- 
-2.25.1
+2.17.1
 

@@ -1,4 +1,4 @@
-From 477548ea2b8a73b0c9a6e90c91994e5242891134 Mon Sep 17 00:00:00 2001
+From e7cd6e6b471a9e14caabf0f297f5088af013f865 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:09:35 +0200
 Subject: [PATCH 17/20] eth,xc-stdmac: Add standard ethernet MAC driver using
@@ -74,7 +74,7 @@ index 000000000000..8e91355df437
 +	};
 +};
 diff --git a/drivers/net/ethernet/Kconfig b/drivers/net/ethernet/Kconfig
-index 1cdff1dca790..0d7895b4bee9 100644
+index de50e8b9e656..89f0b0417467 100644
 --- a/drivers/net/ethernet/Kconfig
 +++ b/drivers/net/ethernet/Kconfig
 @@ -43,6 +43,7 @@ source "drivers/net/ethernet/chelsio/Kconfig"
@@ -86,10 +86,10 @@ index 1cdff1dca790..0d7895b4bee9 100644
  config CX_ECAT
  	tristate "Beckhoff CX5020 EtherCAT master support"
 diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
-index cb3f9084a21b..a00d159a18ac 100644
+index f8f38dcb5f8a..363da2d843e4 100644
 --- a/drivers/net/ethernet/Makefile
 +++ b/drivers/net/ethernet/Makefile
-@@ -64,6 +64,7 @@ obj-$(CONFIG_NET_VENDOR_NATSEMI) += natsemi/
+@@ -63,6 +63,7 @@ obj-$(CONFIG_NET_VENDOR_NATSEMI) += natsemi/
  obj-$(CONFIG_NET_VENDOR_NETERION) += neterion/
  obj-$(CONFIG_NET_VENDOR_NETRONOME) += netronome/
  obj-$(CONFIG_NET_VENDOR_NI) += ni/
@@ -1868,7 +1868,7 @@ index 000000000000..f1ecb88a0bd8
 +{
 +	struct netx_eth_priv *priv = netdev_priv(ndev);
 +	int ret = 0;
-+	u8 mac[ETH_ALEN];
++	char* mac = NULL;
 +
 +	ether_setup(ndev);
 +
@@ -1884,7 +1884,7 @@ index 000000000000..f1ecb88a0bd8
 +	netx4000_xceth_initFifoUnit( priv->portno);
 +
 +	/* Configure MAC address */
-+	if (!of_get_mac_address(priv->dev->of_node, mac)) {
++	if (NULL != (mac = (char*)of_get_mac_address(priv->dev->of_node))) {
 +		port_set_mac_addr( priv->port, ETH_MAC_ADDRESS_CHASSIS, mac);
 +		memcpy( ndev->dev_addr, mac, 6);
 +	} else {
@@ -5393,5 +5393,5 @@ index 000000000000..89c0054565a5
 +#endif
 \ No newline at end of file
 -- 
-2.25.1
+2.17.1
 

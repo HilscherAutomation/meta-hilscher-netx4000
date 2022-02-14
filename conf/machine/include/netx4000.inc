@@ -14,6 +14,8 @@ UBOOT_MACHINE ??= "netx4000_defconfig"
 UBOOT_ENTRYPOINT ?= "0x40008000"
 
 PREFERRED_PROVIDER_virtual/kernel ??= "linux-yocto"
+PREFERRED_VERSION_linux-yocto = "5.10%"
+PREFERRED_VERSION_linux-yocto-rt = "5.10%"
 
 PREFERRED_PROVIDER_virtual/dtb ??= "device-tree"
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append += "device-tree"
