@@ -30,11 +30,6 @@ devicetree_do_deploy() {
 
 FILES:${PN} += "boot/dt-overlays"
 
-python() {
-    if not d.getVar("DTS_BASE"):
-        raise bb.parse.SkipRecipe("DTS_BASE is empty")
-}
-
 # --------------------------------------
 # common include files
 
@@ -42,14 +37,13 @@ SRC_URI:netx4000 = " \
 	file://src/netx4000-common.dtsi \
 	file://src/dt-bindings/pinctrl/netx4000.h \
 	file://src/dt-bindings/video/netx4000.h \
-	${DTS_BASE} \
 "
 
 # --------------------------------------
 # nxhx4000-jtag-plus-revx boards
 
 COMPATIBLE_MACHINE:nxhx4000-jtag-plus-revx = ".*"
-DTS_BASE:nxhx4000-jtag-plus-revx += " \
+SRC_URI:append:nxhx4000-jtag-plus-revx += " \
 	file://src/nxhx4000-jtag-plus-revx.dts \
 	file://src/adc0.dtso \
 	file://src/adc1.dtso \
@@ -74,17 +68,6 @@ SRC_URI:append:nxhx4000-jtag-plus-rev5 = " \
 # ndeb4000-revx based boards
 
 COMPATIBLE_MACHINE:ndeb4000-revx = ".*"
-DTS_BASE:ndeb4000-revx += " \
-	file://src/uart1.dtso \
-	file://src/can0.dtso \
-	file://src/gmac0.dtso \
-	file://src/gmac1.dtso \
-	file://src/pcie-rc.dtso \
-	file://src/adc0.dtso \
-	file://src/adc1.dtso \
-	file://src/xceth0.dtso \
-	file://src/xceth1.dtso \
-"
 
 SRC_URI:append:ndeb4000-rev1 = "\
 	file://src/ndcm4000-rev1.dts \
@@ -95,7 +78,7 @@ SRC_URI:append:ndeb4000-rev1 = "\
 # ndcm4000-revx based boards
 
 COMPATIBLE_MACHINE:ndcm4000-revx = ".*"
-DTS_BASE:ndcm4000-revx += " \
+SRC_URI:append:ndcm4000-revx += " \
         file://src/uart1.dtso \
         file://src/can0.dtso \
         file://src/gmac0.dtso \
