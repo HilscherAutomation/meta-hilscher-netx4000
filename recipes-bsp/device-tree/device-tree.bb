@@ -14,7 +14,7 @@ inherit devicetree
 S = "${WORKDIR}/src"
 
 devicetree_do_install:append() {
-	default_dtb=${KERNEL_DEVICETREE:-${MACHINE}}
+	default_dtb=${MACHINE}
 
 	install -d ${D}/boot/dt-overlays
 	for DTB_FILE in `ls *.dtbo`; do

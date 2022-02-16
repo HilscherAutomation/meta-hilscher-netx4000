@@ -10,7 +10,7 @@ SRC_URI:append:netx4000 = "${@ ' file://enable_ddr_ecc.cfg ' if d.getVar('ENABLE
 # Add support for external device-tree
 DTB_PATH:netx4000 ??= "/boot/devicetree"
 DTB_NAME:netx4000 ??= "${MACHINE}.dtb"
-EXTRA_OEMAKE:append:netx4000 = "${@' EXT_DTB=${RECIPE_SYSROOT}/${DTB_PATH}/${DTB_NAME} ' if (d.getVar('DTB_NAME') != '') else '' }"
+EXTRA_OEMAKE:append:netx4000 = "${@'EXT_DTB=${RECIPE_SYSROOT}/${DTB_PATH}/${DTB_NAME}' if (d.getVar('PREFERRED_PROVIDER_virtual/dtb') != '') else '' }"
 
 python __anonymous () {
     #check if there are any dtb providers
