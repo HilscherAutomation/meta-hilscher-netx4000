@@ -18,7 +18,7 @@ PREFERRED_VERSION_linux-yocto = "5.10%"
 PREFERRED_VERSION_linux-yocto-rt = "5.10%"
 
 PREFERRED_PROVIDER_virtual/dtb ??= "device-tree"
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append += "device-tree"
+MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append += "${PREFERRED_PROVIDER_virtual/dtb}"
 
 #############################################################################
 # Kernel
