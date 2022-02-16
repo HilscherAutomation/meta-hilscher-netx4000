@@ -1,4 +1,4 @@
-From 57e60d3d96e914abca5a98d1a2209838f84a1623 Mon Sep 17 00:00:00 2001
+From 31fcdad7fc9296cba8804a696a03f4e1750bfbf4 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:45:10 +0200
 Subject: [PATCH 4/5] netx4000: Add QSPI driver (only working in 1Bit mode)

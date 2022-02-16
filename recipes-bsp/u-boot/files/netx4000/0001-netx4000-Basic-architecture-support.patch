@@ -1,4 +1,4 @@
-From ca5091cb8e6641af93776bfe669fb73eedaed94c Mon Sep 17 00:00:00 2001
+From b1e9f89bf0b71226f444f9671c5a975a7cdf8a44 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:43:56 +0200
 Subject: [PATCH 1/5] netx4000: Basic architecture support
@@ -8,7 +8,7 @@ Subject: [PATCH 1/5] netx4000: Basic architecture support
  Makefile                                      |   15 +
  arch/arm/Kconfig                              |   15 +
  arch/arm/Makefile                             |    1 +
- arch/arm/dts/Makefile                         |    2 +
+ arch/arm/dts/Makefile                         |    3 +
  arch/arm/dts/netx4000-common.dtsi             | 1188 +++
  .../dts/netx4000-nxhx4000-jtag-plus-rev4.dts  |   22 +
  arch/arm/dts/nxhx4000-jtag-plus-revx.dts      |  171 +
@@ -36,11 +36,11 @@ Subject: [PATCH 1/5] netx4000: Basic architecture support
  drivers/clk/Makefile                          |    1 +
  drivers/clk/clk-netx4000.c                    |  169 +
  drivers/net/Kconfig                           |    8 +
- drivers/net/dwc_eth_qos.c                     |  166 +-
+ drivers/net/dwc_eth_qos.c                     |  173 +
  drivers/net/phy/Kconfig                       |    6 +
  drivers/net/phy/Makefile                      |    2 +
  drivers/net/phy/mdio-gpio-bb.c                |  291 +
- drivers/pinctrl/pinctrl-single.c              |   44 +
+ drivers/pinctrl/pinctrl-single.c              |   29 +
  drivers/serial/serial_pl01x.c                 |    7 +
  include/configs/netx4000.h                    |   47 +
  include/dt-bindings/dma/nbpfaxi.h             |   20 +
@@ -58,7 +58,7 @@ Subject: [PATCH 1/5] netx4000: Basic architecture support
  .../hboot_image_compiler/snippet_library.py   |  351 +
  tools/netx4000/hboot_netx4000_patch_table.xml | 7129 +++++++++++++++++
  tools/netx4000/netx4000_cr7_openfirewalls.elf |  Bin 0 -> 34631 bytes
- 54 files changed, 18740 insertions(+), 1 deletion(-)
+ 54 files changed, 18734 insertions(+)
  create mode 100644 arch/arm/dts/netx4000-common.dtsi
  create mode 100644 arch/arm/dts/netx4000-nxhx4000-jtag-plus-rev4.dts
  create mode 100644 arch/arm/dts/nxhx4000-jtag-plus-revx.dts
@@ -116,10 +116,10 @@ index e66aa864da..c58a2da3b3 100644
  *.su
  *.swp
 diff --git a/Makefile b/Makefile
-index 20c1aa3f58..7a7a936c11 100644
+index a30098c66f..54a4978305 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -970,6 +970,8 @@ ifeq ($(CONFIG_SPL),)
+@@ -961,6 +961,8 @@ ifeq ($(CONFIG_SPL),)
  INPUTS-$(CONFIG_ARCH_MEDIATEK) += u-boot-mtk.bin
  endif
  
@@ -128,7 +128,7 @@ index 20c1aa3f58..7a7a936c11 100644
  # Add optional build target if defined in board/cpu/soc headers
  ifneq ($(CONFIG_BUILD_TARGET),)
  INPUTS-y += $(CONFIG_BUILD_TARGET:"%"=%)
-@@ -1612,6 +1614,19 @@ u-boot-br.bin: u-boot FORCE
+@@ -1601,6 +1603,19 @@ u-boot-br.bin: u-boot FORCE
  endif
  endif
  
@@ -149,10 +149,10 @@ index 20c1aa3f58..7a7a936c11 100644
  cmd_ldr = $(LD) $(LDFLAGS_$(@F)) \
  	       $(filter-out FORCE,$^) -o $@
 diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index b5bd3284cd..06687fd080 100644
+index f7f03837fe..f73567aa62 100644
 --- a/arch/arm/Kconfig
 +++ b/arch/arm/Kconfig
-@@ -782,6 +782,19 @@ config ARCH_LPC32XX
+@@ -801,6 +801,19 @@ config ARCH_LPC32XX
  	select SUPPORT_SPL
  	imply CMD_DM
  
@@ -172,7 +172,7 @@ index b5bd3284cd..06687fd080 100644
  config ARCH_IMX8
  	bool "NXP i.MX8 platform"
  	select ARM64
-@@ -1988,6 +2001,8 @@ source "arch/arm/mach-imx/imxrt/Kconfig"
+@@ -2094,6 +2107,8 @@ source "arch/arm/mach-imx/imxrt/Kconfig"
  
  source "arch/arm/mach-imx/mxs/Kconfig"
  
@@ -182,10 +182,10 @@ index b5bd3284cd..06687fd080 100644
  
  source "arch/arm/cpu/armv8/fsl-layerscape/Kconfig"
 diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index c68e598a67..d8afe6997e 100644
+index ad757e982e..8e7da9d987 100644
 --- a/arch/arm/Makefile
 +++ b/arch/arm/Makefile
-@@ -66,6 +66,7 @@ machine-$(CONFIG_ARCH_LPC32XX)		+= lpc32xx
+@@ -71,6 +71,7 @@ machine-$(CONFIG_ARCH_LPC32XX)		+= lpc32xx
  machine-$(CONFIG_ARCH_MEDIATEK)		+= mediatek
  machine-$(CONFIG_ARCH_MESON)		+= meson
  machine-$(CONFIG_ARCH_MVEBU)		+= mvebu
@@ -194,21 +194,22 @@ index c68e598a67..d8afe6997e 100644
  machine-$(CONFIG_ARCH_OMAP2PLUS)	+= omap2
  machine-$(CONFIG_ARCH_ORION5X)		+= orion5x
 diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
-index fc16a57e60..7d346ddcab 100644
+index b3e2a9c9d7..9b6268bb2d 100644
 --- a/arch/arm/dts/Makefile
 +++ b/arch/arm/dts/Makefile
-@@ -251,6 +251,8 @@ dtb-$(CONFIG_ARCH_MVEBU) +=			\
+@@ -264,6 +264,9 @@ dtb-$(CONFIG_ARCH_MVEBU) +=			\
+ 	cn9130-crb-A.dtb			\
  	cn9130-crb-B.dtb
  
- dtb-$(CONFIG_ARCH_SYNQUACER) += synquacer-sc2a11-developerbox.dtb
-+dtb-$(CONFIG_ARCH_NETX4000) += \
++dtb-$(CONFIG_ARCH_NETX4000) +=			\
 +	netx4000-nxhx4000-jtag-plus-rev4.dtb
++
+ dtb-$(CONFIG_ARCH_SYNQUACER) += synquacer-sc2a11-developerbox.dtb
  dtb-$(CONFIG_ARCH_UNIPHIER_LD11) += \
  	uniphier-ld11-global.dtb \
- 	uniphier-ld11-ref.dtb
 diff --git a/arch/arm/dts/netx4000-common.dtsi b/arch/arm/dts/netx4000-common.dtsi
 new file mode 100644
-index 0000000000..650dbe3a1c
+index 0000000000..bfb21ad9cf
 --- /dev/null
 +++ b/arch/arm/dts/netx4000-common.dtsi
 @@ -0,0 +1,1188 @@
@@ -4140,13 +4141,15 @@ new file mode 100644
 index 0000000000..f29face800
 --- /dev/null
 +++ b/configs/netx4000_defconfig
-@@ -0,0 +1,59 @@
+@@ -0,0 +1,61 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_NETX4000=y
 +CONFIG_MISC_INIT_R=y
 +CONFIG_SYS_THUMB_BUILD=y
++CONFIG_SYS_LOAD_ADDR=0x50000000
 +CONFIG_SYS_TEXT_BASE=0x05000000
 +CONFIG_SYS_MALLOC_F_LEN=0x2000
++CONFIG_SYS_MALLOC_LEN=0x08000000
 +CONFIG_FIT=y
 +CONFIG_FIT_SIGNATURE=y
 +CONFIG_FIT_VERBOSE=y
@@ -4388,10 +4391,10 @@ index 0000000000..06d5951e6a
 +	.flags = DM_FLAG_PRE_RELOC,
 +};
 diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index d4dc72046c..8454497c58 100644
+index c1a49173c2..c140b0b05d 100644
 --- a/drivers/net/Kconfig
 +++ b/drivers/net/Kconfig
-@@ -203,6 +203,14 @@ config DWC_ETH_QOS_IMX
+@@ -206,6 +206,14 @@ config DWC_ETH_QOS_IMX
  	  The Synopsys Designware Ethernet QOS IP block with the specific
  	  configuration used in IMX soc.
  
@@ -4407,14 +4410,13 @@ index d4dc72046c..8454497c58 100644
  	bool "Synopsys DWC Ethernet QOS device support for STM32"
  	depends on DWC_ETH_QOS
 diff --git a/drivers/net/dwc_eth_qos.c b/drivers/net/dwc_eth_qos.c
-index 585101804d..5240a9103b 100644
+index 22dad5b203..aaa57aec90 100644
 --- a/drivers/net/dwc_eth_qos.c
 +++ b/drivers/net/dwc_eth_qos.c
-@@ -615,7 +615,32 @@ err:
+@@ -615,6 +615,31 @@ err:
  #endif
  }
  
--static int eqos_stop_clks_tegra186(struct udevice *dev)
 +static int eqos_start_clks_netx4000(struct udevice *dev)
 +{
 +#ifdef CONFIG_CLK
@@ -4440,10 +4442,9 @@ index 585101804d..5240a9103b 100644
 +#endif
 +}
 +
-+static void eqos_stop_clks_tegra186(struct udevice *dev)
+ static int eqos_stop_clks_tegra186(struct udevice *dev)
  {
  #ifdef CONFIG_CLK
- 	struct eqos_priv *eqos = dev_get_priv(dev);
 @@ -649,6 +674,19 @@ static int eqos_stop_clks_stm32(struct udevice *dev)
  	return 0;
  }
@@ -4482,7 +4483,19 @@ index 585101804d..5240a9103b 100644
  __weak u32 imx_get_eqos_csr_clk(void)
  {
  	return 100 * 1000000;
-@@ -1738,6 +1787,57 @@ err_probe:
+@@ -882,6 +931,11 @@ static int eqos_set_tx_clk_speed_tegra186(struct udevice *dev)
+ 	return 0;
+ }
+ 
++static int eqos_set_tx_clk_speed_netx4000(struct udevice *dev)
++{
++	return 0;
++}
++
+ static int eqos_set_tx_clk_speed_imx(struct udevice *dev)
+ {
+ 	struct eqos_priv *eqos = dev_get_priv(dev);
+@@ -1729,6 +1783,57 @@ err_probe:
  	return ret;
  }
  
@@ -4540,7 +4553,7 @@ index 585101804d..5240a9103b 100644
  static phy_interface_t eqos_get_interface_stm32(struct udevice *dev)
  {
  	const char *phy_mode;
-@@ -1752,6 +1852,20 @@ static phy_interface_t eqos_get_interface_stm32(struct udevice *dev)
+@@ -1743,6 +1852,20 @@ static phy_interface_t eqos_get_interface_stm32(struct udevice *dev)
  	return interface;
  }
  
@@ -4561,7 +4574,7 @@ index 585101804d..5240a9103b 100644
  static phy_interface_t eqos_get_interface_tegra186(struct udevice *dev)
  {
  	return PHY_INTERFACE_MODE_MII;
-@@ -1830,6 +1944,23 @@ static int eqos_remove_resources_stm32(struct udevice *dev)
+@@ -1821,6 +1944,23 @@ static int eqos_remove_resources_stm32(struct udevice *dev)
  	return 0;
  }
  
@@ -4585,7 +4598,7 @@ index 585101804d..5240a9103b 100644
  static int eqos_probe(struct udevice *dev)
  {
  	struct eqos_priv *eqos = dev_get_priv(dev);
-@@ -2017,6 +2148,33 @@ struct eqos_config __maybe_unused eqos_imx_config = {
+@@ -2017,6 +2157,33 @@ struct eqos_config __maybe_unused eqos_imx_config = {
  	.ops = &eqos_imx_ops
  };
  
@@ -4602,7 +4615,7 @@ index 585101804d..5240a9103b 100644
 +	.eqos_start_clks = eqos_start_clks_netx4000,
 +	.eqos_calibrate_pads = eqos_null_ops,
 +	.eqos_disable_calibration = eqos_null_ops,
-+	.eqos_set_tx_clk_speed = eqos_null_ops,
++	.eqos_set_tx_clk_speed = eqos_set_tx_clk_speed_netx4000,
 +	.eqos_get_tick_clk_rate = eqos_get_tick_clk_rate_netx4000
 +};
 +
@@ -4619,7 +4632,7 @@ index 585101804d..5240a9103b 100644
  static const struct udevice_id eqos_ids[] = {
  #if IS_ENABLED(CONFIG_DWC_ETH_QOS_TEGRA186)
  	{
-@@ -2036,6 +2194,12 @@ static const struct udevice_id eqos_ids[] = {
+@@ -2036,6 +2203,12 @@ static const struct udevice_id eqos_ids[] = {
  		.data = (ulong)&eqos_imx_config
  	},
  #endif
@@ -4633,7 +4646,7 @@ index 585101804d..5240a9103b 100644
  	{ }
  };
 diff --git a/drivers/net/phy/Kconfig b/drivers/net/phy/Kconfig
-index 64d5ddf238..cb836bb659 100644
+index 68ee7d7a2d..bc9369c77d 100644
 --- a/drivers/net/phy/Kconfig
 +++ b/drivers/net/phy/Kconfig
 @@ -2,6 +2,12 @@
@@ -4957,10 +4970,10 @@ index 0000000000..181e36b143
 +	.probe = mdio_gpio_bb_probe,
 +};
 diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
-index cf9ad3670f..d2cce04673 100644
+index 8fc07e3498..a45a33c089 100644
 --- a/drivers/pinctrl/pinctrl-single.c
 +++ b/drivers/pinctrl/pinctrl-single.c
-@@ -530,15 +530,59 @@ static int single_of_to_plat(struct udevice *dev)
+@@ -615,16 +615,45 @@ static int single_of_to_plat(struct udevice *dev)
  	return 0;
  }
  
@@ -4970,27 +4983,12 @@ index cf9ad3670f..d2cce04673 100644
 +	struct single_pdata *pdata = dev_get_plat(dev);
 +	struct single_fdt_pin_cfg prop[1];
 +	struct ofnode_phandle_args args;
-+	char *propname = "pinctrl-single,gpio-rangeX";
-+	char *cellname = "#pinctrl-single,gpio-range-cells";
-+	int idx, range, match = 0;
++	int idx, match = 0;
 +
-+	/* pinctrl-single,gpio-range */
-+	sprintf(propname, "pinctrl-single,gpio-range");
-+	for (idx = 0; !dev_read_phandle_with_args(dev, propname, cellname, 0, idx, &args); idx++) {
++	for (idx = 0; !dev_read_phandle_with_args(dev, "pinctrl-single,gpio-range", "#pinctrl-single,gpio-range-cells", 0, idx, &args); idx++) {
 +		if ((pin_selector >= args.args[0]) && (pin_selector < args.args[0] +  args.args[1])) {
 +			prop->val = args.args[2];
 +			match = 1;
-+		}
-+	}
-+
-+	/* pinctrl-single,gpio-rangeX => X=[0..9] */
-+	for (range = 0; range < 10; range ++) {
-+		sprintf(propname, "pinctrl-single,gpio-range%d", range);
-+		for (idx = 0; !dev_read_phandle_with_args(dev, propname, cellname, 0, idx, &args); idx++) {
-+			if ((pin_selector >= args.args[0]) && (pin_selector < args.args[0] +  args.args[1])) {
-+				prop->val = args.args[2];
-+				match = 1;
-+			}
 +		}
 +	}
 +
@@ -5011,7 +5009,8 @@ index cf9ad3670f..d2cce04673 100644
  	.get_pin_name = single_get_pin_name,
  	.set_state = single_set_state,
  	.get_pin_muxing	= single_get_pin_muxing,
-+	.gpio_request_enable	= single_gpio_request_enable,
+ 	.request = single_request,
++	.gpio_request_enable    = single_gpio_request_enable,
  };
  
  static const struct udevice_id single_pinctrl_match[] = {
@@ -5043,7 +5042,7 @@ new file mode 100644
 index 0000000000..93ee3a7497
 --- /dev/null
 +++ b/include/configs/netx4000.h
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,45 @@
 +/* SPDX-License-Identifier: GPL-2.0+ */
 +/*
 + *  (C) Copyright 2019 Hilscher Gesellschaft fuer Systemautomation mbH
@@ -5058,10 +5057,8 @@ index 0000000000..93ee3a7497
 +#define CONFIG_SYS_SDRAM_BASE	0x40000000
 +#define CONFIG_SYS_LOAD_ADDR	0x50000000
 +#define CONFIG_SYS_INIT_SP_ADDR	0x0507F000
-+#define CONFIG_SYS_MALLOC_LEN	(8 * SZ_1M)
 +
 +/* Kernel/Fitimage Load address in env */
-+#define CONFIG_LOADADDR	CONFIG_SYS_LOAD_ADDR
 +#define CONFIG_EXTRA_ENV_SETTINGS \
 +	"initrd_high=0xffffffff\0"    \
 +	"fdt_high=0x60000000\0"   \

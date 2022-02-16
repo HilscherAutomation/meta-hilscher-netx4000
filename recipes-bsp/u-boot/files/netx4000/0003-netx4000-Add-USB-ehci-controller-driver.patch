@@ -1,4 +1,4 @@
-From b6c3e7b8f0f547b0a91952a0a0b1971d11306659 Mon Sep 17 00:00:00 2001
+From aac500637c898cd4c416d7daaa1e276449551de2 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:45:00 +0200
 Subject: [PATCH 3/5] netx4000: Add USB ehci controller driver
@@ -13,12 +13,12 @@ Subject: [PATCH 3/5] netx4000: Add USB ehci controller driver
  create mode 100644 drivers/usb/host/ehci-netx4000.h
 
 diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 427b360af1..68d962e3db 100644
+index ccecb5a3b0..665046f71a 100644
 --- a/drivers/usb/host/Kconfig
 +++ b/drivers/usb/host/Kconfig
-@@ -166,6 +166,14 @@ config USB_EHCI_MX7
- 	---help---
- 	  Enables support for the on-chip EHCI controller on i.MX7 SoCs.
+@@ -187,6 +187,14 @@ config USB_EHCI_MXS
+ 	help
+ 	  Enables support for the on-chip EHCI controller on i.MX23 SoCs.
  
 +config USB_EHCI_NETX4000
 +	bool "Support for netX4000 on-chip EHCI USB controller"
