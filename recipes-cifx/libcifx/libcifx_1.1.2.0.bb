@@ -22,3 +22,5 @@ do_install() {
 
 FILES:${PN} += "/opt/cifx/deviceconfig /opt/cifx/*.bin"
 INSANE_SKIP:${PN} = "already-stripped"
+
+COMPATIBLE_HOST = "arm.*-linux"
