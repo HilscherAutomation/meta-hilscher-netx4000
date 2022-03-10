@@ -8,9 +8,6 @@ KERNEL_EXTRA_FEATURES:netx4000 ?= " \
     ${@ 'features/nfsd/nfsd-enable.scc' if '${DISTRO}' == 'poky-lsb' else '' } \
 "
 
-# Prevent automatically inclusion of kernel-image into rootfs/image
-RDEPENDS:${KERNEL_PACKAGE_NAME}-base:netx4000 = ""
-
 KMACHINE:netx4000 = "netx4000"
 SRC_URI:append:netx4000 = " \
     file://netx4000-standard.scc \
