@@ -23,11 +23,15 @@ MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append = "${PREFERRED_PROVIDER_virtual/dtb}"
 #############################################################################
 KERNEL_CLASSES = "kernel-fitimage"
 KERNEL_IMAGETYPES = "fitImage"
-MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append =" \
+
+MACHINE_ESSENTIAL_EXTRA_RRECOMMENDS += " \
 	kernel-modules \
 	libcifx cifxsample \
-	dto-utils \
 	kernel-module-netx4000-xc-stdmac kernel-module-mdio-xc-netx4000 hethmac \
+"
+
+MACHINE_EXTRA_RRECOMMENDS += " \
+	dto-utils \
 "
 
 #############################################################################
