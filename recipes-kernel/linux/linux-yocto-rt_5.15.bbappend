@@ -1,6 +1,12 @@
 FILESEXTRAPATHS:prepend:="${THISDIR}/files:"
 
-KERNEL_EXTRA_FEATURES:netx4000 ?= "features/netfilter/netfilter.scc features/leds/leds.scc"
+KERNEL_EXTRA_FEATURES:netx4000 ?= " \
+    features/netfilter/netfilter.scc \
+    features/leds/leds.scc \
+    features/firmware/firmware.scc \
+    cfg/usb-mass-storage.scc \
+    ${@ 'features/nfsd/nfsd-enable.scc' if '${DISTRO}' == 'poky-lsb' else '' } \
+"
 
 # Prevent automatically inclusion of kernel-image into rootfs/image
 RDEPENDS:${KERNEL_PACKAGE_NAME}-base:netx4000 = ""

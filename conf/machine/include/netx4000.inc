@@ -21,20 +21,13 @@ MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append = "${PREFERRED_PROVIDER_virtual/dtb}"
 #############################################################################
 # Kernel
 #############################################################################
-KERNEL_CLASSES += "kernel-fitimage"
-KERNEL_IMAGETYPES:append = " fitImage "
+KERNEL_CLASSES = "kernel-fitimage"
+KERNEL_IMAGETYPES = "fitImage"
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append =" \
 	kernel-modules \
 	libcifx cifxsample \
 	dto-utils \
 	kernel-module-netx4000-xc-stdmac kernel-module-mdio-xc-netx4000 hethmac \
-"
-
-# poky-lsb requires nfsd in kernel
-KERNEL_EXTRA_FEATURES:append = " \
-	${@ 'features/nfsd/nfsd-enable.scc' if '${DISTRO}' == 'poky-lsb' else '' } \
-	features/firmware/firmware.scc \
-	cfg/usb-mass-storage.scc \
 "
 
 #############################################################################
