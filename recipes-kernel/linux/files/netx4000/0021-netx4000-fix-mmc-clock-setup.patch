@@ -1,0 +1,11 @@
+--- a/drivers/mmc/host/sdmmc-netx4000.c	2022-03-30 08:59:25.221689028 +0200
++++ b/drivers/mmc/host/sdmmc-netx4000.c	2022-03-30 08:59:48.750129978 +0200
+@@ -274,7 +274,7 @@
+ 		writel( 0xFF, &host->reg->sd_clk_ctrl);
+ 	} else {
+ 		div = 2;
+-		while (div < 1024) {
++		while (div < 512) {
+ 			if ((max/div)<=clock)
+ 				break;
+ 

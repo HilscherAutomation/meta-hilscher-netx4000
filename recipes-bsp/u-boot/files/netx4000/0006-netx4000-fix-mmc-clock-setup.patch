@@ -1,0 +1,13 @@
+diff --git a/drivers/mmc/netx4000-mci.c b/drivers/mmc/netx4000-mci.c
+index 0bc3c3a6f8..9d609c7d07 100644
+--- a/drivers/mmc/netx4000-mci.c
++++ b/drivers/mmc/netx4000-mci.c
+@@ -421,7 +421,7 @@ static void netx4000_mmc_set_clock(struct netx4000_mmc_priv *priv, u32 clock)
+ 		writel( 0xFF, &priv->regs->sd_clk_ctrl);
+         } else {
+ 		div = 2;
+-		while (div < 1024) {
++		while (div < 512) {
+ 			if (clock > (max/div))
+ 				break;
+ 			div <<= 1;
