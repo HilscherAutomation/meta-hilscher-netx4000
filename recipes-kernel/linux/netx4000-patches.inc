@@ -20,4 +20,5 @@ SRC_URI:append:netx4000 = " \
     file://netx4000/0019-pl011-Add-support-for-RS485-using-GPIO-pin.patch           \
     file://netx4000/0020-spidev-Add-spidev-compatible-string-to-silence-warni.patch \
     file://netx4000/0021-dts_update_to_common_base.patch \
+    file://netx4000/0022-stmmac_fix_division_by_zero.patch \
 "
