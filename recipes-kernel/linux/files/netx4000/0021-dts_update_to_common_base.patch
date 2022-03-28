@@ -1,0 +1,25 @@
+devicetree: Update netx4000 common files to match the ones provided by yocto layer.
+--- a/arch/arm/boot/dts/netx4000/netx4000-common.dtsi	2022-03-28 08:25:41.511236995 +0200
++++ b/arch/arm/boot/dts/netx4000/netx4000-common.dtsi	2022-03-28 08:20:49.431652352 +0200
+@@ -396,7 +396,7 @@
+ 			#gpio-cells = <2>;
+ 
+ 			gpio-ranges = <&pinctrl 0 (MUX_PIN(10,10)/4) 1>,
+-			              // <&pinctrl 1 (MUX_PIN(3,5)/4) 15>, // Use this line instead to use all pins as GPIOs
++			              // <&pinctrl 1 (MUX_PIN(3,1)/4) 15>, // Use this line instead to use all pins as GPIOs
+ 			              <&pinctrl 5 (MUX_PIN(3,5)/4) 11>,    // Use this line when using xc port
+ 			              <&pinctrl 16 (MUX_PIN(7,1)/4) 8>;
+ 		};
+@@ -867,12 +867,6 @@
+ };
+ 
+ &pinctrl {
+-	/* Default pin control used by GPIO requests ---> */
+-	pinctrl-single,gpio-range = <
+-		&range (MUX_PIN(15,0)/4) 1 (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_PULLUP50K | REEMUX_CTL(0x8)) // gpio4[0] / mdio (gpio-bitbang)
+-		&range (MUX_PIN(15,1)/4) 1 (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))      // gpio4[1] / mdc (gpio-bitbang)
+-	>;
+-
+ 	range: gpio-range {
+ 		#pinctrl-single,gpio-range-cells = <3>;
+ 	};

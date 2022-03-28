@@ -31,15 +31,6 @@ devicetree_do_deploy() {
 FILES:${PN} += "boot/dt-overlays"
 
 # --------------------------------------
-# common include files
-
-SRC_URI:netx4000 = " \
-	file://src/netx4000-common.dtsi \
-	file://src/dt-bindings/pinctrl/netx4000.h \
-	file://src/dt-bindings/video/netx4000.h \
-"
-
-# --------------------------------------
 # nxhx4000-jtag-plus-revx boards
 
 COMPATIBLE_MACHINE:nxhx4000-jtag-plus-revx = ".*"

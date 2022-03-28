@@ -13,4 +13,5 @@ SRC_URI:append:netx4000 = " \
     file://0003-netx4000-Add-USB-ehci-controller-driver.patch \
     file://0004-netx4000-Add-QSPI-driver-only-working-in-1Bit-mode.patch \
     file://0005-netx4000-Add-GPIO-driver.patch \
+    file://0006-netx4000-dts_update_to_common_base.patch \
 "
