@@ -18,4 +18,5 @@ SRC_URI:append:netx4000 += " \
     file://netx4000/0018-uio_netx-Update-including-device-tree-support-with-n.patch \
     file://netx4000/0019-amba-pl011-Add-RS485-support-ioctl-and-devicetree.patch    \
     file://netx4000/0020-spidev-Add-spidev-compatible-string-to-silence-warni.patch \
+    file://netx4000/0021-netx4000-fix-mmc-clock-setup.patch \
 "
