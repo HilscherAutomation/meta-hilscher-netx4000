@@ -24,4 +24,5 @@ SRC_URI:append:netx4000 = " \
     file://netx4000/0023-xceth-fix-crash-on-load.patch \
     file://netx4000/0024-netx4000-fix-mmc-clock-setup.patch \
     file://netx4000/0025-use_l2cache_parameters_from_dts.patch \
+    file://netx4000/0026-dts-fix-timer_irq.patch \
 "
