@@ -110,7 +110,7 @@ Example machine:
  * machine configuration:
    meta-hilscher-netx4000/conf/nxhx4000-jtag-plus-rev4.conf
  * hardware description (device tree):
-   meta-hilscher-netx4000/recipes-bsp/device-tree/files/nxhx4000-jtag-plus_rev4.dts
+   meta-hilscher-netx4000/recipes-bsp/netx-device-tree/files/nxhx4000-jtag-plus_rev4.dts
 
 
 2.4 Creating bootable images

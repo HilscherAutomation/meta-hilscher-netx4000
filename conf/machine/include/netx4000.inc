@@ -15,7 +15,7 @@ UBOOT_ENTRYPOINT ?= "0x40008000"
 
 PREFERRED_PROVIDER_virtual/kernel ??= "linux-yocto"
 
-PREFERRED_PROVIDER_virtual/dtb ??= "device-tree"
+PREFERRED_PROVIDER_virtual/dtb ??= "netx-device-tree"
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append = "${PREFERRED_PROVIDER_virtual/dtb}"
 
 #############################################################################

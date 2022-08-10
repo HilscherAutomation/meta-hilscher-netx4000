@@ -39,7 +39,7 @@ do_build_uboot() {
 	git am ../../../meta-hilscher-netx4000/recipes-bsp/u-boot/files/netx4000/*.patch
 
 	# Copy DTS files
-	cp -r ../../../meta-hilscher-netx4000/recipes-bsp/device-tree/files/src/* arch/arm/dts/
+	cp -r ../../../meta-hilscher-netx4000/recipes-bsp/netx-device-tree/files/src/* arch/arm/dts/
 
 	# Create default config if neccessary
 	if [ ! -e .config ]; then
@@ -117,7 +117,7 @@ do_build_kernel() {
 	git am ../../../meta-hilscher-netx4000/recipes-kernel/linux/files/netx4000/*.patch
 
 	# Copy DTS files
-	cp -r ../../../meta-hilscher-netx4000/recipes-bsp/device-tree/files/src/* arch/arm/boot/dts/netx4000/
+	cp -r ../../../meta-hilscher-netx4000/recipes-bsp/netx-device-tree/files/src/* arch/arm/boot/dts/netx4000/
 
 	# Create default config if neccessary
 	if [ ! -e .config ]; then
