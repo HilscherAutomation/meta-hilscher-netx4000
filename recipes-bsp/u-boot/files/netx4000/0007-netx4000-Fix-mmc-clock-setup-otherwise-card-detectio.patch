@@ -1,5 +1,15 @@
+From 02131ac6469a988fcf9982b3431ae024dd73ae6e Mon Sep 17 00:00:00 2001
+From: Michael Trensch <mtrensch@hilscher.com>
+Date: Wed, 10 Aug 2022 19:48:02 +0200
+Subject: [PATCH 7/7] netx4000: Fix mmc clock setup, otherwise card detection
+ will run at 25MHz instead of 400 kHz
+
+---
+ drivers/mmc/netx4000-mci.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
 diff --git a/drivers/mmc/netx4000-mci.c b/drivers/mmc/netx4000-mci.c
-index 0bc3c3a6f8..9d609c7d07 100644
+index bf8c44848a..9fe7f4c49e 100644
 --- a/drivers/mmc/netx4000-mci.c
 +++ b/drivers/mmc/netx4000-mci.c
 @@ -421,7 +421,7 @@ static void netx4000_mmc_set_clock(struct netx4000_mmc_priv *priv, u32 clock)
@@ -11,3 +21,6 @@ index 0bc3c3a6f8..9d609c7d07 100644
  			if (clock > (max/div))
  				break;
  			div <<= 1;
+-- 
+2.25.1
+

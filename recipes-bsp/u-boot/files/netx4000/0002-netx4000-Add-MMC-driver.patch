@@ -1,7 +1,7 @@
-From 38ffb1699d8bbd252595039c1d31cb99fb38ff53 Mon Sep 17 00:00:00 2001
+From f400c100f9e0cad3ae987946be96a46008ff162b Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:44:10 +0200
-Subject: [PATCH 2/5] netx4000: Add MMC driver
+Subject: [PATCH 2/7] netx4000: Add MMC driver
 
 ---
  drivers/mmc/Kconfig        |   9 +
@@ -13,10 +13,10 @@ Subject: [PATCH 2/5] netx4000: Add MMC driver
  create mode 100644 drivers/mmc/netx4000-mci.h
 
 diff --git a/drivers/mmc/Kconfig b/drivers/mmc/Kconfig
-index e0927ce1c9..598ec4cbcc 100644
+index 5e2921ce41..5378f3e207 100644
 --- a/drivers/mmc/Kconfig
 +++ b/drivers/mmc/Kconfig
-@@ -308,6 +308,15 @@ config MMC_MXS
+@@ -315,6 +315,15 @@ config MMC_MXS
  
  	  If unsure, say N.
  
@@ -33,20 +33,20 @@ index e0927ce1c9..598ec4cbcc 100644
  	bool "Support for MMC controllers on PCI"
  	depends on MMC_SDHCI
 diff --git a/drivers/mmc/Makefile b/drivers/mmc/Makefile
-index 7e819d2b3a..9d56a73fdd 100644
+index 9627509302..252fab27d3 100644
 --- a/drivers/mmc/Makefile
 +++ b/drivers/mmc/Makefile
-@@ -38,6 +38,7 @@ obj-$(CONFIG_MVEBU_MMC) += mvebu_mmc.o
+@@ -43,6 +43,7 @@ obj-$(CONFIG_MVEBU_MMC) += mvebu_mmc.o
  obj-$(CONFIG_MMC_OMAP_HS)		+= omap_hsmmc.o
  obj-$(CONFIG_MMC_MXC)			+= mxcmmc.o
  obj-$(CONFIG_MMC_MXS)			+= mxsmmc.o
 +obj-$(CONFIG_MMC_NETX4000)		+= netx4000-mci.o
  obj-$(CONFIG_MMC_OCTEONTX)		+= octeontx_hsmmc.o
+ obj-$(CONFIG_MMC_OWL)			+= owl_mmc.o
  obj-$(CONFIG_MMC_PCI)			+= pci_mmc.o
- obj-$(CONFIG_PXA_MMC_GENERIC) += pxa_mmc_gen.o
 diff --git a/drivers/mmc/netx4000-mci.c b/drivers/mmc/netx4000-mci.c
 new file mode 100644
-index 0000000000..0bc3c3a6f8
+index 0000000000..bf8c44848a
 --- /dev/null
 +++ b/drivers/mmc/netx4000-mci.c
 @@ -0,0 +1,575 @@
@@ -233,7 +233,7 @@ index 0000000000..0bc3c3a6f8
 +		count--;
 +	}
 +	if(num>0) {
-+		int i;
++		long i;
 +		data32 = 0;
 +		for(i=0;i<num;i--) {
 +			data32 |= (*buff++ << (8*i));

@@ -1,6 +1,16 @@
-diff -aurN a/arch/arm/dts/netx4000-common.dtsi b/arch/arm/dts/netx4000-common.dtsi
---- a/arch/arm/dts/netx4000-common.dtsi	2022-03-10 09:26:54.316765127 +0100
-+++ b/arch/arm/dts/netx4000-common.dtsi	2022-03-28 08:53:49.706109441 +0200
+From 42ab540234c6c1f07efd0bc8198bbcefaa7f054e Mon Sep 17 00:00:00 2001
+From: Michael Trensch <mtrensch@hilscher.com>
+Date: Wed, 10 Aug 2022 19:47:24 +0200
+Subject: [PATCH 6/7] netx4000: dts - Update to common base
+
+---
+ arch/arm/dts/netx4000-common.dtsi | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/dts/netx4000-common.dtsi b/arch/arm/dts/netx4000-common.dtsi
+index bfb21ad9cf..5b3ef9bc08 100644
+--- a/arch/arm/dts/netx4000-common.dtsi
++++ b/arch/arm/dts/netx4000-common.dtsi
 @@ -308,6 +308,7 @@
  			reg = <0xfb100000 0x800>;
  			pinctrl-single,register-width = <32>;
@@ -39,3 +49,6 @@ diff -aurN a/arch/arm/dts/netx4000-common.dtsi b/arch/arm/dts/netx4000-common.dt
  	range: gpio-range {
  		#pinctrl-single,gpio-range-cells = <3>;
  	};
+-- 
+2.25.1
+

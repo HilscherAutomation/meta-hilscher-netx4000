@@ -1,20 +1,20 @@
-From 417101fbc371ce0eb83497cc88c8d6e7c4e69989 Mon Sep 17 00:00:00 2001
+From bd32af0b18e6c3a8213fff605234762648754288 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:45:28 +0200
-Subject: [PATCH 5/5] netx4000: Add GPIO driver.
+Subject: [PATCH 5/7] netx4000: Add GPIO driver.
 
 ---
  drivers/gpio/Kconfig         |   7 ++
  drivers/gpio/Makefile        |   1 +
- drivers/gpio/netx4000-gpio.c | 170 +++++++++++++++++++++++++++++++++++
- 3 files changed, 178 insertions(+)
+ drivers/gpio/netx4000-gpio.c | 174 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 182 insertions(+)
  create mode 100644 drivers/gpio/netx4000-gpio.c
 
 diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 40abc33772..eb67acf2f4 100644
+index d7f37f0471..f6853e9ac4 100644
 --- a/drivers/gpio/Kconfig
 +++ b/drivers/gpio/Kconfig
-@@ -506,6 +506,13 @@ config MT7621_GPIO
+@@ -558,6 +558,13 @@ config MT7621_GPIO
  	help
  	  Say yes here to support MediaTek MT7621 compatible GPIOs.
  
@@ -29,10 +29,10 @@ index 40abc33772..eb67acf2f4 100644
  	bool "Nexell GPIO driver"
  	depends on DM_GPIO
 diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 3c851b38c7..c5e5012ddd 100644
+index d7552762d0..4d496d07c7 100644
 --- a/drivers/gpio/Makefile
 +++ b/drivers/gpio/Makefile
-@@ -65,6 +65,7 @@ obj-$(CONFIG_$(SPL_TPL_)PM8916_GPIO)	+= pm8916_gpio.o
+@@ -68,6 +68,7 @@ obj-$(CONFIG_$(SPL_TPL_)PM8916_GPIO)	+= pm8916_gpio.o
  obj-$(CONFIG_MT7620_GPIO)	+= mt7620_gpio.o
  obj-$(CONFIG_MT7621_GPIO)	+= mt7621_gpio.o
  obj-$(CONFIG_MSCC_SGPIO)	+= mscc_sgpio.o
@@ -42,10 +42,10 @@ index 3c851b38c7..c5e5012ddd 100644
  obj-$(CONFIG_NOMADIK_GPIO)	+= nmk_gpio.o
 diff --git a/drivers/gpio/netx4000-gpio.c b/drivers/gpio/netx4000-gpio.c
 new file mode 100644
-index 0000000000..e2f30bc335
+index 0000000000..7d901204b0
 --- /dev/null
 +++ b/drivers/gpio/netx4000-gpio.c
-@@ -0,0 +1,170 @@
+@@ -0,0 +1,174 @@
 +/*
 +* GPIO driver for Hilscher netX4000 based platforms
 +*
@@ -70,6 +70,7 @@ index 0000000000..e2f30bc335
 +#include <dm.h>
 +#include <asm/gpio.h>
 +#include <dm/pinctrl.h>
++#include <dm/device_compat.h>
 +#include <asm/io.h>
 +#include <errno.h>
 +
@@ -150,16 +151,19 @@ index 0000000000..e2f30bc335
 +static int netx4000_gpio_request(struct udevice *dev, unsigned offset, const char *label)
 +{
 +	struct priv_data *pd = dev_get_priv(dev);
++	int res;
 +
 +	if (pd->assigned & BIT(offset))
 +		return -EBUSY;
 +
-+	if (pinctrl_gpio_request(dev, offset) == -EBUSY)
-+		return -EBUSY;
++	res = pinctrl_request_noflags(dev, offset);
++	if (res != 0) {
++		dev_warn(dev, "gpio:%u Unable to request pin (res=%d)\n", offset, res);
++	} else {
++		pd->assigned |= BIT(offset);
++	}
 +
-+	pd->assigned |= BIT(offset);
-+
-+	return 0;
++	return res;
 +}
 +
 +static int netx4000_gpio_free(struct udevice *dev, unsigned offset)

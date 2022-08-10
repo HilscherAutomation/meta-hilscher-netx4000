@@ -1,24 +1,24 @@
-From aac500637c898cd4c416d7daaa1e276449551de2 Mon Sep 17 00:00:00 2001
+From 005fa5da2c89d4d1d50b48b64e0fec7e6653cc92 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:45:00 +0200
-Subject: [PATCH 3/5] netx4000: Add USB ehci controller driver
+Subject: [PATCH 3/7] netx4000: Add USB ehci controller driver
 
 ---
  drivers/usb/host/Kconfig         |   8 +
  drivers/usb/host/Makefile        |   1 +
- drivers/usb/host/ehci-netx4000.c | 253 +++++++++++++++++++
+ drivers/usb/host/ehci-netx4000.c | 246 ++++++++++++++++++
  drivers/usb/host/ehci-netx4000.h | 415 +++++++++++++++++++++++++++++++
- 4 files changed, 677 insertions(+)
+ 4 files changed, 670 insertions(+)
  create mode 100644 drivers/usb/host/ehci-netx4000.c
  create mode 100644 drivers/usb/host/ehci-netx4000.h
 
 diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index ccecb5a3b0..665046f71a 100644
+index 8f77412cc7..d95c7e92bc 100644
 --- a/drivers/usb/host/Kconfig
 +++ b/drivers/usb/host/Kconfig
-@@ -187,6 +187,14 @@ config USB_EHCI_MXS
- 	help
- 	  Enables support for the on-chip EHCI controller on i.MX23 SoCs.
+@@ -188,6 +188,14 @@ config USB_EHCI_MXS
+ 	  Enables support for the on-chip EHCI controller on i.MX23 and
+ 	  i.MX28 SoCs.
  
 +config USB_EHCI_NETX4000
 +	bool "Support for netX4000 on-chip EHCI USB controller"
@@ -32,10 +32,10 @@ index ccecb5a3b0..665046f71a 100644
  	bool "Support for OMAP3+ on-chip EHCI USB controller"
  	depends on ARCH_OMAP2PLUS
 diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index eb6fe9f6b3..1e46dfdcfd 100644
+index 7785b3744e..709e37f2ef 100644
 --- a/drivers/usb/host/Makefile
 +++ b/drivers/usb/host/Makefile
-@@ -32,6 +32,7 @@ obj-$(CONFIG_USB_EHCI_MXS) += ehci-mxs.o
+@@ -35,6 +35,7 @@ obj-$(CONFIG_USB_EHCI_MXS) += ehci-mxs.o
  obj-$(CONFIG_USB_EHCI_MX5) += ehci-mx5.o
  obj-$(CONFIG_USB_EHCI_MX6) += ehci-mx6.o
  obj-$(CONFIG_USB_EHCI_MX7) += ehci-mx6.o
@@ -45,10 +45,10 @@ index eb6fe9f6b3..1e46dfdcfd 100644
  obj-$(CONFIG_USB_EHCI_MSM) += ehci-msm.o
 diff --git a/drivers/usb/host/ehci-netx4000.c b/drivers/usb/host/ehci-netx4000.c
 new file mode 100644
-index 0000000000..536efcd4c3
+index 0000000000..a67c44f5eb
 --- /dev/null
 +++ b/drivers/usb/host/ehci-netx4000.c
-@@ -0,0 +1,253 @@
+@@ -0,0 +1,246 @@
 +/*
 +* USB EHCI driver for Hilscher netx4000 based platforms
 +*
@@ -279,13 +279,6 @@ index 0000000000..536efcd4c3
 +
 +	/* Add USB device */
 +	return ehci_register(dev, hccr, hcor, NULL, 0, USB_INIT_HOST);
-+}
-+
-+static int netx4000_ehci_ofdata_to_platdata(struct udevice *dev)
-+{
-+	struct netx4000_ehci_priv *priv = dev_get_priv(dev);
-+
-+	return 0;
 +}
 +
 +static const struct udevice_id netx4000_ehci_ids[] = {
