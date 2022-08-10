@@ -1,7 +1,7 @@
-From d65247da8bbe4bfca7a1ac2c5a846ec7ed4cba93 Mon Sep 17 00:00:00 2001
+From 7ec46b63c89920503bb7d3a6f6b4f9b91f74ffab Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:01:38 +0200
-Subject: [PATCH 03/20] nbpfaxi: Add netx4000 support for requesting specific
+Subject: [PATCH 03/25] nbpfaxi: Add netx4000 support for requesting specific
  dma channels.
 
 ---

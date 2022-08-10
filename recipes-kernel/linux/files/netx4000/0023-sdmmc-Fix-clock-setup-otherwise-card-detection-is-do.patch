@@ -1,0 +1,26 @@
+From 38247f235bbfbcf46b7f07ec4f5c3eb3c92111b6 Mon Sep 17 00:00:00 2001
+From: Michael Trensch <mtrensch@hilscher.com>
+Date: Wed, 10 Aug 2022 18:16:18 +0200
+Subject: [PATCH 23/25] sdmmc: Fix clock setup, otherwise card detection is
+ done at maximum speed instead of 400 MHz, which may not work on all cards
+
+---
+ drivers/mmc/host/sdmmc-netx4000.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mmc/host/sdmmc-netx4000.c b/drivers/mmc/host/sdmmc-netx4000.c
+index f44e3a66839c..ec62ef137b85 100644
+--- a/drivers/mmc/host/sdmmc-netx4000.c
++++ b/drivers/mmc/host/sdmmc-netx4000.c
+@@ -274,7 +274,7 @@ static void netx4000_hsmmc_set_clock(struct netx4000_hsmmc_host *host)
+ 		writel( 0xFF, &host->reg->sd_clk_ctrl);
+ 	} else {
+ 		div = 2;
+-		while (div < 1024) {
++		while (div < 512) {
+ 			if ((max/div)<=clock)
+ 				break;
+ 
+-- 
+2.25.1
+

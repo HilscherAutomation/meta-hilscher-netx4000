@@ -1,0 +1,39 @@
+From a4f14660813e0349157c1fe83661bd2f7efd878d Mon Sep 17 00:00:00 2001
+From: Michael Trensch <mtrensch@hilscher.com>
+Date: Wed, 10 Aug 2022 18:13:20 +0200
+Subject: [PATCH 20/25] devicetree: Update netx4000 common files to match the
+ ones provided by yocto layer.
+
+---
+ arch/arm/boot/dts/netx4000/netx4000-common.dtsi | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/arch/arm/boot/dts/netx4000/netx4000-common.dtsi b/arch/arm/boot/dts/netx4000/netx4000-common.dtsi
+index 5bfc05564914..5b3ef9bc087f 100644
+--- a/arch/arm/boot/dts/netx4000/netx4000-common.dtsi
++++ b/arch/arm/boot/dts/netx4000/netx4000-common.dtsi
+@@ -396,7 +396,7 @@ gpio0: gpio@f801f000 {
+ 			#gpio-cells = <2>;
+ 
+ 			gpio-ranges = <&pinctrl 0 (MUX_PIN(10,10)/4) 1>,
+-			              // <&pinctrl 1 (MUX_PIN(3,5)/4) 15>, // Use this line instead to use all pins as GPIOs
++			              // <&pinctrl 1 (MUX_PIN(3,1)/4) 15>, // Use this line instead to use all pins as GPIOs
+ 			              <&pinctrl 5 (MUX_PIN(3,5)/4) 11>,    // Use this line when using xc port
+ 			              <&pinctrl 16 (MUX_PIN(7,1)/4) 8>;
+ 		};
+@@ -867,12 +867,6 @@ keyaccess-control {
+ };
+ 
+ &pinctrl {
+-	/* Default pin control used by GPIO requests ---> */
+-	pinctrl-single,gpio-range = <
+-		&range (MUX_PIN(15,0)/4) 1 (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_PULLUP50K | REEMUX_CTL(0x8)) // gpio4[0] / mdio (gpio-bitbang)
+-		&range (MUX_PIN(15,1)/4) 1 (REEMUX_1 | REEMUX_DRV_04MA | REEMUX_UDC_NONE | REEMUX_CTL(0x8))      // gpio4[1] / mdc (gpio-bitbang)
+-	>;
+-
+ 	range: gpio-range {
+ 		#pinctrl-single,gpio-range-cells = <3>;
+ 	};
+-- 
+2.25.1
+

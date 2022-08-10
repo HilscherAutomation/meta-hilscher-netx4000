@@ -1,7 +1,7 @@
-From 3af5d54e83e4a68f1d07c02908d5b25f60b8561b Mon Sep 17 00:00:00 2001
+From 8934d08f26ecb9bac9c818ff86c4cb558f92901f Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:06:18 +0200
-Subject: [PATCH 14/20] can: Add CAN bus driver rza1_can from Renesas with
+Subject: [PATCH 14/25] can: Add CAN bus driver rza1_can from Renesas with
  netX4000 support.
 
 https://github.com/renesas-rz/linux-3.14/commit/fd1df38643075dfcdd6cd0b97859916f8690c9b9
@@ -81,10 +81,10 @@ index 000000000000..fbbd9a443f1a
 +	};
 +};
 diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
-index e355d3974977..b67c641d4cc2 100644
+index fff259247d52..bdf67389fb66 100644
 --- a/drivers/net/can/Kconfig
 +++ b/drivers/net/can/Kconfig
-@@ -167,6 +167,12 @@ config PCH_CAN
+@@ -168,6 +168,12 @@ config PCH_CAN
  	  is an IOH for x86 embedded processor (Intel Atom E6xx series).
  	  This driver can access CAN bus.
  
@@ -110,7 +110,7 @@ index a2b4463d8480..3d613554fcde 100644
  subdir-ccflags-$(CONFIG_CAN_DEBUG_DEVICES) += -DDEBUG
 diff --git a/drivers/net/can/rza1_can.c b/drivers/net/can/rza1_can.c
 new file mode 100644
-index 000000000000..5404eb217b5e
+index 000000000000..e900f39b1aea
 --- /dev/null
 +++ b/drivers/net/can/rza1_can.c
 @@ -0,0 +1,1089 @@

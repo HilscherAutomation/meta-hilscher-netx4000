@@ -1,6 +1,6 @@
 SRC_URI:append:netx4000 = " \
-    file://netx4000/0001-arm-Add-basic-support-for-Hilscher-netX4000-SoC.patch      \
-    file://netx4000/0002-pl011-Fix-invalid-byte-access-in-debug-mode.patch          \
+    file://netx4000/0001-arm-Add-basic-support-for-Hilscher-netX4000-SoC.patch \
+    file://netx4000/0002-pl011-Fix-invalid-byte-access-in-debug-mode.patch \
     file://netx4000/0003-nbpfaxi-Add-netx4000-support-for-requesting-specific.patch \
     file://netx4000/0004-mmc-Add-SD-MMC-driver-for-Hilscher-netX4000-based-pl.patch \
     file://netx4000/0005-gpio-Add-GPIO-driver-for-Hilscher-netX4000-based-pla.patch \
@@ -13,16 +13,15 @@ SRC_URI:append:netx4000 = " \
     file://netx4000/0012-fbdev-Add-Framebuffer-driver-for-Hilscher-netX4000-b.patch \
     file://netx4000/0013-edac-Add-EDAC-CACHE-DC-and-DDR-MC-driver-for-Hilsche.patch \
     file://netx4000/0014-can-Add-CAN-bus-driver-rza1_can-from-Renesas-with-ne.patch \
-    file://netx4000/0015-of-Add-dt-overlay-configfs-interface-v2.patch              \
-    file://netx4000/0016-pcie-netx4000-Add-pcie-root-complex-driver.patch           \
-    file://netx4000/0017-eth-xc-stdmac-Add-standard-ethernet-MAC-driver-using.patch \
-    file://netx4000/0018-uio_netx-Update-including-device-tree-support-with-n.patch \
-    file://netx4000/0019-pl011-Add-support-for-RS485-using-GPIO-pin.patch           \
-    file://netx4000/0020-spidev-Add-spidev-compatible-string-to-silence-warni.patch \
-    file://netx4000/0021-dts_update_to_common_base.patch \
-    file://netx4000/0022-stmmac_fix_division_by_zero.patch \
-    file://netx4000/0023-xceth-fix-crash-on-load.patch \
-    file://netx4000/0024-netx4000-fix-mmc-clock-setup.patch \
-    file://netx4000/0025-use_l2cache_parameters_from_dts.patch \
-    file://netx4000/0026-dts-fix-timer_irq.patch \
+    file://netx4000/0015-pcie-netx4000-Add-pcie-root-complex-driver.patch \
+    file://netx4000/0016-eth-xc-stdmac-Add-standard-ethernet-MAC-driver-using.patch \
+    file://netx4000/0017-uio_netx-Update-including-device-tree-support-with-n.patch \
+    file://netx4000/0018-pl011-Add-support-for-RS485-using-GPIO-pin.patch \
+    file://netx4000/0019-spidev-Add-spidev-compatible-string-to-silence-warni.patch \
+    file://netx4000/0020-devicetree-Update-netx4000-common-files-to-match-the.patch \
+    file://netx4000/0021-Fix-division-by-zero-as-stmmac-clock-is-not-yet-enab.patch \
+    file://netx4000/0022-xceth-crashes-during-load-as-the-firmware-is-decoded.patch \
+    file://netx4000/0023-sdmmc-Fix-clock-setup-otherwise-card-detection-is-do.patch \
+    file://netx4000/0024-Use-DTS-to-enable-data-and-instruction-prefetch.patch \
+    file://netx4000/0025-Fix-Wrong-IRQ-type-for-A9-global-timer-resulting-in-.patch \
 "

@@ -1,7 +1,7 @@
-From 7757d5adba0abfd4ebeb44584dcfad8c0fd4239d Mon Sep 17 00:00:00 2001
+From 287c096029444a3a60840e1f888ccdc72952fa49 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:03:39 +0200
-Subject: [PATCH 09/20] usb-hcd: Add USB HCD driver for Hilscher netX4000 based
+Subject: [PATCH 09/25] usb-hcd: Add USB HCD driver for Hilscher netX4000 based
  platforms.
 
 ---
@@ -12,10 +12,10 @@ Subject: [PATCH 09/20] usb-hcd: Add USB HCD driver for Hilscher netX4000 based
  create mode 100644 drivers/usb/host/hcd-netx4000.c
 
 diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index df9428f1dc5e..f023174d22b7 100644
+index c4736d1d020c..cf0329260e60 100644
 --- a/drivers/usb/host/Kconfig
 +++ b/drivers/usb/host/Kconfig
-@@ -763,6 +763,20 @@ config USB_HCD_SSB
+@@ -754,6 +754,20 @@ config USB_HCD_SSB
  
  	  If unsure, say N.
  

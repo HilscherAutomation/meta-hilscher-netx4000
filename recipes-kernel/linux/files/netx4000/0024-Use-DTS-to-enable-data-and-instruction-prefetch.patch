@@ -1,0 +1,51 @@
+From 5b5ecd785689f5fdb7fda3906b943f161b49b855 Mon Sep 17 00:00:00 2001
+From: Michael Trensch <mtrensch@hilscher.com>
+Date: Wed, 10 Aug 2022 18:17:22 +0200
+Subject: [PATCH 24/25] Use DTS to enable data and instruction prefetch.
+
+NOTE: This also silences the kernel warning/error message about register corruption:
+ | L2C OF: override cache size: 524288 bytes (512KB)
+ | L2C OF: override line size: 32 bytes
+ | L2C OF: override way size: 32768 bytes (32KB)
+ | L2C OF: override associativity: 16
+ | L2C: platform provided aux values permit register corruption.
+
+NOTE2: Following warning is still thrown and can only be removed by disabling i/d prefetch (set prefetch-data and prefetch-instr to 0)
+ | L2C: DT/platform modifies aux control register: 0x02050000 -> 0x32050000
+---
+ arch/arm/boot/dts/netx4000/netx4000-common.dtsi | 5 ++---
+ arch/arm/mach-netx4000/board-generic.c          | 2 +-
+ 2 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/netx4000/netx4000-common.dtsi b/arch/arm/boot/dts/netx4000/netx4000-common.dtsi
+index 5b3ef9bc087f..841ae2bb1c9c 100644
+--- a/arch/arm/boot/dts/netx4000/netx4000-common.dtsi
++++ b/arch/arm/boot/dts/netx4000/netx4000-common.dtsi
+@@ -78,9 +78,8 @@ l2: l2-cache@faf10000 {
+ 		reg = <0xfaf10000 0x1000>;
+ 		cache-unified;
+ 		cache-level = <2>;
+-		cache-size = <524288>;
+-		cache-sets = <1024>;
+-		cache-line-size = <32>;
++		prefetch-data = <1>;
++		prefetch-instr = <1>;
+ 	};
+ 
+ 	/* Global Interrupt Controller */
+diff --git a/arch/arm/mach-netx4000/board-generic.c b/arch/arm/mach-netx4000/board-generic.c
+index 2ecb4f796742..9bd3f8eb6cc7 100644
+--- a/arch/arm/mach-netx4000/board-generic.c
++++ b/arch/arm/mach-netx4000/board-generic.c
+@@ -94,7 +94,7 @@ DT_MACHINE_START(NETX4000_DT, "netX4000 using device tree")
+ 	.reserve      = NULL,
+ 	.smp          = smp_ops(netx4000_smp_ops),
+ 	.map_io       = netx4000_map_io,
+-	.l2c_aux_val  = L310_AUX_CTRL_DATA_PREFETCH | L310_AUX_CTRL_INSTR_PREFETCH,
++	.l2c_aux_val  = 0,
+ 	.l2c_aux_mask = ~0,
+ 	.init_early   = NULL,
+ 	.init_irq     = NULL, /* not needed since it is part of DT -> gic */
+-- 
+2.25.1
+

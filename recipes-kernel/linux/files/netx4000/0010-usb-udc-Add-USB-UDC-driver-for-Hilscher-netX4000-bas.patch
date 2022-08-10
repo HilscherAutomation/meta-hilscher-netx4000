@@ -1,7 +1,7 @@
-From 015d42392000783194b00f72c5f8a5d0991d8d22 Mon Sep 17 00:00:00 2001
+From 6c952784e8b915f9a9a730380b7f7714074a8b00 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:03:46 +0200
-Subject: [PATCH 10/20] usb-udc: Add USB UDC driver for Hilscher netX4000 based
+Subject: [PATCH 10/25] usb-udc: Add USB UDC driver for Hilscher netX4000 based
  platforms.
 
 ---
@@ -12,10 +12,10 @@ Subject: [PATCH 10/20] usb-udc: Add USB UDC driver for Hilscher netX4000 based
  create mode 100644 drivers/usb/gadget/udc/udc-netx4000.c
 
 diff --git a/drivers/usb/gadget/udc/Kconfig b/drivers/usb/gadget/udc/Kconfig
-index 8c614bb86c66..303705cd89ab 100644
+index 69394dc1cdfb..0e4f861e88f1 100644
 --- a/drivers/usb/gadget/udc/Kconfig
 +++ b/drivers/usb/gadget/udc/Kconfig
-@@ -464,6 +464,17 @@ config USB_TEGRA_XUDC
+@@ -465,6 +465,17 @@ config USB_TEGRA_XUDC
  
  source "drivers/usb/gadget/udc/aspeed-vhub/Kconfig"
  

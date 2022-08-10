@@ -1,7 +1,7 @@
-From 8a6c9f489210556dc093aa7cd3e0a67a0d1e7b0a Mon Sep 17 00:00:00 2001
+From 475590293ef2f06516eb947ba910a10984b1b620 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:04:21 +0200
-Subject: [PATCH 12/20] fbdev: Add Framebuffer driver for Hilscher netX4000
+Subject: [PATCH 12/25] fbdev: Add Framebuffer driver for Hilscher netX4000
  based platforms.
 
 ---
@@ -56,10 +56,10 @@ index 000000000000..4cfd46583a9e
 +	};
 +};
 diff --git a/drivers/video/fbdev/Kconfig b/drivers/video/fbdev/Kconfig
-index 4f02db65dede..46703463b61a 100644
+index 6ed5e608dd04..73252ec429cc 100644
 --- a/drivers/video/fbdev/Kconfig
 +++ b/drivers/video/fbdev/Kconfig
-@@ -2239,3 +2239,19 @@ config FB_SM712
+@@ -2241,3 +2241,19 @@ config FB_SM712
  source "drivers/video/fbdev/omap/Kconfig"
  source "drivers/video/fbdev/omap2/Kconfig"
  source "drivers/video/fbdev/mmp/Kconfig"

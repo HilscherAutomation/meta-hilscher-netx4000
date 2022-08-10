@@ -1,7 +1,7 @@
-From d410f03c533083b4066cb7f952af7bc3b6a631e6 Mon Sep 17 00:00:00 2001
+From 6bf37213d8187f55859ae08a83d23abb0d3c22b3 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Fri, 10 Sep 2021 11:04:42 +0000
-Subject: [PATCH 04/20] mmc: Add SD/MMC driver for Hilscher netX4000 based
+Subject: [PATCH 04/25] mmc: Add SD/MMC driver for Hilscher netX4000 based
  platforms.
 
 ---
@@ -12,7 +12,7 @@ Subject: [PATCH 04/20] mmc: Add SD/MMC driver for Hilscher netX4000 based
  create mode 100644 drivers/mmc/host/sdmmc-netx4000.c
 
 diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index a4d4c757eea0..8877dbe421a3 100644
+index ccc148cdb5ee..b972c1dca767 100644
 --- a/drivers/mmc/host/Kconfig
 +++ b/drivers/mmc/host/Kconfig
 @@ -1091,3 +1091,13 @@ config MMC_OWL
@@ -43,7 +43,7 @@ index 14004cc09aaa..6bd0c2f0fd63 100644
  	CFLAGS-cb710-mmc	+= -DDEBUG
 diff --git a/drivers/mmc/host/sdmmc-netx4000.c b/drivers/mmc/host/sdmmc-netx4000.c
 new file mode 100644
-index 000000000000..83c7a522ef42
+index 000000000000..f44e3a66839c
 --- /dev/null
 +++ b/drivers/mmc/host/sdmmc-netx4000.c
 @@ -0,0 +1,1045 @@

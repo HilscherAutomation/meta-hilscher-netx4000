@@ -1,7 +1,7 @@
-From 8a965545773069a316cfdbbfa8fdbc2e9cf08540 Mon Sep 17 00:00:00 2001
+From 917e78b123600724d77dcf304fe02b5c2a0db3a2 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:03:21 +0200
-Subject: [PATCH 08/20] adc: Add IIO ADC driver for Hilscher netX4000 based
+Subject: [PATCH 08/25] adc: Add IIO ADC driver for Hilscher netX4000 based
  platforms.
 
 ---
@@ -68,10 +68,10 @@ index 000000000000..35582c8e37d0
 +	};
 +};
 diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
-index c7946c439612..1ade33a17e3b 100644
+index af168e1c9fdb..f951dcac98a6 100644
 --- a/drivers/iio/adc/Kconfig
 +++ b/drivers/iio/adc/Kconfig
-@@ -1256,4 +1256,16 @@ config XILINX_XADC
+@@ -1278,4 +1278,16 @@ config XILINX_XADC
  	  The driver can also be build as a module. If so, the module will be called
  	  xilinx-xadc.
  
@@ -89,10 +89,10 @@ index c7946c439612..1ade33a17e3b 100644
 +
  endmenu
 diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
-index a226657d19c0..425ce8fa199b 100644
+index d68550f493e3..92debd1be269 100644
 --- a/drivers/iio/adc/Makefile
 +++ b/drivers/iio/adc/Makefile
-@@ -113,3 +113,4 @@ obj-$(CONFIG_VIPERBOARD_ADC) += viperboard_adc.o
+@@ -115,3 +115,4 @@ obj-$(CONFIG_VIPERBOARD_ADC) += viperboard_adc.o
  xilinx-xadc-y := xilinx-xadc-core.o xilinx-xadc-events.o
  obj-$(CONFIG_XILINX_XADC) += xilinx-xadc.o
  obj-$(CONFIG_SD_ADC_MODULATOR) += sd_adc_modulator.o

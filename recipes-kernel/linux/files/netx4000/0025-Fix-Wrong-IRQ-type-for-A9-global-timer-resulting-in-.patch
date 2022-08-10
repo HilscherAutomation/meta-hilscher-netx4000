@@ -1,0 +1,28 @@
+From f5fb3cbc761048a5ae1cea1b0b0c0e53e36095a8 Mon Sep 17 00:00:00 2001
+From: Michael Trensch <mtrensch@hilscher.com>
+Date: Wed, 10 Aug 2022 18:17:33 +0200
+Subject: [PATCH 25/25] Fix Wrong IRQ type for A9 global timer resulting in
+ following warning:  [    0.000000] GIC: PPI11 is secure or misconfigured  [  
+  0.000067] GIC: PPI11 is secure or misconfigured  [    0.006356] GIC: PPI11
+ is secure or misconfigured
+
+---
+ arch/arm/boot/dts/netx4000/netx4000-common.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/netx4000/netx4000-common.dtsi b/arch/arm/boot/dts/netx4000/netx4000-common.dtsi
+index 841ae2bb1c9c..1589a4113fa2 100644
+--- a/arch/arm/boot/dts/netx4000/netx4000-common.dtsi
++++ b/arch/arm/boot/dts/netx4000/netx4000-common.dtsi
+@@ -98,7 +98,7 @@ timer@faf00200 {
+ 		compatible = "arm,cortex-a9-global-timer";
+ 		reg = <0xfaf00200 0x20>;
+ 		interrupt-parent = <&gic>;
+-		interrupts = <GIC_PPI (27-16) (GIC_CPU_MASK_RAW(0x1)|IRQ_TYPE_LEVEL_HIGH)>;
++		interrupts = <GIC_PPI (27-16) (GIC_CPU_MASK_RAW(0x1)|IRQ_TYPE_EDGE_RISING)>;
+ 		clocks = <&arm_periph_clk>;
+ 	};
+ 
+-- 
+2.25.1
+

@@ -1,7 +1,7 @@
-From 5b574ce5cd49ffb4ad3a5a298801d02b9251b5bf Mon Sep 17 00:00:00 2001
+From 1636ac35f97c4602f18f70d97b2bee6f999ca6ef Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:01:07 +0200
-Subject: [PATCH 02/20] pl011: Fix invalid byte access in debug mode
+Subject: [PATCH 02/25] pl011: Fix invalid byte access in debug mode
 
 ---
  arch/arm/include/debug/pl01x.S | 2 +-

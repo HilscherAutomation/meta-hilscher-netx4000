@@ -1,7 +1,7 @@
-From 9e59bc746d375cd607a5df514d049c806ce6dc46 Mon Sep 17 00:00:00 2001
+From 1db47ac9a5e8980b5608651f81e11f9fc76f43e3 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Fri, 10 Sep 2021 11:08:57 +0000
-Subject: [PATCH 06/20] rtc: Add RTC driver for Hilscher netX4000 based
+Subject: [PATCH 06/25] rtc: Add RTC driver for Hilscher netX4000 based
  platforms.
 
 ---
@@ -12,10 +12,10 @@ Subject: [PATCH 06/20] rtc: Add RTC driver for Hilscher netX4000 based
  create mode 100644 drivers/rtc/rtc-netx4000.c
 
 diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 914497abeef9..1721543fcba4 100644
+index e1bc5214494e..73bc9ec4f579 100644
 --- a/drivers/rtc/Kconfig
 +++ b/drivers/rtc/Kconfig
-@@ -1305,6 +1305,16 @@ config RTC_DRV_NTXEC
+@@ -1314,6 +1314,16 @@ config RTC_DRV_NTXEC
  	  embedded controller found in certain e-book readers designed by the
  	  original design manufacturer Netronix.
  
@@ -33,10 +33,10 @@ index 914497abeef9..1721543fcba4 100644
  
  config RTC_DRV_ASM9260
 diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 2dd0dd956b0e..3bbf838172c5 100644
+index 5ceeafe4d5b2..9182720adf73 100644
 --- a/drivers/rtc/Makefile
 +++ b/drivers/rtc/Makefile
-@@ -108,6 +108,7 @@ obj-$(CONFIG_RTC_DRV_MT7622)	+= rtc-mt7622.o
+@@ -110,6 +110,7 @@ obj-$(CONFIG_RTC_DRV_MT7622)	+= rtc-mt7622.o
  obj-$(CONFIG_RTC_DRV_MV)	+= rtc-mv.o
  obj-$(CONFIG_RTC_DRV_MXC)	+= rtc-mxc.o
  obj-$(CONFIG_RTC_DRV_MXC_V2)	+= rtc-mxc_v2.o
