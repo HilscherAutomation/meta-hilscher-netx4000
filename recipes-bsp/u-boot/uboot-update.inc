@@ -1,5 +1,5 @@
 # Use v2021.01 from netx4000 repository
-SRC_URI_remove += "git://git.denx.de/u-boot.git;branch=master \
+SRC_URI_remove += "git://source.denx.de/u-boot/u-boot.git;protocol=https;branch=master \
                    file://remove-redundant-yyloc-global.patch \
                    file://CVE-2020-8432.patch \
                    file://CVE-2020-10648-1.patch \
