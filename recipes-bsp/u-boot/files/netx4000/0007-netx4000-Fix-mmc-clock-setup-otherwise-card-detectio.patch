@@ -1,7 +1,7 @@
-From 02131ac6469a988fcf9982b3431ae024dd73ae6e Mon Sep 17 00:00:00 2001
+From 73b179f7ca915822136897b4fefb52ea5d796e47 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Wed, 10 Aug 2022 19:48:02 +0200
-Subject: [PATCH 7/7] netx4000: Fix mmc clock setup, otherwise card detection
+Subject: [PATCH 7/8] netx4000: Fix mmc clock setup, otherwise card detection
  will run at 25MHz instead of 400 kHz
 
 ---

@@ -1,7 +1,7 @@
-From b270dc62f03187278fca7bd5b2d38fadcc66c452 Mon Sep 17 00:00:00 2001
+From c13cc012537f0ab542279c9d64459408c167ef22 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Fri, 10 Sep 2021 11:22:39 +0000
-Subject: [PATCH 17/25] uio_netx: Update including device-tree support with
+Subject: [PATCH 17/27] uio_netx: Update including device-tree support with
  netx4000 dtso fragment.
 
 ---

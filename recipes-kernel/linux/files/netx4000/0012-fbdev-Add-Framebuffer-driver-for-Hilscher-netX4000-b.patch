@@ -1,7 +1,7 @@
-From 475590293ef2f06516eb947ba910a10984b1b620 Mon Sep 17 00:00:00 2001
+From e4f14d45856aff7657f3016b105cb4958ca1f9a5 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:04:21 +0200
-Subject: [PATCH 12/25] fbdev: Add Framebuffer driver for Hilscher netX4000
+Subject: [PATCH 12/27] fbdev: Add Framebuffer driver for Hilscher netX4000
  based platforms.
 
 ---
@@ -56,10 +56,10 @@ index 000000000000..4cfd46583a9e
 +	};
 +};
 diff --git a/drivers/video/fbdev/Kconfig b/drivers/video/fbdev/Kconfig
-index 6ed5e608dd04..73252ec429cc 100644
+index 974e862cd20d..f6b84b985891 100644
 --- a/drivers/video/fbdev/Kconfig
 +++ b/drivers/video/fbdev/Kconfig
-@@ -2241,3 +2241,19 @@ config FB_SM712
+@@ -2240,3 +2240,19 @@ config FB_SM712
  source "drivers/video/fbdev/omap/Kconfig"
  source "drivers/video/fbdev/omap2/Kconfig"
  source "drivers/video/fbdev/mmp/Kconfig"
@@ -80,7 +80,7 @@ index 6ed5e608dd04..73252ec429cc 100644
 +	  To compile this driver as a module, choose M here:
 +	  the module will be called fb-netx4000.
 diff --git a/drivers/video/fbdev/Makefile b/drivers/video/fbdev/Makefile
-index 477b9624b703..6b70fcad992f 100644
+index 7795c4126706..70b009cf3e06 100644
 --- a/drivers/video/fbdev/Makefile
 +++ b/drivers/video/fbdev/Makefile
 @@ -118,6 +118,7 @@ obj-$(CONFIG_FB_MB862XX)	  += mb862xx/
@@ -294,7 +294,7 @@ index 000000000000..4047e3837a91
 +#include <linux/clk.h>
 +#include <linux/dma-mapping.h>
 +
-+#include <mach/hardware.h>
++#include <linux/soc/netx4000/cpu.h>
 +
 +/* TODO: Move it to dt-bindings */
 +#ifndef _DT_BINDINGS_FB_NETX4000_H

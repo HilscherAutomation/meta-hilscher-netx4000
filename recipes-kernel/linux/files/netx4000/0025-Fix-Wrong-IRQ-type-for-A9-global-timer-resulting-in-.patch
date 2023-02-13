@@ -1,10 +1,10 @@
-From f5fb3cbc761048a5ae1cea1b0b0c0e53e36095a8 Mon Sep 17 00:00:00 2001
+From abe6b2fbf919653c9e35c60e432b52cc5d761d18 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Wed, 10 Aug 2022 18:17:33 +0200
-Subject: [PATCH 25/25] Fix Wrong IRQ type for A9 global timer resulting in
- following warning:  [    0.000000] GIC: PPI11 is secure or misconfigured  [  
-  0.000067] GIC: PPI11 is secure or misconfigured  [    0.006356] GIC: PPI11
- is secure or misconfigured
+Subject: [PATCH 25/27] Fix Wrong IRQ type for A9 global timer resulting in
+ following warning: [ 0.000000] GIC: PPI11 is secure or misconfigured [
+ 0.000067] GIC: PPI11 is secure or misconfigured [ 0.006356] GIC: PPI11 is
+ secure or misconfigured
 
 ---
  arch/arm/boot/dts/netx4000/netx4000-common.dtsi | 2 +-

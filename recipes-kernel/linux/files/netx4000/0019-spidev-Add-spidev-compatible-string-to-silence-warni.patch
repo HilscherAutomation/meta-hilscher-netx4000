@@ -1,7 +1,7 @@
-From 0e4a25f7b3b39697193ab0a764b9e498a6c33346 Mon Sep 17 00:00:00 2001
+From be17316764420d791c963b418285793269c18b09 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Fri, 10 Sep 2021 11:23:55 +0000
-Subject: [PATCH 19/25] spidev: Add "spidev" compatible string to silence
+Subject: [PATCH 19/27] spidev: Add "spidev" compatible string to silence
  warning
 
 ---
@@ -9,13 +9,13 @@ Subject: [PATCH 19/25] spidev: Add "spidev" compatible string to silence
  1 file changed, 1 insertion(+)
 
 diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
-index 1bd73e322b7b..303a789df12f 100644
+index 71c3db60e968..f80602b87d92 100644
 --- a/drivers/spi/spidev.c
 +++ b/drivers/spi/spidev.c
-@@ -696,6 +696,7 @@ static const struct of_device_id spidev_dt_ids[] = {
- 	{ .compatible = "menlo,m53cpld" },
- 	{ .compatible = "cisco,spi-petra" },
- 	{ .compatible = "micron,spi-authenta" },
+@@ -726,6 +726,7 @@ static const struct of_device_id spidev_dt_ids[] = {
+ 	{ .compatible = "menlo,m53cpld", .data = &spidev_of_check },
+ 	{ .compatible = "cisco,spi-petra", .data = &spidev_of_check },
+ 	{ .compatible = "micron,spi-authenta", .data = &spidev_of_check },
 +	{ .compatible = "spidev" },
  	{},
  };

@@ -1,7 +1,7 @@
-From 0e62f3c1d5e0a4a5481128c34767b331cffbf274 Mon Sep 17 00:00:00 2001
+From 1c44ad7b39d04e65bc614cc990502f71ac48e61e Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:09:35 +0200
-Subject: [PATCH 16/25] eth,xc-stdmac: Add standard ethernet MAC driver using
+Subject: [PATCH 16/27] eth,xc-stdmac: Add standard ethernet MAC driver using
  XC.
 
 ATTENTION: This driver must no be used, if a communication firmware (e.g. PROFINET)
@@ -74,10 +74,10 @@ index 000000000000..8e91355df437
 +	};
 +};
 diff --git a/drivers/net/ethernet/Kconfig b/drivers/net/ethernet/Kconfig
-index 35ac6fe7529c..4bd2e2ca7fd3 100644
+index 1917da784191..75c47a861240 100644
 --- a/drivers/net/ethernet/Kconfig
 +++ b/drivers/net/ethernet/Kconfig
-@@ -141,6 +141,7 @@ source "drivers/net/ethernet/ni/Kconfig"
+@@ -146,6 +146,7 @@ source "drivers/net/ethernet/ni/Kconfig"
  source "drivers/net/ethernet/natsemi/Kconfig"
  source "drivers/net/ethernet/neterion/Kconfig"
  source "drivers/net/ethernet/netronome/Kconfig"
@@ -86,10 +86,10 @@ index 35ac6fe7529c..4bd2e2ca7fd3 100644
  source "drivers/net/ethernet/nvidia/Kconfig"
  source "drivers/net/ethernet/nxp/Kconfig"
 diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
-index aaa5078cd7d1..4f55ce771d46 100644
+index 0d872d4efcd1..3b3db2c5c7b4 100644
 --- a/drivers/net/ethernet/Makefile
 +++ b/drivers/net/ethernet/Makefile
-@@ -65,6 +65,7 @@ obj-$(CONFIG_NET_VENDOR_NATSEMI) += natsemi/
+@@ -69,6 +69,7 @@ obj-$(CONFIG_NET_VENDOR_NATSEMI) += natsemi/
  obj-$(CONFIG_NET_VENDOR_NETERION) += neterion/
  obj-$(CONFIG_NET_VENDOR_NETRONOME) += netronome/
  obj-$(CONFIG_NET_VENDOR_NI) += ni/
@@ -3870,7 +3870,7 @@ new file mode 100644
 index 000000000000..020825d15579
 --- /dev/null
 +++ b/drivers/net/ethernet/netx4000/netx4000-xc.c
-@@ -0,0 +1,476 @@
+@@ -0,0 +1,475 @@
 +/*
 +* MDIO XC driver for Hilscher netx4000 based platforms
 +*
@@ -3901,8 +3901,7 @@ index 000000000000..020825d15579
 +#include <linux/of.h>
 +#include <linux/of_fdt.h>
 +
-+#include <mach/hardware.h>
-+#include <mach/irqs.h>
++#include <linux/soc/netx4000/cpu.h>
 +
 +#include "netx4000-xc.h"
 +#include "netx4000-xceth-hal.h"
@@ -4108,7 +4107,7 @@ index 000000000000..020825d15579
 +/* Definitions                                                               */
 +/*****************************************************************************/
 +
-+int port_set_mac_addr( struct port* p, ETH_MAC_ADDRESS_TYPE_E eType, ETHERNET_MAC_ADDR_T tMacAddr)
++int port_set_mac_addr( struct port* p, ETH_MAC_ADDRESS_TYPE_E eType, const ETHERNET_MAC_ADDR_T tMacAddr)
 +{
 +	return netx4000_xceth_set_mac_address( p->portno, eType, tMacAddr);
 +}
@@ -4387,7 +4386,7 @@ index 000000000000..a725e01e3402
 +uint32_t port_get_irq(struct port* port);
 +void port_confirm_irq(struct port* port, uint32_t mask);
 +int port_set_link_mode( struct port* p, int fValid, unsigned int uiSpeed, int fFdx);
-+int port_set_mac_addr( struct port* p, ETH_MAC_ADDRESS_TYPE_E eType, ETHERNET_MAC_ADDR_T tMacAddr);
++int port_set_mac_addr( struct port* p, ETH_MAC_ADDRESS_TYPE_E eType, const ETHERNET_MAC_ADDR_T tMacAddr);
 +int port_get_mac_addr( struct port* p, ETH_MAC_ADDRESS_TYPE_E eType, ETHERNET_MAC_ADDR_T* ptMacAddr);
 +
 +#endif

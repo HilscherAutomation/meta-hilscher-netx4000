@@ -1,7 +1,7 @@
-From 208c0c4e64aad7e849bb0e09571b2e9c31733b4a Mon Sep 17 00:00:00 2001
+From ab18ee5ca11082a6f6a251c1333b7d2d40d2969f Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:04:49 +0200
-Subject: [PATCH 13/25] edac: Add EDAC CACHE DC and DDR MC driver for Hilscher
+Subject: [PATCH 13/27] edac: Add EDAC CACHE DC and DDR MC driver for Hilscher
  netX4000 based platforms.
 
 ---
@@ -14,10 +14,10 @@ Subject: [PATCH 13/25] edac: Add EDAC CACHE DC and DDR MC driver for Hilscher
  create mode 100644 drivers/edac/edac-ddr-mc-netx4000.c
 
 diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
-index 2fc4c3f91fd5..983e94553b23 100644
+index 456602d373b7..bfefd2f70dd5 100644
 --- a/drivers/edac/Kconfig
 +++ b/drivers/edac/Kconfig
-@@ -539,4 +539,29 @@ config EDAC_DMC520
+@@ -541,4 +541,29 @@ config EDAC_DMC520
  	  Support for error detection and correction on the
  	  SoCs with ARM DMC-520 DRAM controller.
  

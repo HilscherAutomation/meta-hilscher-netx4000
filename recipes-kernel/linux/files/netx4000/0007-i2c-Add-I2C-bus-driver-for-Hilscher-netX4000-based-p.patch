@@ -1,7 +1,7 @@
-From 462c64fdcb3200b3dd66db8234280858d86fdf8c Mon Sep 17 00:00:00 2001
+From 5498d7604c2c9a54a5de767148db34e3e81258d4 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Fri, 10 Sep 2021 11:10:10 +0000
-Subject: [PATCH 07/25] i2c: Add I2C bus driver for Hilscher netX4000 based
+Subject: [PATCH 07/27] i2c: Add I2C bus driver for Hilscher netX4000 based
  platforms.
 
 ---
@@ -152,10 +152,10 @@ index 000000000000..f681f5b6f2b3
 +	};
 +};
 diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index fea403431f22..c62ef532c265 100644
+index e50f9603d189..d2e824abac79 100644
 --- a/drivers/i2c/busses/Kconfig
 +++ b/drivers/i2c/busses/Kconfig
-@@ -1178,6 +1178,16 @@ config I2C_RCAR
+@@ -1221,6 +1221,16 @@ config I2C_RCAR
  	  This driver can also be built as a module.  If so, the module
  	  will be called i2c-rcar.
  
@@ -173,16 +173,16 @@ index fea403431f22..c62ef532c265 100644
  
  config I2C_DIOLAN_U2C
 diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-index 1336b04f40e2..98e86c77b41e 100644
+index e73cdb1d2b5a..6e6d578986e3 100644
 --- a/drivers/i2c/busses/Makefile
 +++ b/drivers/i2c/busses/Makefile
-@@ -79,6 +79,7 @@ obj-$(CONFIG_I2C_MT65XX)	+= i2c-mt65xx.o
+@@ -84,6 +84,7 @@ obj-$(CONFIG_I2C_MT65XX)	+= i2c-mt65xx.o
  obj-$(CONFIG_I2C_MT7621)	+= i2c-mt7621.o
  obj-$(CONFIG_I2C_MV64XXX)	+= i2c-mv64xxx.o
  obj-$(CONFIG_I2C_MXS)		+= i2c-mxs.o
 +obj-$(CONFIG_I2C_NETX4000)	+= i2c-netx4000.o
  obj-$(CONFIG_I2C_NOMADIK)	+= i2c-nomadik.o
- obj-$(CONFIG_I2C_NPCM7XX)	+= i2c-npcm7xx.o
+ obj-$(CONFIG_I2C_NPCM)		+= i2c-npcm7xx.o
  obj-$(CONFIG_I2C_OCORES)	+= i2c-ocores.o
 diff --git a/drivers/i2c/busses/i2c-netx4000.c b/drivers/i2c/busses/i2c-netx4000.c
 new file mode 100644

@@ -1,7 +1,7 @@
-From 38247f235bbfbcf46b7f07ec4f5c3eb3c92111b6 Mon Sep 17 00:00:00 2001
+From c5582e56f925cd49e64ce658608df080118b6dcd Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Wed, 10 Aug 2022 18:16:18 +0200
-Subject: [PATCH 23/25] sdmmc: Fix clock setup, otherwise card detection is
+Subject: [PATCH 23/27] sdmmc: Fix clock setup, otherwise card detection is
  done at maximum speed instead of 400 MHz, which may not work on all cards
 
 ---

@@ -1,7 +1,7 @@
-From b422830a6f0fcea364e7485db506c364cd1e56be Mon Sep 17 00:00:00 2001
+From 19ba15eebfadceb2f71fa20e8e1a07e5adadbe62 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Fri, 10 Sep 2021 11:07:18 +0000
-Subject: [PATCH 05/25] gpio: Add GPIO driver for Hilscher netX4000 based
+Subject: [PATCH 05/27] gpio: Add GPIO driver for Hilscher netX4000 based
  platforms.
 
 ---
@@ -12,10 +12,10 @@ Subject: [PATCH 05/25] gpio: Add GPIO driver for Hilscher netX4000 based
  create mode 100644 drivers/gpio/gpio-netx4000.c
 
 diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 947474f6abb4..d8b293c43eae 100644
+index a01af1180616..60414869b72e 100644
 --- a/drivers/gpio/Kconfig
 +++ b/drivers/gpio/Kconfig
-@@ -446,6 +446,17 @@ config GPIO_MXS
+@@ -461,6 +461,17 @@ config GPIO_MXS
  	select GPIO_GENERIC
  	select GENERIC_IRQ_CHIP
  
@@ -34,10 +34,10 @@ index 947474f6abb4..d8b293c43eae 100644
  	tristate "Cavium OCTEON GPIO"
  	depends on CAVIUM_OCTEON_SOC
 diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index fbcda637d5e1..a1263c0a54e8 100644
+index 29e3beb6548c..22c6318a489a 100644
 --- a/drivers/gpio/Makefile
 +++ b/drivers/gpio/Makefile
-@@ -107,6 +107,7 @@ obj-$(CONFIG_GPIO_MT7621)		+= gpio-mt7621.o
+@@ -108,6 +108,7 @@ obj-$(CONFIG_GPIO_MT7621)		+= gpio-mt7621.o
  obj-$(CONFIG_GPIO_MVEBU)		+= gpio-mvebu.o
  obj-$(CONFIG_GPIO_MXC)			+= gpio-mxc.o
  obj-$(CONFIG_GPIO_MXS)			+= gpio-mxs.o

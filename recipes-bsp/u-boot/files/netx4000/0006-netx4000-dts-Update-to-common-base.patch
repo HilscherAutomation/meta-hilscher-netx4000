@@ -1,7 +1,7 @@
-From 42ab540234c6c1f07efd0bc8198bbcefaa7f054e Mon Sep 17 00:00:00 2001
+From 702655b9e36528ac6cbdbeafff67b5adb1ea43fa Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Wed, 10 Aug 2022 19:47:24 +0200
-Subject: [PATCH 6/7] netx4000: dts - Update to common base
+Subject: [PATCH 6/8] netx4000: dts - Update to common base
 
 ---
  arch/arm/dts/netx4000-common.dtsi | 10 +++-------

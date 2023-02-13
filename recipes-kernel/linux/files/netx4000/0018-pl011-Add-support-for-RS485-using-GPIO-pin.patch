@@ -1,17 +1,17 @@
-From 8cc735e8113aa6fb16c7690b724983732cb4c79d Mon Sep 17 00:00:00 2001
+From ae741b2fcef994504ea94c47772bd8c9983eb068 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 14 Feb 2022 10:21:22 +0100
-Subject: [PATCH 18/25] pl011: Add support for RS485 using GPIO pin
+Subject: [PATCH 18/27] pl011: Add support for RS485 using GPIO pin
 
 ---
- drivers/tty/serial/amba-pl011.c | 54 +++++++++++++++++++++++++++------
- 1 file changed, 45 insertions(+), 9 deletions(-)
+ drivers/tty/serial/amba-pl011.c | 55 +++++++++++++++++++++++++++------
+ 1 file changed, 46 insertions(+), 9 deletions(-)
  mode change 100644 => 100755 drivers/tty/serial/amba-pl011.c
 
 diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
 old mode 100644
 new mode 100755
-index 0e908061b5d7..710adb7233e1
+index 0a1cc36f93aa..f6c769353b09
 --- a/drivers/tty/serial/amba-pl011.c
 +++ b/drivers/tty/serial/amba-pl011.c
 @@ -41,6 +41,7 @@
@@ -20,9 +20,9 @@ index 0e908061b5d7..710adb7233e1
  #include <linux/acpi.h>
 +#include <linux/of_gpio.h>
  
- #include "amba-pl011.h"
+ #define UART_NR			14
  
-@@ -275,6 +276,9 @@ struct uart_amba_port {
+@@ -270,6 +271,9 @@ struct uart_amba_port {
  	struct pl011_dmatx_data	dmatx;
  	bool			dma_probed;
  #endif
@@ -32,7 +32,7 @@ index 0e908061b5d7..710adb7233e1
  };
  
  static unsigned int pl011_tx_empty(struct uart_port *port);
-@@ -1312,12 +1316,19 @@ static void pl011_rs485_tx_stop(struct uart_amba_port *uap)
+@@ -1310,12 +1314,19 @@ static void pl011_rs485_tx_stop(struct uart_amba_port *uap)
  	if (port->rs485.delay_rts_after_send)
  		mdelay(port->rs485.delay_rts_after_send);
  
@@ -57,7 +57,7 @@ index 0e908061b5d7..710adb7233e1
  
  	/* Disable the transmitter and reenable the transceiver */
  	cr &= ~UART011_CR_TXE;
-@@ -1441,10 +1452,17 @@ static void pl011_rs485_tx_start(struct uart_amba_port *uap)
+@@ -1448,10 +1459,17 @@ static void pl011_rs485_tx_start(struct uart_amba_port *uap)
  	if (!(port->rs485.flags & SER_RS485_RX_DURING_TX))
  		cr &= ~UART011_CR_RXE;
  
@@ -79,7 +79,7 @@ index 0e908061b5d7..710adb7233e1
  
  	pl011_write(cr, uap, REG_CR);
  
-@@ -2727,6 +2745,24 @@ static int pl011_setup_port(struct device *dev, struct uart_amba_port *uap,
+@@ -2733,6 +2751,24 @@ static int pl011_setup_port(struct device *dev, struct uart_amba_port *uap,
  
  	index = pl011_probe_dt_alias(index, dev);
  
@@ -101,9 +101,9 @@ index 0e908061b5d7..710adb7233e1
 +		dev_info(dev, "gpio%d used as tx-enable for RS485 mode (active-%s)\n", uap->rs485_txen_gpio, (uap->rs485_txen_gpio_flags & OF_GPIO_ACTIVE_LOW) ? "low" : "high");
 +	}
 +
- 	uap->old_cr = 0;
  	uap->port.dev = dev;
  	uap->port.mapbase = mmiobase->start;
+ 	uap->port.membase = base;
 -- 
 2.25.1
 

@@ -1,7 +1,7 @@
-From 1178e25b30acc6d567d0329bc18ab4418192b2fc Mon Sep 17 00:00:00 2001
+From d2e00a969331605796117cc7afc0e036adf79a45 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:04:08 +0200
-Subject: [PATCH 11/25] spi: Add QSPI driver for Hilscher netX4000 based
+Subject: [PATCH 11/27] spi: Add QSPI driver for Hilscher netX4000 based
  platforms.
 
 ---
@@ -40,10 +40,10 @@ index 000000000000..8007b3f62ca8
 +	};
 +};
 diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index 83e352b0c8f9..5a992c1c4127 100644
+index d1bb62f7368b..3f1d07d227f5 100644
 --- a/drivers/spi/Kconfig
 +++ b/drivers/spi/Kconfig
-@@ -994,6 +994,16 @@ config SPI_AMD
+@@ -1111,6 +1111,16 @@ config SPI_AMD
  	help
  	  Enables SPI controller driver for AMD SoC.
  
@@ -61,10 +61,10 @@ index 83e352b0c8f9..5a992c1c4127 100644
  # Add new SPI master controllers in alphabetical order above this line
  #
 diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-index 699db95c8441..90af13c53ac8 100644
+index 4b34e855c841..4ac3e6cfa024 100644
 --- a/drivers/spi/Makefile
 +++ b/drivers/spi/Makefile
-@@ -134,6 +134,7 @@ obj-$(CONFIG_SPI_XTENSA_XTFPGA)		+= spi-xtensa-xtfpga.o
+@@ -145,6 +145,7 @@ obj-$(CONFIG_SPI_XTENSA_XTFPGA)		+= spi-xtensa-xtfpga.o
  obj-$(CONFIG_SPI_ZYNQ_QSPI)		+= spi-zynq-qspi.o
  obj-$(CONFIG_SPI_ZYNQMP_GQSPI)		+= spi-zynqmp-gqspi.o
  obj-$(CONFIG_SPI_AMD)			+= spi-amd.o
@@ -116,7 +116,7 @@ index 000000000000..4d3063782add
 +	#include <linux/dma-mapping.h>
 +#endif /* CONFIG_DMA_ENGINE */
 +
-+#include <mach/hardware.h>
++#include <linux/soc/netx4000/cpu.h>
 +
 +
 +#define MAX_SPEED_HZ    50000000

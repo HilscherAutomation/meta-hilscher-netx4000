@@ -1,7 +1,7 @@
-From 8934d08f26ecb9bac9c818ff86c4cb558f92901f Mon Sep 17 00:00:00 2001
+From 7f60b8a09cdb214a26ba15b4caa3578aacb382cb Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:06:18 +0200
-Subject: [PATCH 14/25] can: Add CAN bus driver rza1_can from Renesas with
+Subject: [PATCH 14/27] can: Add CAN bus driver rza1_can from Renesas with
  netX4000 support.
 
 https://github.com/renesas-rz/linux-3.14/commit/fd1df38643075dfcdd6cd0b97859916f8690c9b9
@@ -81,10 +81,10 @@ index 000000000000..fbbd9a443f1a
 +	};
 +};
 diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
-index fff259247d52..bdf67389fb66 100644
+index 3048ad77edb3..ecdef9c9bf66 100644
 --- a/drivers/net/can/Kconfig
 +++ b/drivers/net/can/Kconfig
-@@ -168,6 +168,12 @@ config PCH_CAN
+@@ -206,6 +206,12 @@ config PCH_CAN
  	  is an IOH for x86 embedded processor (Intel Atom E6xx series).
  	  This driver can access CAN bus.
  
@@ -96,12 +96,12 @@ index fff259247d52..bdf67389fb66 100644
 +
  source "drivers/net/can/c_can/Kconfig"
  source "drivers/net/can/cc770/Kconfig"
- source "drivers/net/can/ifi_canfd/Kconfig"
+ source "drivers/net/can/ctucanfd/Kconfig"
 diff --git a/drivers/net/can/Makefile b/drivers/net/can/Makefile
-index a2b4463d8480..3d613554fcde 100644
+index 61c75ce9d500..e696110061bb 100644
 --- a/drivers/net/can/Makefile
 +++ b/drivers/net/can/Makefile
-@@ -29,5 +29,6 @@ obj-$(CONFIG_CAN_SUN4I)		+= sun4i_can.o
+@@ -31,5 +31,6 @@ obj-$(CONFIG_CAN_SUN4I)		+= sun4i_can.o
  obj-$(CONFIG_CAN_TI_HECC)	+= ti_hecc.o
  obj-$(CONFIG_CAN_XILINXCAN)	+= xilinx_can.o
  obj-$(CONFIG_PCH_CAN)		+= pch_can.o

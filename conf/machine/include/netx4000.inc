@@ -14,8 +14,8 @@ UBOOT_MACHINE ??= "netx4000_defconfig"
 UBOOT_ENTRYPOINT ?= "0x40008000"
 
 PREFERRED_PROVIDER_virtual/kernel ??= "linux-yocto"
-PREFERRED_VERSION_linux-yocto ?= "5.15%"
-PREFERRED_VERSION_linux-yocto-rt ?= "5.15%"
+PREFERRED_VERSION_linux-yocto ?= "6.1%"
+PREFERRED_VERSION_linux-yocto-rt ?= "6.1%"
 
 PREFERRED_PROVIDER_virtual/dtb ??= "netx-device-tree"
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append = "${PREFERRED_PROVIDER_virtual/dtb}"
@@ -42,4 +42,5 @@ MACHINE_EXTRA_RRECOMMENDS += " \
 IMAGE_BOOT_FILES ??= "netx.rom fitImage-${MACHINE}.bin;fitImage"
 
 WKS_FILE ?= "sdimage-bootpart.wks"
+do_image_wic[depends] += "virtual/bootloader:do_deploy"
 IMAGE_FSTYPES ?= "wic.bz2 wic.bmap"

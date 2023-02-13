@@ -1,7 +1,7 @@
-From 6c952784e8b915f9a9a730380b7f7714074a8b00 Mon Sep 17 00:00:00 2001
+From 205b43c6df3304a0f0d40bc6f2ce2300bd0738bd Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:03:46 +0200
-Subject: [PATCH 10/25] usb-udc: Add USB UDC driver for Hilscher netX4000 based
+Subject: [PATCH 10/27] usb-udc: Add USB UDC driver for Hilscher netX4000 based
  platforms.
 
 ---
@@ -12,10 +12,10 @@ Subject: [PATCH 10/25] usb-udc: Add USB UDC driver for Hilscher netX4000 based
  create mode 100644 drivers/usb/gadget/udc/udc-netx4000.c
 
 diff --git a/drivers/usb/gadget/udc/Kconfig b/drivers/usb/gadget/udc/Kconfig
-index 69394dc1cdfb..0e4f861e88f1 100644
+index 5756acb07b8d..8600c1c6a2e2 100644
 --- a/drivers/usb/gadget/udc/Kconfig
 +++ b/drivers/usb/gadget/udc/Kconfig
-@@ -465,6 +465,17 @@ config USB_TEGRA_XUDC
+@@ -478,6 +478,17 @@ config USB_ASPEED_UDC
  
  source "drivers/usb/gadget/udc/aspeed-vhub/Kconfig"
  
@@ -34,13 +34,13 @@ index 69394dc1cdfb..0e4f861e88f1 100644
  # LAST -- dummy/emulated controller
  #
 diff --git a/drivers/usb/gadget/udc/Makefile b/drivers/usb/gadget/udc/Makefile
-index a21f2224e7eb..4c0cb00dd027 100644
+index 12f9e4c9eb0c..99c1c7633af6 100644
 --- a/drivers/usb/gadget/udc/Makefile
 +++ b/drivers/usb/gadget/udc/Makefile
-@@ -40,5 +40,6 @@ obj-$(CONFIG_USB_GR_UDC)	+= gr_udc.o
- obj-$(CONFIG_USB_GADGET_XILINX)	+= udc-xilinx.o
+@@ -41,5 +41,6 @@ obj-$(CONFIG_USB_GADGET_XILINX)	+= udc-xilinx.o
  obj-$(CONFIG_USB_SNP_UDC_PLAT) += snps_udc_plat.o
  obj-$(CONFIG_USB_ASPEED_VHUB)	+= aspeed-vhub/
+ obj-$(CONFIG_USB_ASPEED_UDC)	+= aspeed_udc.o
 +obj-$(CONFIG_USB_GADGET_NETX4000)	+= udc-netx4000.o
  obj-$(CONFIG_USB_BDC_UDC)	+= bdc/
  obj-$(CONFIG_USB_MAX3420_UDC)	+= max3420_udc.o
@@ -85,7 +85,7 @@ index 000000000000..6f691a5517cb
 +#include <linux/io.h>
 +#include <linux/of_address.h>
 +
-+#include <mach/hardware.h>
++#include <linux/soc/netx4000/cpu.h>
 +
 +#define ioset32(setmask, addr)	{uint32_t val32; val32 = ioread32(addr); iowrite32(val32 | setmask, addr);}
 +#define ioclear32(clearmask, addr)	{uint32_t val32; val32 = ioread32(addr); iowrite32(val32 & ~clearmask, addr);}

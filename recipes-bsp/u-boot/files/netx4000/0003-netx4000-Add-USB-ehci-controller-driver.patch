@@ -1,7 +1,7 @@
-From 005fa5da2c89d4d1d50b48b64e0fec7e6653cc92 Mon Sep 17 00:00:00 2001
+From 1acc12f14e5358fc5ee1be251baa5449319e26ba Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:45:00 +0200
-Subject: [PATCH 3/7] netx4000: Add USB ehci controller driver
+Subject: [PATCH 3/8] netx4000: Add USB ehci controller driver
 
 ---
  drivers/usb/host/Kconfig         |   8 +
@@ -13,12 +13,12 @@ Subject: [PATCH 3/7] netx4000: Add USB ehci controller driver
  create mode 100644 drivers/usb/host/ehci-netx4000.h
 
 diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 8f77412cc7..d95c7e92bc 100644
+index 6213b3c95f..bd835d57c0 100644
 --- a/drivers/usb/host/Kconfig
 +++ b/drivers/usb/host/Kconfig
-@@ -188,6 +188,14 @@ config USB_EHCI_MXS
- 	  Enables support for the on-chip EHCI controller on i.MX23 and
- 	  i.MX28 SoCs.
+@@ -223,6 +223,14 @@ config USB_EHCI_NPCM
+ 	  Enables support for the on-chip EHCI controller on
+ 	  Nuvoton NPCM chips.
  
 +config USB_EHCI_NETX4000
 +	bool "Support for netX4000 on-chip EHCI USB controller"
@@ -32,13 +32,13 @@ index 8f77412cc7..d95c7e92bc 100644
  	bool "Support for OMAP3+ on-chip EHCI USB controller"
  	depends on ARCH_OMAP2PLUS
 diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index 7785b3744e..709e37f2ef 100644
+index ddc3663206..9f6db82bde 100644
 --- a/drivers/usb/host/Makefile
 +++ b/drivers/usb/host/Makefile
-@@ -35,6 +35,7 @@ obj-$(CONFIG_USB_EHCI_MXS) += ehci-mxs.o
- obj-$(CONFIG_USB_EHCI_MX5) += ehci-mx5.o
+@@ -36,6 +36,7 @@ obj-$(CONFIG_USB_EHCI_MX5) += ehci-mx5.o
  obj-$(CONFIG_USB_EHCI_MX6) += ehci-mx6.o
  obj-$(CONFIG_USB_EHCI_MX7) += ehci-mx6.o
+ obj-$(CONFIG_USB_EHCI_NPCM) += ehci-npcm.o
 +obj-$(CONFIG_USB_EHCI_NETX4000) += ehci-netx4000.o
  obj-$(CONFIG_USB_EHCI_OMAP) += ehci-omap.o
  obj-$(CONFIG_USB_EHCI_MARVELL) += ehci-marvell.o

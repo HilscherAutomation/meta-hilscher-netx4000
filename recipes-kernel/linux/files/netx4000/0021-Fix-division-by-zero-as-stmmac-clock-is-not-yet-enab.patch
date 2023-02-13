@@ -1,7 +1,7 @@
-From 4798483a0f86797eb31c6f992aeda529eaaa92e7 Mon Sep 17 00:00:00 2001
+From a756406cbd289866f28911ecb5c557b5d4d01fe5 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Wed, 10 Aug 2022 18:14:15 +0200
-Subject: [PATCH 21/25] Fix division by zero as stmmac clock is not yet
+Subject: [PATCH 21/27] Fix division by zero as stmmac clock is not yet
  enabled.
 
 This fixes the following warning during boot:
@@ -27,10 +27,10 @@ Exception stack(0xc1375fa8 to 0xc1375ff0)
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-index e61a4ffde74a..505af709b3a2 100644
+index 4fc3bd90562b..70ce6b1abb29 100644
 --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
 +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-@@ -578,7 +578,7 @@ stmmac_probe_config_dt(struct platform_device *pdev, u8 *mac)
+@@ -579,7 +579,7 @@ stmmac_probe_config_dt(struct platform_device *pdev, u8 *mac)
  	}
  
  	/* clock setup */

@@ -1,7 +1,7 @@
-From 6bf37213d8187f55859ae08a83d23abb0d3c22b3 Mon Sep 17 00:00:00 2001
+From fddfcc9135c60fedc62f858dabf99c45b0e018c0 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Fri, 10 Sep 2021 11:04:42 +0000
-Subject: [PATCH 04/25] mmc: Add SD/MMC driver for Hilscher netX4000 based
+Subject: [PATCH 04/27] mmc: Add SD/MMC driver for Hilscher netX4000 based
  platforms.
 
 ---
@@ -12,13 +12,13 @@ Subject: [PATCH 04/25] mmc: Add SD/MMC driver for Hilscher netX4000 based
  create mode 100644 drivers/mmc/host/sdmmc-netx4000.c
 
 diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index ccc148cdb5ee..b972c1dca767 100644
+index fb1062a6394c..df1de954fddf 100644
 --- a/drivers/mmc/host/Kconfig
 +++ b/drivers/mmc/host/Kconfig
-@@ -1091,3 +1091,13 @@ config MMC_OWL
+@@ -1111,3 +1111,13 @@ config MMC_LITEX
+ 	  module will be called litex_mmc.
  
- config MMC_SDHCI_EXTERNAL_DMA
- 	bool
+ 	  If unsure, say N.
 +
 +config MMC_NETX4000
 +	tristate "SD/MMC Host Controller driver for netX4000 based platfroms"
@@ -30,13 +30,13 @@ index ccc148cdb5ee..b972c1dca767 100644
 +	  To compile this driver as a module, choose M here:
 +	  the module will be called sdmmc-netx4000.
 diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
-index 14004cc09aaa..6bd0c2f0fd63 100644
+index 4e4ceb32c4b4..2e867dbd9b3e 100644
 --- a/drivers/mmc/host/Makefile
 +++ b/drivers/mmc/host/Makefile
-@@ -102,6 +102,7 @@ obj-$(CONFIG_MMC_CQHCI)			+= cqhci.o
- cqhci-y					+= cqhci-core.o
+@@ -102,6 +102,7 @@ cqhci-y					+= cqhci-core.o
  cqhci-$(CONFIG_MMC_CRYPTO)		+= cqhci-crypto.o
  obj-$(CONFIG_MMC_HSQ)			+= mmc_hsq.o
+ obj-$(CONFIG_MMC_LITEX)			+= litex_mmc.o
 +obj-$(CONFIG_MMC_NETX4000)		+= sdmmc-netx4000.o
  
  ifeq ($(CONFIG_CB710_DEBUG),y)
@@ -71,8 +71,8 @@ index 000000000000..f44e3a66839c
 +#define DRIVER_NAME  "sdmmc-netx4000"
 +
 +#include <linux/types.h>
-+#include <mach/hardware.h>
-+#include <mach/platform.h>
++#include <linux/soc/netx4000/cpu.h>
++#include <linux/soc/netx4000/regdef_netx4000.h>
 +
 +#include <linux/kernel.h>
 +#include <linux/module.h>
@@ -889,7 +889,7 @@ index 000000000000..f44e3a66839c
 +	.set_ios = netx4000_hsmmc_set_ios,
 +	.get_cd = netx4000_hsmmc_get_cd,
 +	.get_ro = netx4000_gpio_get_ro,
-+	.hw_reset = netx4000_sdmmc_hardware_reset,
++	.card_hw_reset = netx4000_sdmmc_hardware_reset,
 +	.init_card = netx4000_hsmmc_init_card,
 +};
 +

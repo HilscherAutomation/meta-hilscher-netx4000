@@ -1,7 +1,7 @@
-From a17703a1d96967f1df2bd3e9e6daed939b6b6306 Mon Sep 17 00:00:00 2001
+From ea47508d9ff135f72035678e9d6b3cb1ce1fe764 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Fri, 10 Sep 2021 11:12:01 +0000
-Subject: [PATCH 15/25] pcie-netx4000: Add pcie root complex driver
+Subject: [PATCH 15/27] pcie-netx4000: Add pcie root complex driver
 
 ---
  .../boot/dts/netx4000/overlays/pcie-rc.dts    |  11 +
@@ -30,10 +30,10 @@ index 000000000000..9c5019e99d23
 +	};
 +};
 diff --git a/drivers/pci/controller/Kconfig b/drivers/pci/controller/Kconfig
-index 326f7d13024f..85c87198029e 100644
+index bfd9bac37e24..91af60f597df 100644
 --- a/drivers/pci/controller/Kconfig
 +++ b/drivers/pci/controller/Kconfig
-@@ -253,6 +253,18 @@ config PCIE_MEDIATEK_GEN3
+@@ -257,6 +257,18 @@ config PCIE_MEDIATEK_GEN3
  	  Say Y here if you want to enable Gen3 PCIe controller support on
  	  MediaTek SoCs.
  
@@ -50,10 +50,10 @@ index 326f7d13024f..85c87198029e 100644
 +	  1 slots.
 +
  config VMD
- 	depends on PCI_MSI && X86_64 && SRCU
+ 	depends on PCI_MSI && X86_64 && SRCU && !UML
  	tristate "Intel Volume Management Device Driver"
 diff --git a/drivers/pci/controller/Makefile b/drivers/pci/controller/Makefile
-index aaf30b3dcc14..e57280079c95 100644
+index 37c8663de7fe..beb6cc88ba5a 100644
 --- a/drivers/pci/controller/Makefile
 +++ b/drivers/pci/controller/Makefile
 @@ -27,6 +27,7 @@ obj-$(CONFIG_PCIE_IPROC_PLATFORM) += pcie-iproc-platform.o
@@ -93,7 +93,7 @@ index 000000000000..c4fcee704914
 +#define DRIVER_DESC  "PCIe host controller driver for Hilscher netx4000 based platforms"
 +#define DRIVER_NAME  "pcierc-netx4000"
 +
-+#include <mach/hardware.h>
++#include <linux/soc/netx4000/cpu.h>
 +
 +#include <linux/kernel.h>
 +#include <linux/module.h>

@@ -1,7 +1,7 @@
-From 7ec46b63c89920503bb7d3a6f6b4f9b91f74ffab Mon Sep 17 00:00:00 2001
+From ab9618ead17d79650aa0d52b7289d663abe1309d Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:01:38 +0200
-Subject: [PATCH 03/25] nbpfaxi: Add netx4000 support for requesting specific
+Subject: [PATCH 03/27] nbpfaxi: Add netx4000 support for requesting specific
  dma channels.
 
 ---
@@ -9,7 +9,7 @@ Subject: [PATCH 03/25] nbpfaxi: Add netx4000 support for requesting specific
  1 file changed, 8 insertions(+)
 
 diff --git a/drivers/dma/nbpfaxi.c b/drivers/dma/nbpfaxi.c
-index 9c52c57919c6..83819a1eca68 100644
+index a7063e9cd551..d4dd1c16acee 100644
 --- a/drivers/dma/nbpfaxi.c
 +++ b/drivers/dma/nbpfaxi.c
 @@ -1088,14 +1088,22 @@ static void nbpf_free_chan_resources(struct dma_chan *dchan)

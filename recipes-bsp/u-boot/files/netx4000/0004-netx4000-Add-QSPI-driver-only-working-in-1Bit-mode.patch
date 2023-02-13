@@ -1,7 +1,7 @@
-From 06eb331a4b2b84a8c8a63019ca0e1835b03d00c0 Mon Sep 17 00:00:00 2001
+From 37e619ee18ed495a540f9da948fdab32066a40da Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:45:10 +0200
-Subject: [PATCH 4/7] netx4000: Add QSPI driver (only working in 1Bit mode)
+Subject: [PATCH 4/8] netx4000: Add QSPI driver (only working in 1Bit mode)
 
 ---
  drivers/spi/Kconfig         |   7 +
@@ -11,12 +11,12 @@ Subject: [PATCH 4/7] netx4000: Add QSPI driver (only working in 1Bit mode)
  create mode 100644 drivers/spi/netx4000_qspi.c
 
 diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index a1e515cb2b..37116c47aa 100644
+index c6900f449d..4afe8fbd78 100644
 --- a/drivers/spi/Kconfig
 +++ b/drivers/spi/Kconfig
-@@ -289,6 +289,13 @@ config NPCM_FIU_SPI
- 	  This enables support for the Flash Interface Unit SPI controller
- 	  in master mode.
+@@ -331,6 +331,13 @@ config NPCM_PSPI
+ 	help
+ 	  PSPI driver for NPCM SoC
  
 +config NETX4000_QSPI
 +	bool "Hilscher netX4000 SQI driver"
@@ -29,12 +29,12 @@ index a1e515cb2b..37116c47aa 100644
  	bool "NXP FlexSPI driver"
  	depends on SPI_MEM
 diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-index 06e81b465b..093abedb3d 100644
+index 674d81caae..16b477d059 100644
 --- a/drivers/spi/Makefile
 +++ b/drivers/spi/Makefile
-@@ -49,6 +49,7 @@ obj-$(CONFIG_MXC_SPI) += mxc_spi.o
- obj-$(CONFIG_MXS_SPI) += mxs_spi.o
+@@ -55,6 +55,7 @@ obj-$(CONFIG_MXS_SPI) += mxs_spi.o
  obj-$(CONFIG_NPCM_FIU_SPI) += npcm_fiu_spi.o
+ obj-$(CONFIG_NPCM_PSPI) += npcm_pspi.o
  obj-$(CONFIG_NXP_FSPI) += nxp_fspi.o
 +obj-$(CONFIG_NETX4000_QSPI) += netx4000_qspi.o
  obj-$(CONFIG_ATCSPI200_SPI) += atcspi200_spi.o

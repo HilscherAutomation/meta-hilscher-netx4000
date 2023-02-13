@@ -1,7 +1,7 @@
-From 5b5ecd785689f5fdb7fda3906b943f161b49b855 Mon Sep 17 00:00:00 2001
+From 7ca03efcd06a90459eaff9ecd54876352e1cb2ba Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Wed, 10 Aug 2022 18:17:22 +0200
-Subject: [PATCH 24/25] Use DTS to enable data and instruction prefetch.
+Subject: [PATCH 24/27] Use DTS to enable data and instruction prefetch.
 
 NOTE: This also silences the kernel warning/error message about register corruption:
  | L2C OF: override cache size: 524288 bytes (512KB)
@@ -34,7 +34,7 @@ index 5b3ef9bc087f..841ae2bb1c9c 100644
  
  	/* Global Interrupt Controller */
 diff --git a/arch/arm/mach-netx4000/board-generic.c b/arch/arm/mach-netx4000/board-generic.c
-index 2ecb4f796742..9bd3f8eb6cc7 100644
+index 9c6b0113e85d..c7c6f5b2a8ce 100644
 --- a/arch/arm/mach-netx4000/board-generic.c
 +++ b/arch/arm/mach-netx4000/board-generic.c
 @@ -94,7 +94,7 @@ DT_MACHINE_START(NETX4000_DT, "netX4000 using device tree")

@@ -1,7 +1,7 @@
-From ce22539ad81fe2bd9c0afb2e210679a666d53029 Mon Sep 17 00:00:00 2001
+From aad70b5b957e26fa600a578aa4c0a5e0e3ea61e3 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Wed, 10 Aug 2022 18:15:34 +0200
-Subject: [PATCH 22/25] xceth crashes during load, as the firmware is decoded
+Subject: [PATCH 22/27] xceth crashes during load, as the firmware is decoded
  using of_fdt_unflatten_tree() and integrated into device node. Once firmware
  is loaded the firmware is onloaded, thus the device tree is invalid. Any
  further parsing action results in a crash.

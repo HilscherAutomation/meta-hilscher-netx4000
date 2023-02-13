@@ -1,7 +1,7 @@
-From e69b6ba7aac8791825d15cf1800b91cf2ad0e90f Mon Sep 17 00:00:00 2001
+From 38f040224fb8250c50cc1a78c8c2d54ce5734b17 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 13 Feb 2023 10:47:17 +0100
-Subject: [PATCH 1/2] xceth: Add multicast support
+Subject: [PATCH 26/27] xceth: Add multicast support
 
 NOTE: Multicast support is available in XC unit by enabling hashes of
       multicast addresses, which are in turn passed to application.
