@@ -1,0 +1,64 @@
+From 79cf2d191937d01c8d336c87aa2190d4077edae0 Mon Sep 17 00:00:00 2001
+From: Michael Trensch <mtrensch@hilscher.com>
+Date: Mon, 13 Feb 2023 09:29:16 +0000
+Subject: [PATCH 2/2] xceth: Add support for VLAN tagged frames.
+
+NOTE: VLAN tagged frames were received per default in high-priority queue, but only
+      low-priority queue is used in driver. Change so-called traffic class arrangement
+      makes the XC unit place the vlan tagged frames in low-priority queue as well
+---
+ drivers/net/ethernet/netx4000/netx4000-eth.c       |  3 +++
+ drivers/net/ethernet/netx4000/netx4000-xceth-hal.c | 14 ++++++++++++++
+ drivers/net/ethernet/netx4000/netx4000-xceth-hal.h |  2 ++
+ 3 files changed, 19 insertions(+)
+
+diff --git a/drivers/net/ethernet/netx4000/netx4000-eth.c b/drivers/net/ethernet/netx4000/netx4000-eth.c
+index db97126ef460..88dce06ec9d3 100644
+--- a/drivers/net/ethernet/netx4000/netx4000-eth.c
++++ b/drivers/net/ethernet/netx4000/netx4000-eth.c
+@@ -344,6 +344,9 @@ static int netx_eth_open(struct net_device *ndev)
+ 				MSK_ETHMAC_INTERRUPTS_ENABLE_IND_LO_VAL |
+ 				MSK_ETHMAC_INTERRUPTS_ENABLE_IND_HI_VAL);
+ 
++	// Make sure all frames go into low priority queue
++	netx4000_xceth_set_traffic_class_arrangement(priv->portno, 8);
++
+ 	port_start(priv->port);
+ 
+ 	phy_node = of_parse_phandle(priv->dev->of_node, "phy-handle", 0);
+diff --git a/drivers/net/ethernet/netx4000/netx4000-xceth-hal.c b/drivers/net/ethernet/netx4000/netx4000-xceth-hal.c
+index 7e64fc64fb50..f531c77f7f57 100644
+--- a/drivers/net/ethernet/netx4000/netx4000-xceth-hal.c
++++ b/drivers/net/ethernet/netx4000/netx4000-xceth-hal.c
+@@ -946,3 +946,17 @@ void netx4000_xceth_enable_multicast(unsigned int uiPort, uint8_t *addr)
+ 	value |= ulMsk;
+ 	iowrite32(value, &s_aptXpecDRam[uiPort]->tETHMAC_MULTICAST_FILTER_TABLE.aulDataField[uiOfs]);
+ }
++
++void netx4000_xceth_set_traffic_class_arrangement(unsigned int uiPort, unsigned int uClass)
++{
++	/* 0: HI: vlan priority 7..0, LO: untagged frame */
++	/* 1: HI: vlan priority 7..1, LO: vlan priority 0, untagged frame */
++	/* 2: HI: vlan priority 7..2, LO: vlan priority 1..0, untagged frame */
++	/* 3: HI: vlan priority 7..3, LO: vlan priority 2..0, untagged frame */
++	/* 4: HI: vlan priority 7..4, LO: vlan priority 3..0, untagged frame (802.1Q Recommendation) */
++	/* 5: HI: vlan priority 7..5, LO: vlan priority 4..0, untagged frame */
++	/* 6: HI: vlan priority 7..6, LO: vlan priority 5..0, untagged frame */
++	/* 7: HI: vlan priority 7,    LO: vlan priority 6..0, untagged frame */
++	/* 8: HI: -,                  LO: vlan priority 7..0, untagged frame */
++	iowrite32(uClass, &s_aptXpecDRam[uiPort]->tETHMAC_CONFIG_AREA_BASE.ulETHMAC_TRAFFIC_CLASS_ARRANGEMENT);
++}
+diff --git a/drivers/net/ethernet/netx4000/netx4000-xceth-hal.h b/drivers/net/ethernet/netx4000/netx4000-xceth-hal.h
+index 97d4f1c6e220..fa237514cd04 100644
+--- a/drivers/net/ethernet/netx4000/netx4000-xceth-hal.h
++++ b/drivers/net/ethernet/netx4000/netx4000-xceth-hal.h
+@@ -75,4 +75,6 @@ void netx4000_xceth_enable_all_multicast(unsigned int uiPort);
+ void netx4000_xceth_disable_all_multicast(unsigned int uiPort);
+ void netx4000_xceth_enable_multicast(unsigned int uiPort, uint8_t *addr);
+ 
++void netx4000_xceth_set_traffic_class_arrangement(unsigned int uiPort, unsigned int uClass);
++
+ #endif
+-- 
+2.25.1
+

@@ -24,4 +24,6 @@ SRC_URI:append:netx4000 = " \
     file://netx4000/0023-sdmmc-Fix-clock-setup-otherwise-card-detection-is-do.patch \
     file://netx4000/0024-Use-DTS-to-enable-data-and-instruction-prefetch.patch \
     file://netx4000/0025-Fix-Wrong-IRQ-type-for-A9-global-timer-resulting-in-.patch \
+    file://netx4000/0026-xceth-Add-multicast-support.patch \
+    file://netx4000/0027-xceth-Add-support-for-VLAN-tagged-frames.patch \
 "
