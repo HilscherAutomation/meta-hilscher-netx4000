@@ -13,4 +13,4 @@ fi
 
 docker build -t yocto-buildenv $SCRIPTDIR/docker/.
 
-docker run -it --rm -v $(pwd):/build -u $BUILD_UID:`id -g` yocto-buildenv /build/build.sh $@
+docker run -it --rm -v $(pwd):/build -u $BUILD_UID:`id -g` yocto-buildenv:20.04 /build/build.sh $@
