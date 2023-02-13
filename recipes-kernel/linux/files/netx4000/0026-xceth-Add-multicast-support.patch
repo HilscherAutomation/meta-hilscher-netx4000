@@ -1,0 +1,96 @@
+From e69b6ba7aac8791825d15cf1800b91cf2ad0e90f Mon Sep 17 00:00:00 2001
+From: Michael Trensch <mtrensch@hilscher.com>
+Date: Mon, 13 Feb 2023 10:47:17 +0100
+Subject: [PATCH 1/2] xceth: Add multicast support
+
+NOTE: Multicast support is available in XC unit by enabling hashes of
+      multicast addresses, which are in turn passed to application.
+---
+ drivers/net/ethernet/netx4000/netx4000-eth.c  | 12 ++++++-
+ .../ethernet/netx4000/netx4000-xceth-hal.c    | 34 +++++++++++++++++++
+ .../ethernet/netx4000/netx4000-xceth-hal.h    |  6 +++-
+ 3 files changed, 50 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/netx4000/netx4000-eth.c b/drivers/net/ethernet/netx4000/netx4000-eth.c
+index 2326dcadbf92..db97126ef460 100644
+--- a/drivers/net/ethernet/netx4000/netx4000-eth.c
++++ b/drivers/net/ethernet/netx4000/netx4000-eth.c
+@@ -93,7 +93,17 @@ void netx_eth_ethtool_ops(struct net_device *netdev)
+ 
+ static void netx_eth_set_multicast_list(struct net_device *ndev)
+ {
+-	//TODO
++	struct netx_eth_priv *priv = netdev_priv(ndev);
++	if (ndev->flags & IFF_ALLMULTI) {
++		netx4000_xceth_enable_all_multicast(priv->portno);
++	} else {
++		struct netdev_hw_addr *ha;
++
++		netx4000_xceth_disable_all_multicast(priv->portno);
++		netdev_for_each_mc_addr(ha, ndev) {
++			netx4000_xceth_enable_multicast(priv->portno, ha->addr);
++		}
++	}
+ }
+ 
+ static void netx_eth_set_rx_mode(struct net_device *ndev)
+diff --git a/drivers/net/ethernet/netx4000/netx4000-xceth-hal.c b/drivers/net/ethernet/netx4000/netx4000-xceth-hal.c
+index de42052df060..7e64fc64fb50 100644
+--- a/drivers/net/ethernet/netx4000/netx4000-xceth-hal.c
++++ b/drivers/net/ethernet/netx4000/netx4000-xceth-hal.c
+@@ -912,3 +912,37 @@ int netx4000_xceth_mode_promisc(unsigned int uiPort, unsigned int uEnable)
+ 
+ 	return 0;
+ }
++
++void netx4000_xceth_enable_all_multicast(unsigned int uiPort)
++{
++	int i;
++	for(i = 0; i < ARRAY_SIZE(s_aptXpecDRam[uiPort]->tETHMAC_MULTICAST_FILTER_TABLE.aulDataField); i++) {
++		iowrite32(0xFFFFFFFF, &s_aptXpecDRam[uiPort]->tETHMAC_MULTICAST_FILTER_TABLE.aulDataField[i]);
++	}
++}
++
++void netx4000_xceth_disable_all_multicast(unsigned int uiPort)
++{
++	int i;
++	for(i = 0; i < ARRAY_SIZE(s_aptXpecDRam[uiPort]->tETHMAC_MULTICAST_FILTER_TABLE.aulDataField); i++) {
++		uint32_t value;
++		/* NOTE: Broadcast filtering is also done using MULTICAST_FILTER_TABLE, so we
++			 need to set Bit31 in last entry (register offset = mac[5] >> 1,
++			 bitnumber = mac[5] & 0x1 | mac[4] & 0xf) */
++		value = (i < 0x7F) ? 0 : 0x80000000;
++		iowrite32(value, &s_aptXpecDRam[uiPort]->tETHMAC_MULTICAST_FILTER_TABLE.aulDataField[i]);
++	}
++}
++
++void netx4000_xceth_enable_multicast(unsigned int uiPort, uint8_t *addr)
++{
++	uint32_t uiOfs, uiBit, ulMsk, value;
++
++	uiOfs = addr[5] >> 1;
++	uiBit = (((addr[5] & 1U) << 4) | (addr[4] & 0xfU));
++	ulMsk = 1UL << uiBit;
++
++	value = ioread32(&s_aptXpecDRam[uiPort]->tETHMAC_MULTICAST_FILTER_TABLE.aulDataField[uiOfs]);
++	value |= ulMsk;
++	iowrite32(value, &s_aptXpecDRam[uiPort]->tETHMAC_MULTICAST_FILTER_TABLE.aulDataField[uiOfs]);
++}
+diff --git a/drivers/net/ethernet/netx4000/netx4000-xceth-hal.h b/drivers/net/ethernet/netx4000/netx4000-xceth-hal.h
+index 89c0054565a5..97d4f1c6e220 100644
+--- a/drivers/net/ethernet/netx4000/netx4000-xceth-hal.h
++++ b/drivers/net/ethernet/netx4000/netx4000-xceth-hal.h
+@@ -71,4 +71,8 @@ uint32_t netx4000_xceth_get_irq(uint8_t port);
+ void netx4000_xceth_confirm_irq(uint8_t port, uint32_t mask);
+ int netx4000_xceth_mode_promisc(unsigned int uiPort, unsigned int uEnable );
+ 
+-#endif
+\ No newline at end of file
++void netx4000_xceth_enable_all_multicast(unsigned int uiPort);
++void netx4000_xceth_disable_all_multicast(unsigned int uiPort);
++void netx4000_xceth_enable_multicast(unsigned int uiPort, uint8_t *addr);
++
++#endif
+-- 
+2.25.1
+
