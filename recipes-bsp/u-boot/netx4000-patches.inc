@@ -15,5 +15,4 @@ SRC_URI:append:netx4000 = " \
     file://0005-netx4000-Add-GPIO-driver.patch \
     file://0006-netx4000-dts-Update-to-common-base.patch \
     file://0007-netx4000-Fix-mmc-clock-setup-otherwise-card-detectio.patch \
-    file://0008-pl022-Fix-redefinition-of-flush.patch \
 "

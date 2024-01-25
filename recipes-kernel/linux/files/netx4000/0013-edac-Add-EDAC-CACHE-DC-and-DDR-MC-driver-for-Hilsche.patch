@@ -4,6 +4,8 @@ Date: Mon, 10 May 2021 10:04:49 +0200
 Subject: [PATCH 13/27] edac: Add EDAC CACHE DC and DDR MC driver for Hilscher
  netX4000 based platforms.
 
+Upstream-Status: Pending
+
 ---
  drivers/edac/Kconfig                  |  25 +
  drivers/edac/Makefile                 |   2 +

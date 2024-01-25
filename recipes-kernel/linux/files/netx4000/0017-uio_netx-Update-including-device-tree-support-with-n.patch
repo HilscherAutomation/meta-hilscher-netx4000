@@ -4,6 +4,8 @@ Date: Fri, 10 Sep 2021 11:22:39 +0000
 Subject: [PATCH 17/27] uio_netx: Update including device-tree support with
  netx4000 dtso fragment.
 
+Upstream-Status: Pending
+
 ---
  .../boot/dts/netx4000/overlays/cifx-dpm0.dts  |  27 +
  .../boot/dts/netx4000/overlays/cifx-dpm1.dts  |  27 +

@@ -4,6 +4,8 @@ Date: Fri, 10 Sep 2021 11:04:42 +0000
 Subject: [PATCH 04/27] mmc: Add SD/MMC driver for Hilscher netX4000 based
  platforms.
 
+Upstream-Status: Pending
+
 ---
  drivers/mmc/host/Kconfig          |   10 +
  drivers/mmc/host/Makefile         |    1 +

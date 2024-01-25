@@ -1,8 +1,9 @@
-From af11905056744cd0b6518f7f6ec62d22744987af Mon Sep 17 00:00:00 2001
+From e76f20096037bbc1ebe8509729f727a3fe6dc8f4 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:44:10 +0200
-Subject: [PATCH 2/8] netx4000: Add MMC driver
+Subject: [PATCH 2/7] netx4000: Add MMC driver
 
+Upstream-Status: Pending
 ---
  drivers/mmc/Kconfig        |   9 +
  drivers/mmc/Makefile       |   1 +
@@ -13,7 +14,7 @@ Subject: [PATCH 2/8] netx4000: Add MMC driver
  create mode 100644 drivers/mmc/netx4000-mci.h
 
 diff --git a/drivers/mmc/Kconfig b/drivers/mmc/Kconfig
-index bf4d994ff6..73d51920d6 100644
+index de01b9687b..d9c7d9d111 100644
 --- a/drivers/mmc/Kconfig
 +++ b/drivers/mmc/Kconfig
 @@ -326,6 +326,15 @@ config MMC_MXS
@@ -33,7 +34,7 @@ index bf4d994ff6..73d51920d6 100644
  	bool "Support for MMC controllers on PCI"
  	depends on MMC_SDHCI
 diff --git a/drivers/mmc/Makefile b/drivers/mmc/Makefile
-index 3a664c2ebb..b5a9d82496 100644
+index 2c65c4765a..79efed5ba1 100644
 --- a/drivers/mmc/Makefile
 +++ b/drivers/mmc/Makefile
 @@ -43,6 +43,7 @@ obj-$(CONFIG_MVEBU_MMC) += mvebu_mmc.o
@@ -46,7 +47,7 @@ index 3a664c2ebb..b5a9d82496 100644
  obj-$(CONFIG_MMC_PCI)			+= pci_mmc.o
 diff --git a/drivers/mmc/netx4000-mci.c b/drivers/mmc/netx4000-mci.c
 new file mode 100644
-index 0000000000..bf8c44848a
+index 0000000000..cc2a549773
 --- /dev/null
 +++ b/drivers/mmc/netx4000-mci.c
 @@ -0,0 +1,575 @@
@@ -233,9 +234,9 @@ index 0000000000..bf8c44848a
 +		count--;
 +	}
 +	if(num>0) {
-+		long i;
++		int i;
 +		data32 = 0;
-+		for(i=0;i<num;i--) {
++		for(i=0;i<(num & 0x3);i--) {
 +			data32 |= (*buff++ << (8*i));
 +		}
 +		writel( data32, &host->regs->sd_buf0);

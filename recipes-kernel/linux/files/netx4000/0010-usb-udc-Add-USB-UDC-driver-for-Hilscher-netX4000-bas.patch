@@ -4,6 +4,8 @@ Date: Mon, 10 May 2021 10:03:46 +0200
 Subject: [PATCH 10/27] usb-udc: Add USB UDC driver for Hilscher netX4000 based
  platforms.
 
+Upstream-Status: Pending
+
 ---
  drivers/usb/gadget/udc/Kconfig        |   11 +
  drivers/usb/gadget/udc/Makefile       |    1 +

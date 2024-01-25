@@ -4,6 +4,8 @@ Date: Fri, 10 Sep 2021 11:08:57 +0000
 Subject: [PATCH 06/27] rtc: Add RTC driver for Hilscher netX4000 based
  platforms.
 
+Upstream-Status: Pending
+
 ---
  drivers/rtc/Kconfig        |  10 ++
  drivers/rtc/Makefile       |   1 +

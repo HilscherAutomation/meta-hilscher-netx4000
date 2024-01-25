@@ -3,6 +3,8 @@ From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:01:07 +0200
 Subject: [PATCH 02/27] pl011: Fix invalid byte access in debug mode
 
+Upstream-Status: Pending
+
 ---
  arch/arm/include/debug/pl01x.S | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

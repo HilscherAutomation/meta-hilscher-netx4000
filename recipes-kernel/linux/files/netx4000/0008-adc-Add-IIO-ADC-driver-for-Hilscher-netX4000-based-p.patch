@@ -4,6 +4,8 @@ Date: Mon, 10 May 2021 10:03:21 +0200
 Subject: [PATCH 08/27] adc: Add IIO ADC driver for Hilscher netX4000 based
  platforms.
 
+Upstream-Status: Pending
+
 ---
  arch/arm/boot/dts/netx4000/overlays/adc0.dts |  20 +
  arch/arm/boot/dts/netx4000/overlays/adc1.dts |  20 +

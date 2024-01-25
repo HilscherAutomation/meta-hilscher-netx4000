@@ -4,6 +4,8 @@ Date: Mon, 10 May 2021 10:03:39 +0200
 Subject: [PATCH 09/27] usb-hcd: Add USB HCD driver for Hilscher netX4000 based
  platforms.
 
+Upstream-Status: Pending
+
 ---
  drivers/usb/host/Kconfig        |  14 ++
  drivers/usb/host/Makefile       |   1 +

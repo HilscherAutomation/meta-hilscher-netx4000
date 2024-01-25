@@ -3,6 +3,8 @@ From: Michael Trensch <mtrensch@hilscher.com>
 Date: Fri, 10 Sep 2021 11:12:01 +0000
 Subject: [PATCH 15/27] pcie-netx4000: Add pcie root complex driver
 
+Upstream-Status: Pending
+
 ---
  .../boot/dts/netx4000/overlays/pcie-rc.dts    |  11 +
  drivers/pci/controller/Kconfig                |  12 +

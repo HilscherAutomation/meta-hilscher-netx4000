@@ -5,6 +5,8 @@ Subject: [PATCH 14/27] can: Add CAN bus driver rza1_can from Renesas with
  netX4000 support.
 
 https://github.com/renesas-rz/linux-3.14/commit/fd1df38643075dfcdd6cd0b97859916f8690c9b9
+
+Upstream-Status: Pending
 ---
  arch/arm/boot/dts/netx4000/overlays/can0.dts  |   14 +
  .../arm/boot/dts/netx4000/overlays/can0_1.dts |   14 +

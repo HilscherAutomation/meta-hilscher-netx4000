@@ -3,6 +3,8 @@ From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 14 Feb 2022 10:21:22 +0100
 Subject: [PATCH 18/27] pl011: Add support for RS485 using GPIO pin
 
+Upstream-Status: Pending
+
 ---
  drivers/tty/serial/amba-pl011.c | 55 +++++++++++++++++++++++++++------
  1 file changed, 46 insertions(+), 9 deletions(-)

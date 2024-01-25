@@ -5,6 +5,8 @@ Subject: [PATCH 26/27] xceth: Add multicast support
 
 NOTE: Multicast support is available in XC unit by enabling hashes of
       multicast addresses, which are in turn passed to application.
+
+Upstream-Status: Pending
 ---
  drivers/net/ethernet/netx4000/netx4000-eth.c  | 12 ++++++-
  .../ethernet/netx4000/netx4000-xceth-hal.c    | 34 +++++++++++++++++++

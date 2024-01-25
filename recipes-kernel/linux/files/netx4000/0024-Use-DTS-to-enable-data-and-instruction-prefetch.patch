@@ -3,6 +3,8 @@ From: Michael Trensch <mtrensch@hilscher.com>
 Date: Wed, 10 Aug 2022 18:17:22 +0200
 Subject: [PATCH 24/27] Use DTS to enable data and instruction prefetch.
 
+Upstream-Status: Pending
+
 NOTE: This also silences the kernel warning/error message about register corruption:
  | L2C OF: override cache size: 524288 bytes (512KB)
  | L2C OF: override line size: 32 bytes

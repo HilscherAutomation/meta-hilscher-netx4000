@@ -4,6 +4,8 @@ Date: Wed, 10 Aug 2022 18:14:15 +0200
 Subject: [PATCH 21/27] Fix division by zero as stmmac clock is not yet
  enabled.
 
+Upstream-Status: Pending
+
 This fixes the following warning during boot:
 [<c0110b80>] (unwind_backtrace) from [<c010ad24>] (show_stack+0x18/0x1c)
 [<c010ad24>] (show_stack) from [<c09cf23c>] (dump_stack_lvl+0x40/0x4c)

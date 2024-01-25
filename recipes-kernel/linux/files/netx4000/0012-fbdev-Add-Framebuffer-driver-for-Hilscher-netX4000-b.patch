@@ -4,6 +4,8 @@ Date: Mon, 10 May 2021 10:04:21 +0200
 Subject: [PATCH 12/27] fbdev: Add Framebuffer driver for Hilscher netX4000
  based platforms.
 
+Upstream-Status: Pending
+
 ---
  .../overlays/tft_etq570g0dh6_ntsc.dts         |  36 ++
  drivers/video/fbdev/Kconfig                   |  16 +

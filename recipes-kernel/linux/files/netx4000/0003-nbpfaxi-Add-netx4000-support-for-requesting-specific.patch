@@ -4,6 +4,8 @@ Date: Mon, 10 May 2021 10:01:38 +0200
 Subject: [PATCH 03/27] nbpfaxi: Add netx4000 support for requesting specific
  dma channels.
 
+Upstream-Status: Pending
+
 ---
  drivers/dma/nbpfaxi.c | 8 ++++++++
  1 file changed, 8 insertions(+)

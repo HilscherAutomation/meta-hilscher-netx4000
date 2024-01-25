@@ -4,6 +4,8 @@ Date: Fri, 10 Sep 2021 11:23:55 +0000
 Subject: [PATCH 19/27] spidev: Add "spidev" compatible string to silence
  warning
 
+Upstream-Status: Pending
+
 ---
  drivers/spi/spidev.c | 1 +
  1 file changed, 1 insertion(+)

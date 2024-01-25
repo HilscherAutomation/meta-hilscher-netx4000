@@ -4,6 +4,8 @@ Date: Fri, 10 Sep 2021 11:10:10 +0000
 Subject: [PATCH 07/27] i2c: Add I2C bus driver for Hilscher netX4000 based
  platforms.
 
+Upstream-Status: Pending
+
 ---
  arch/arm/boot/dts/netx4000/overlays/i2c1.dts |  20 +
  arch/arm/boot/dts/netx4000/overlays/i2c2.dts |  20 +

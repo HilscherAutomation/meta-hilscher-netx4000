@@ -1,8 +1,9 @@
-From 37e619ee18ed495a540f9da948fdab32066a40da Mon Sep 17 00:00:00 2001
+From 64b50cb6f083abc9ae7faf7fe6d23c91e857dda5 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:45:10 +0200
-Subject: [PATCH 4/8] netx4000: Add QSPI driver (only working in 1Bit mode)
+Subject: [PATCH 4/7] netx4000: Add QSPI driver (only working in 1Bit mode)
 
+Upstream-Status: Pending
 ---
  drivers/spi/Kconfig         |   7 +
  drivers/spi/Makefile        |   1 +
@@ -11,10 +12,10 @@ Subject: [PATCH 4/8] netx4000: Add QSPI driver (only working in 1Bit mode)
  create mode 100644 drivers/spi/netx4000_qspi.c
 
 diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index c6900f449d..4afe8fbd78 100644
+index 854b8b88da..5b9da4128b 100644
 --- a/drivers/spi/Kconfig
 +++ b/drivers/spi/Kconfig
-@@ -331,6 +331,13 @@ config NPCM_PSPI
+@@ -340,6 +340,13 @@ config NPCM_PSPI
  	help
  	  PSPI driver for NPCM SoC
  
@@ -29,10 +30,10 @@ index c6900f449d..4afe8fbd78 100644
  	bool "NXP FlexSPI driver"
  	depends on SPI_MEM
 diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-index 674d81caae..16b477d059 100644
+index c27b3327c3..3e4a3d44e9 100644
 --- a/drivers/spi/Makefile
 +++ b/drivers/spi/Makefile
-@@ -55,6 +55,7 @@ obj-$(CONFIG_MXS_SPI) += mxs_spi.o
+@@ -56,6 +56,7 @@ obj-$(CONFIG_MXS_SPI) += mxs_spi.o
  obj-$(CONFIG_NPCM_FIU_SPI) += npcm_fiu_spi.o
  obj-$(CONFIG_NPCM_PSPI) += npcm_pspi.o
  obj-$(CONFIG_NXP_FSPI) += nxp_fspi.o

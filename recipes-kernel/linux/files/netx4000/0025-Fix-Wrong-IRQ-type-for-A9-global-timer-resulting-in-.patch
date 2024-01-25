@@ -6,6 +6,8 @@ Subject: [PATCH 25/27] Fix Wrong IRQ type for A9 global timer resulting in
  0.000067] GIC: PPI11 is secure or misconfigured [ 0.006356] GIC: PPI11 is
  secure or misconfigured
 
+Upstream-Status: Pending
+
 ---
  arch/arm/boot/dts/netx4000/netx4000-common.dtsi | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

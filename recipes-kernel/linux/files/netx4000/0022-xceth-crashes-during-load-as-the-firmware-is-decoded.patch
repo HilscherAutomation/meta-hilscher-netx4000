@@ -6,6 +6,8 @@ Subject: [PATCH 22/27] xceth crashes during load, as the firmware is decoded
  is loaded the firmware is onloaded, thus the device tree is invalid. Any
  further parsing action results in a crash.
 
+Upstream-Status: Pending
+
 See following crash dump:
 -------------------------
 Unable to handle kernel paging request at virtual address f08fdd38

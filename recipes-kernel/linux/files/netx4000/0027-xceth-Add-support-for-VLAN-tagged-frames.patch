@@ -3,6 +3,8 @@ From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 13 Feb 2023 09:29:16 +0000
 Subject: [PATCH 27/27] xceth: Add support for VLAN tagged frames.
 
+Upstream-Status: Pending
+
 NOTE: VLAN tagged frames were received per default in high-priority queue, but only
       low-priority queue is used in driver. Change so-called traffic class arrangement
       makes the XC unit place the vlan tagged frames in low-priority queue as well

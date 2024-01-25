@@ -4,6 +4,8 @@ Date: Mon, 10 May 2021 10:04:08 +0200
 Subject: [PATCH 11/27] spi: Add QSPI driver for Hilscher netX4000 based
  platforms.
 
+Upstream-Status: Pending
+
 ---
  .../boot/dts/netx4000/overlays/qspi_flash.dts |   20 +
  drivers/spi/Kconfig                           |   10 +

@@ -6,6 +6,8 @@ Subject: [PATCH 16/27] eth,xc-stdmac: Add standard ethernet MAC driver using
 
 ATTENTION: This driver must no be used, if a communication firmware (e.g. PROFINET)
 is running on R7 side. It also requires firewalls between A9/R7 side to be open.
+
+Upstream-Status: Pending
 ---
  .../arm/boot/dts/netx4000/overlays/xceth0.dts |  11 +
  .../arm/boot/dts/netx4000/overlays/xceth1.dts |  11 +
