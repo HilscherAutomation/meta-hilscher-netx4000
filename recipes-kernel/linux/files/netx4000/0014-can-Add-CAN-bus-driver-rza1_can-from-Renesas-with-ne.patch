@@ -1,4 +1,4 @@
-From 7f60b8a09cdb214a26ba15b4caa3578aacb382cb Mon Sep 17 00:00:00 2001
+From a5b887a47faaab94e9908aa8e6a6675accc0d538 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:06:18 +0200
 Subject: [PATCH 14/27] can: Add CAN bus driver rza1_can from Renesas with
@@ -83,12 +83,12 @@ index 000000000000..fbbd9a443f1a
 +	};
 +};
 diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
-index 3048ad77edb3..ecdef9c9bf66 100644
+index f8cde9f9f554..a1080101f99a 100644
 --- a/drivers/net/can/Kconfig
 +++ b/drivers/net/can/Kconfig
-@@ -206,6 +206,12 @@ config PCH_CAN
- 	  is an IOH for x86 embedded processor (Intel Atom E6xx series).
- 	  This driver can access CAN bus.
+@@ -214,6 +214,12 @@ config CAN_XILINXCAN
+ 	  Xilinx CAN driver. This driver supports both soft AXI CAN IP and
+ 	  Zynq CANPS IP.
  
 +config CAN_RZA1
 +	depends on CAN_DEV
@@ -100,13 +100,13 @@ index 3048ad77edb3..ecdef9c9bf66 100644
  source "drivers/net/can/cc770/Kconfig"
  source "drivers/net/can/ctucanfd/Kconfig"
 diff --git a/drivers/net/can/Makefile b/drivers/net/can/Makefile
-index 61c75ce9d500..e696110061bb 100644
+index ff8f76295d13..088b05bedc9e 100644
 --- a/drivers/net/can/Makefile
 +++ b/drivers/net/can/Makefile
-@@ -31,5 +31,6 @@ obj-$(CONFIG_CAN_SUN4I)		+= sun4i_can.o
+@@ -31,5 +31,6 @@ obj-$(CONFIG_CAN_SJA1000)	+= sja1000/
+ obj-$(CONFIG_CAN_SUN4I)		+= sun4i_can.o
  obj-$(CONFIG_CAN_TI_HECC)	+= ti_hecc.o
  obj-$(CONFIG_CAN_XILINXCAN)	+= xilinx_can.o
- obj-$(CONFIG_PCH_CAN)		+= pch_can.o
 +obj-$(CONFIG_CAN_RZA1)		+= rza1_can.o
  
  subdir-ccflags-$(CONFIG_CAN_DEBUG_DEVICES) += -DDEBUG

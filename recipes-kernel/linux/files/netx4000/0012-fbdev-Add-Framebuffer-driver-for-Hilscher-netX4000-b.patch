@@ -1,11 +1,10 @@
-From e4f14d45856aff7657f3016b105cb4958ca1f9a5 Mon Sep 17 00:00:00 2001
+From c06301f312ffc8f8acc552e5dffdaeb4f732f913 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:04:21 +0200
 Subject: [PATCH 12/27] fbdev: Add Framebuffer driver for Hilscher netX4000
  based platforms.
 
 Upstream-Status: Pending
-
 ---
  .../overlays/tft_etq570g0dh6_ntsc.dts         |  36 ++
  drivers/video/fbdev/Kconfig                   |  16 +
@@ -58,13 +57,13 @@ index 000000000000..4cfd46583a9e
 +	};
 +};
 diff --git a/drivers/video/fbdev/Kconfig b/drivers/video/fbdev/Kconfig
-index 974e862cd20d..f6b84b985891 100644
+index c29754b65c0e..b765d9682f57 100644
 --- a/drivers/video/fbdev/Kconfig
 +++ b/drivers/video/fbdev/Kconfig
-@@ -2240,3 +2240,19 @@ config FB_SM712
- source "drivers/video/fbdev/omap/Kconfig"
- source "drivers/video/fbdev/omap2/Kconfig"
+@@ -1955,3 +1955,19 @@ source "drivers/video/fbdev/omap2/Kconfig"
  source "drivers/video/fbdev/mmp/Kconfig"
+ 
+ source "drivers/video/fbdev/core/Kconfig"
 +
 +config FB_NETX4000
 +	tristate "Framebuffer driver for netX4000 based platforms"
@@ -82,10 +81,10 @@ index 974e862cd20d..f6b84b985891 100644
 +	  To compile this driver as a module, choose M here:
 +	  the module will be called fb-netx4000.
 diff --git a/drivers/video/fbdev/Makefile b/drivers/video/fbdev/Makefile
-index 7795c4126706..70b009cf3e06 100644
+index 70569f7027ed..ab1201c2a2e1 100644
 --- a/drivers/video/fbdev/Makefile
 +++ b/drivers/video/fbdev/Makefile
-@@ -118,6 +118,7 @@ obj-$(CONFIG_FB_MB862XX)	  += mb862xx/
+@@ -115,6 +115,7 @@ obj-$(CONFIG_FB_MB862XX)	  += mb862xx/
  obj-$(CONFIG_FB_HYPERV)		  += hyperv_fb.o
  obj-$(CONFIG_FB_OPENCORES)	  += ocfb.o
  obj-$(CONFIG_FB_SM712)		  += sm712fb.o
@@ -95,7 +94,7 @@ index 7795c4126706..70b009cf3e06 100644
  obj-$(CONFIG_FB_UVESA)            += uvesafb.o
 diff --git a/drivers/video/fbdev/fb-netx4000.c b/drivers/video/fbdev/fb-netx4000.c
 new file mode 100644
-index 000000000000..4047e3837a91
+index 000000000000..346071f0c5cb
 --- /dev/null
 +++ b/drivers/video/fbdev/fb-netx4000.c
 @@ -0,0 +1,580 @@

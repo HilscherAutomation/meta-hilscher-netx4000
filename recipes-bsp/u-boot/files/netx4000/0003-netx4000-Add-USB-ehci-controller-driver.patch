@@ -1,4 +1,4 @@
-From f91e2ce69ecb486dd6b3e0bbaa4f96f7d207ff4c Mon Sep 17 00:00:00 2001
+From 86c3c323a017eaa7cc04ca02ca9563524e11c87b Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:45:00 +0200
 Subject: [PATCH 3/7] netx4000: Add USB ehci controller driver
@@ -14,10 +14,10 @@ Upstream-Status: Pending
  create mode 100644 drivers/usb/host/ehci-netx4000.h
 
 diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 1a883babf4..e7b1a22bea 100644
+index 35610ffc2b..f420e45019 100644
 --- a/drivers/usb/host/Kconfig
 +++ b/drivers/usb/host/Kconfig
-@@ -236,6 +236,14 @@ config USB_EHCI_NPCM
+@@ -235,6 +235,14 @@ config USB_EHCI_NPCM
  	  Enables support for the on-chip EHCI controller on
  	  Nuvoton NPCM chips.
  

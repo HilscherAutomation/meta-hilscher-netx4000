@@ -1,4 +1,4 @@
-From 1c44ad7b39d04e65bc614cc990502f71ac48e61e Mon Sep 17 00:00:00 2001
+From 6823a7378ec4b8bdf5408eb3f9f1b2c690b4e8ef Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:09:35 +0200
 Subject: [PATCH 16/27] eth,xc-stdmac: Add standard ethernet MAC driver using
@@ -21,11 +21,11 @@ Upstream-Status: Pending
  .../net/ethernet/netx4000/netx4000-xc-hal.c   | 909 +++++++++++++++++
  .../net/ethernet/netx4000/netx4000-xc-hal.h   |  78 ++
  .../net/ethernet/netx4000/netx4000-xc-res.h   | 811 +++++++++++++++
- drivers/net/ethernet/netx4000/netx4000-xc.c   | 476 +++++++++
+ drivers/net/ethernet/netx4000/netx4000-xc.c   | 475 +++++++++
  drivers/net/ethernet/netx4000/netx4000-xc.h   |  38 +
  .../ethernet/netx4000/netx4000-xceth-hal.c    | 914 +++++++++++++++++
  .../ethernet/netx4000/netx4000-xceth-hal.h    |  74 ++
- 16 files changed, 5246 insertions(+)
+ 16 files changed, 5245 insertions(+)
  create mode 100644 arch/arm/boot/dts/netx4000/overlays/xceth0.dts
  create mode 100644 arch/arm/boot/dts/netx4000/overlays/xceth1.dts
  create mode 100644 drivers/net/ethernet/netx4000/Kconfig
@@ -76,10 +76,10 @@ index 000000000000..8e91355df437
 +	};
 +};
 diff --git a/drivers/net/ethernet/Kconfig b/drivers/net/ethernet/Kconfig
-index 1917da784191..75c47a861240 100644
+index 5a274b99f299..36578742a13a 100644
 --- a/drivers/net/ethernet/Kconfig
 +++ b/drivers/net/ethernet/Kconfig
-@@ -146,6 +146,7 @@ source "drivers/net/ethernet/ni/Kconfig"
+@@ -145,6 +145,7 @@ source "drivers/net/ethernet/ni/Kconfig"
  source "drivers/net/ethernet/natsemi/Kconfig"
  source "drivers/net/ethernet/neterion/Kconfig"
  source "drivers/net/ethernet/netronome/Kconfig"
@@ -3869,7 +3869,7 @@ index 000000000000..69328619d775
 +#endif
 diff --git a/drivers/net/ethernet/netx4000/netx4000-xc.c b/drivers/net/ethernet/netx4000/netx4000-xc.c
 new file mode 100644
-index 000000000000..020825d15579
+index 000000000000..2feb1eef7a9d
 --- /dev/null
 +++ b/drivers/net/ethernet/netx4000/netx4000-xc.c
 @@ -0,0 +1,475 @@
@@ -4350,7 +4350,7 @@ index 000000000000..020825d15579
 +EXPORT_SYMBOL(port_set_mac_addr);
 diff --git a/drivers/net/ethernet/netx4000/netx4000-xc.h b/drivers/net/ethernet/netx4000/netx4000-xc.h
 new file mode 100644
-index 000000000000..a725e01e3402
+index 000000000000..8a636378a8ed
 --- /dev/null
 +++ b/drivers/net/ethernet/netx4000/netx4000-xc.h
 @@ -0,0 +1,38 @@

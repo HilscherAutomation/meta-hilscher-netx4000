@@ -1,11 +1,10 @@
-From fddfcc9135c60fedc62f858dabf99c45b0e018c0 Mon Sep 17 00:00:00 2001
+From 60c248473e9c63724854927c158678a18df7df4b Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Fri, 10 Sep 2021 11:04:42 +0000
 Subject: [PATCH 04/27] mmc: Add SD/MMC driver for Hilscher netX4000 based
  platforms.
 
 Upstream-Status: Pending
-
 ---
  drivers/mmc/host/Kconfig          |   10 +
  drivers/mmc/host/Makefile         |    1 +
@@ -14,10 +13,10 @@ Upstream-Status: Pending
  create mode 100644 drivers/mmc/host/sdmmc-netx4000.c
 
 diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index fb1062a6394c..df1de954fddf 100644
+index 554e67103c1a..75f4ed662fae 100644
 --- a/drivers/mmc/host/Kconfig
 +++ b/drivers/mmc/host/Kconfig
-@@ -1111,3 +1111,13 @@ config MMC_LITEX
+@@ -1069,3 +1069,13 @@ config MMC_LITEX
  	  module will be called litex_mmc.
  
  	  If unsure, say N.
@@ -32,10 +31,10 @@ index fb1062a6394c..df1de954fddf 100644
 +	  To compile this driver as a module, choose M here:
 +	  the module will be called sdmmc-netx4000.
 diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
-index 4e4ceb32c4b4..2e867dbd9b3e 100644
+index a693fa3d3f1c..1702b3365ec7 100644
 --- a/drivers/mmc/host/Makefile
 +++ b/drivers/mmc/host/Makefile
-@@ -102,6 +102,7 @@ cqhci-y					+= cqhci-core.o
+@@ -101,6 +101,7 @@ cqhci-y					+= cqhci-core.o
  cqhci-$(CONFIG_MMC_CRYPTO)		+= cqhci-crypto.o
  obj-$(CONFIG_MMC_HSQ)			+= mmc_hsq.o
  obj-$(CONFIG_MMC_LITEX)			+= litex_mmc.o
@@ -45,7 +44,7 @@ index 4e4ceb32c4b4..2e867dbd9b3e 100644
  	CFLAGS-cb710-mmc	+= -DDEBUG
 diff --git a/drivers/mmc/host/sdmmc-netx4000.c b/drivers/mmc/host/sdmmc-netx4000.c
 new file mode 100644
-index 000000000000..f44e3a66839c
+index 000000000000..35697819a96e
 --- /dev/null
 +++ b/drivers/mmc/host/sdmmc-netx4000.c
 @@ -0,0 +1,1045 @@

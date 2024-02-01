@@ -1,4 +1,4 @@
-From a8bc0bddc1ba65f631f0f33e513b1c5d0be6a1e2 Mon Sep 17 00:00:00 2001
+From e3175cc7b930bcbbc68e6fd926dcf3a8edbac886 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:45:28 +0200
 Subject: [PATCH 5/7] netx4000: Add GPIO driver.
@@ -12,10 +12,10 @@ Upstream-Status: Pending
  create mode 100644 drivers/gpio/netx4000-gpio.c
 
 diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 9bf6e428de..bcbb9621d5 100644
+index ba42b0768e..8d398d9d3c 100644
 --- a/drivers/gpio/Kconfig
 +++ b/drivers/gpio/Kconfig
-@@ -595,6 +595,13 @@ config MT7621_GPIO
+@@ -602,6 +602,13 @@ config MT7621_GPIO
  	help
  	  Say yes here to support MediaTek MT7621 compatible GPIOs.
  
@@ -30,7 +30,7 @@ index 9bf6e428de..bcbb9621d5 100644
  	bool "Nexell GPIO driver"
  	depends on DM_GPIO
 diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 64a36c472e..dc595e0912 100644
+index c8b3fd7814..41acdb3b2a 100644
 --- a/drivers/gpio/Makefile
 +++ b/drivers/gpio/Makefile
 @@ -64,6 +64,7 @@ obj-$(CONFIG_$(SPL_TPL_)QCOM_PMIC_GPIO)	+= qcom_pmic_gpio.o

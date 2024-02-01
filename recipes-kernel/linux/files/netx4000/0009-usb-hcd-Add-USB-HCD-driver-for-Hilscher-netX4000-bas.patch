@@ -1,11 +1,10 @@
-From c2793f8f9afb6f186ac6adbd0fc6a69bd44d240c Mon Sep 17 00:00:00 2001
+From 37d1ec7635889bcc0e28de5c30b5ab836ebcf19c Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:03:39 +0200
 Subject: [PATCH 09/27] usb-hcd: Add USB HCD driver for Hilscher netX4000 based
  platforms.
 
 Upstream-Status: Pending
-
 ---
  drivers/usb/host/Kconfig        |  14 ++
  drivers/usb/host/Makefile       |   1 +
@@ -14,10 +13,10 @@ Upstream-Status: Pending
  create mode 100644 drivers/usb/host/hcd-netx4000.c
 
 diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 247568bc17a2..c9f0a36881e4 100644
+index 4448d0ab06f0..ad80343d2c9b 100644
 --- a/drivers/usb/host/Kconfig
 +++ b/drivers/usb/host/Kconfig
-@@ -766,6 +766,20 @@ config USB_HCD_SSB
+@@ -702,6 +702,20 @@ config USB_HCD_SSB
  
  	  If unsure, say N.
  
@@ -39,20 +38,19 @@ index 247568bc17a2..c9f0a36881e4 100644
  	bool "HCD test mode support"
  	help
 diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index 2c8a61be7e46..911a2f57fe42 100644
+index be4e5245c52f..cfb26a0f2bd9 100644
 --- a/drivers/usb/host/Makefile
 +++ b/drivers/usb/host/Makefile
-@@ -84,6 +84,7 @@ obj-$(CONFIG_USB_EHCI_FSL)	+= ehci-fsl.o
+@@ -83,5 +83,6 @@ obj-$(CONFIG_USB_EHCI_FSL)	+= ehci-fsl.o
  obj-$(CONFIG_USB_EHCI_MV)	+= ehci-mv.o
  obj-$(CONFIG_USB_HCD_BCMA)	+= bcma-hcd.o
  obj-$(CONFIG_USB_HCD_SSB)	+= ssb-hcd.o
 +obj-$(CONFIG_USB_HCD_NETX4000)	+= hcd-netx4000.o
- obj-$(CONFIG_USB_FOTG210_HCD)	+= fotg210-hcd.o
  obj-$(CONFIG_USB_MAX3421_HCD)	+= max3421-hcd.o
  obj-$(CONFIG_USB_XEN_HCD)	+= xen-hcd.o
 diff --git a/drivers/usb/host/hcd-netx4000.c b/drivers/usb/host/hcd-netx4000.c
 new file mode 100644
-index 000000000000..b3ec2a11d8ef
+index 000000000000..ba0f3e9d283d
 --- /dev/null
 +++ b/drivers/usb/host/hcd-netx4000.c
 @@ -0,0 +1,400 @@

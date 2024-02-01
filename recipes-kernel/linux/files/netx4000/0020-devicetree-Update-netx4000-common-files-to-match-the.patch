@@ -1,11 +1,10 @@
-From a28d56038235c8bcfa9b7fc51f84d537888d38e6 Mon Sep 17 00:00:00 2001
+From deae58c0d26eb55d70ec04108c189c16da09d283 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Wed, 10 Aug 2022 18:13:20 +0200
 Subject: [PATCH 20/27] devicetree: Update netx4000 common files to match the
  ones provided by yocto layer.
 
 Upstream-Status: Pending
-
 ---
  arch/arm/boot/dts/netx4000/netx4000-common.dtsi | 8 +-------
  1 file changed, 1 insertion(+), 7 deletions(-)

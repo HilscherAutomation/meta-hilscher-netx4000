@@ -1,16 +1,15 @@
-From ea47508d9ff135f72035678e9d6b3cb1ce1fe764 Mon Sep 17 00:00:00 2001
+From 4049bd566591d6ac31dca9f026c9ed77647d3b85 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Fri, 10 Sep 2021 11:12:01 +0000
 Subject: [PATCH 15/27] pcie-netx4000: Add pcie root complex driver
 
 Upstream-Status: Pending
-
 ---
  .../boot/dts/netx4000/overlays/pcie-rc.dts    |  11 +
  drivers/pci/controller/Kconfig                |  12 +
  drivers/pci/controller/Makefile               |   1 +
- drivers/pci/controller/pcie-netx4000.c        | 921 ++++++++++++++++++
- 4 files changed, 945 insertions(+)
+ drivers/pci/controller/pcie-netx4000.c        | 909 ++++++++++++++++++
+ 4 files changed, 933 insertions(+)
  create mode 100644 arch/arm/boot/dts/netx4000/overlays/pcie-rc.dts
  create mode 100644 drivers/pci/controller/pcie-netx4000.c
 
@@ -32,12 +31,12 @@ index 000000000000..9c5019e99d23
 +	};
 +};
 diff --git a/drivers/pci/controller/Kconfig b/drivers/pci/controller/Kconfig
-index bfd9bac37e24..91af60f597df 100644
+index c0c3f2824990..e0751ba1c8a3 100644
 --- a/drivers/pci/controller/Kconfig
 +++ b/drivers/pci/controller/Kconfig
-@@ -257,6 +257,18 @@ config PCIE_MEDIATEK_GEN3
- 	  Say Y here if you want to enable Gen3 PCIe controller support on
- 	  MediaTek SoCs.
+@@ -148,6 +148,18 @@ config PCI_IXP4XX
+ 	  Say Y here if you want support for the PCI host controller found
+ 	  in the Intel IXP4xx XScale-based network processor SoC.
  
 +config PCIE_NETX4000
 +	bool "Hilscher netX4000 PCIe controller"
@@ -52,7 +51,7 @@ index bfd9bac37e24..91af60f597df 100644
 +	  1 slots.
 +
  config VMD
- 	depends on PCI_MSI && X86_64 && SRCU && !UML
+ 	depends on PCI_MSI && X86_64 && !UML
  	tristate "Intel Volume Management Device Driver"
 diff --git a/drivers/pci/controller/Makefile b/drivers/pci/controller/Makefile
 index 37c8663de7fe..beb6cc88ba5a 100644
@@ -68,10 +67,10 @@ index 37c8663de7fe..beb6cc88ba5a 100644
  obj-$(CONFIG_PCIE_ROCKCHIP_HOST) += pcie-rockchip-host.o
 diff --git a/drivers/pci/controller/pcie-netx4000.c b/drivers/pci/controller/pcie-netx4000.c
 new file mode 100644
-index 000000000000..c4fcee704914
+index 000000000000..88f2e221c391
 --- /dev/null
 +++ b/drivers/pci/controller/pcie-netx4000.c
-@@ -0,0 +1,921 @@
+@@ -0,0 +1,909 @@
 +/*
 +* PCIe host controller for Hilscher netx4000 based platforms
 +*
@@ -100,10 +99,12 @@ index 000000000000..c4fcee704914
 +#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/of_address.h>
-+#include <linux/of_gpio.h>
 +#include <linux/of_pci.h>
++#include <linux/gpio/consumer.h>
 +#include <linux/pci.h>
 +#include <linux/interrupt.h>
++#include <linux/irqdomain.h>
++#include <linux/irqchip/chained_irq.h>
 +#include <linux/msi.h>
 +#include <linux/clk.h>
 +#include <linux/platform_device.h>
@@ -201,10 +202,8 @@ index 000000000000..c4fcee704914
 +	u8 busnr;
 +	u32 link_gen;
 +
-+	int gpio_reset;
-+	enum of_gpio_flags gpio_reset_flags;
-+	int gpio_clkreq;
-+	enum of_gpio_flags gpio_clkreq_flags;
++	struct gpio_desc *gpio_reset;
++	struct gpio_desc *gpio_clkreq;
 +
 +	struct netx4000_pcie_msi_priv *msi;
 +
@@ -214,11 +213,11 @@ index 000000000000..c4fcee704914
 +#define PCIE_RESET_DELAY_US	(1000)
 +static int netx4000_pcie_reset_deassert(struct netx4000_pcie_priv *priv)
 +{
-+	if (!gpio_is_valid(priv->gpio_reset)) {
++	if (!priv->gpio_reset) {
 +		return -ENODEV;
 +	}
 +
-+	gpio_set_value(priv->gpio_reset, (priv->gpio_reset_flags & OF_GPIO_ACTIVE_LOW) ? 1 : 0);
++	gpiod_set_value_cansleep(priv->gpio_reset, 0);
 +
 +	usleep_range(PCIE_RESET_DELAY_US, PCIE_RESET_DELAY_US + 500);
 +
@@ -230,12 +229,12 @@ index 000000000000..c4fcee704914
 +	unsigned long start_jiffies = jiffies;
 +	u32 clkreq;
 +
-+	if (!gpio_is_valid(priv->gpio_clkreq)) {
++	if (!priv->gpio_clkreq) {
 +		return -ENODEV;
 +	}
 +
 +	do {
-+		clkreq = gpio_get_value(priv->gpio_clkreq) ^ ((priv->gpio_clkreq_flags & OF_GPIO_ACTIVE_LOW) ? 1 : 0);
++		clkreq = gpiod_get_value(priv->gpio_clkreq);
 +		if (clkreq)
 +			return 0;
 +	} while (time_before(jiffies, start_jiffies + msecs_to_jiffies(timeout_ms)));
@@ -813,33 +812,21 @@ index 000000000000..c4fcee704914
 +	if (err)
 +		priv->link_gen = 2;
 +
-+	priv->gpio_reset = of_get_named_gpio_flags(pdev->dev.of_node, "reset-gpio", 0, &priv->gpio_reset_flags);
-+	if (priv->gpio_reset < 0) {
++	priv->gpio_reset = devm_gpiod_get_optional(&pdev->dev, "reset-gpio", GPIOD_ASIS);
++	if (!priv->gpio_reset) {
 +		dev_warn(&pdev->dev, "Error retrieving gpio 'reset-gpio' from DT.\n");
 +	}
 +	else {
-+		if ((!gpio_is_valid(priv->gpio_reset)) || (devm_gpio_request(&pdev->dev, priv->gpio_reset, "pcie-reset") < 0)) {
-+			dev_err(&pdev->dev, "Error requesting reset-gpio (%d).\n", priv->gpio_reset);
-+			return -EINVAL;
-+		}
-+		else {
-+			gpio_direction_output(priv->gpio_reset, (priv->gpio_reset_flags & OF_GPIO_ACTIVE_LOW) ? 0 : 1);
-+		}
++		gpiod_direction_output(priv->gpio_reset, 1);
 +	}
 +
 +	/* NOTE: The clkreq is normally connected to hardware clock provider. */
-+	priv->gpio_clkreq = of_get_named_gpio_flags(pdev->dev.of_node, "clkreq-gpio", 0, &priv->gpio_clkreq_flags);
-+	if (priv->gpio_clkreq < 0) {
++	priv->gpio_clkreq = devm_gpiod_get_optional(&pdev->dev, "clkreq-gpio", GPIOD_ASIS);
++	if (!priv->gpio_clkreq) {
 +		dev_dbg(&pdev->dev, "Error retrieving gpio 'clkreq-gpio' from DT.\n");
 +	}
 +	else {
-+		if ((!gpio_is_valid(priv->gpio_clkreq)) || (devm_gpio_request(&pdev->dev, priv->gpio_clkreq, "pcie-clkreq") < 0)) {
-+			dev_err(&pdev->dev, "Error requesting clkreq-gpio (%d).\n", priv->gpio_clkreq);
-+			return -EINVAL;
-+		}
-+		else {
-+			gpio_direction_input(priv->gpio_clkreq);
-+		}
++		gpiod_direction_input(priv->gpio_clkreq);
 +	}
 +
 +	return 0;

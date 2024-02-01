@@ -1,11 +1,10 @@
-From a263d876fa8c4ab0a88f33e10ea46cd1b8f6271e Mon Sep 17 00:00:00 2001
+From 15199ca1f7bfeff113c427506dfd638fb886d7af Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:03:21 +0200
 Subject: [PATCH 08/27] adc: Add IIO ADC driver for Hilscher netX4000 based
  platforms.
 
 Upstream-Status: Pending
-
 ---
  arch/arm/boot/dts/netx4000/overlays/adc0.dts |  20 +
  arch/arm/boot/dts/netx4000/overlays/adc1.dts |  20 +
@@ -70,10 +69,10 @@ index 000000000000..35582c8e37d0
 +	};
 +};
 diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
-index 791612ca6012..c3142f19d3df 100644
+index 517b3db114b8..76819f8fdfe5 100644
 --- a/drivers/iio/adc/Kconfig
 +++ b/drivers/iio/adc/Kconfig
-@@ -1338,4 +1338,16 @@ config XILINX_AMS
+@@ -1441,4 +1441,16 @@ config XILINX_AMS
  	  The driver can also be built as a module. If so, the module will be called
  	  xilinx-ams.
  
@@ -91,10 +90,10 @@ index 791612ca6012..c3142f19d3df 100644
 +
  endmenu
 diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
-index 46caba7a010c..38737e4d9c59 100644
+index 2facf979327d..2540dc488089 100644
 --- a/drivers/iio/adc/Makefile
 +++ b/drivers/iio/adc/Makefile
-@@ -120,3 +120,4 @@ xilinx-xadc-y := xilinx-xadc-core.o xilinx-xadc-events.o
+@@ -129,3 +129,4 @@ xilinx-xadc-y := xilinx-xadc-core.o xilinx-xadc-events.o
  obj-$(CONFIG_XILINX_XADC) += xilinx-xadc.o
  obj-$(CONFIG_XILINX_AMS) += xilinx-ams.o
  obj-$(CONFIG_SD_ADC_MODULATOR) += sd_adc_modulator.o

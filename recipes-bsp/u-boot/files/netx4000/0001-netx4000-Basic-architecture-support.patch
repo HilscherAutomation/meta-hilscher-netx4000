@@ -1,4 +1,4 @@
-From 4b8ee3300587f5cf3cba357db6049f490b214c6b Mon Sep 17 00:00:00 2001
+From d082771116f0a5e7a50e7c6f9e7906892c05fb8b Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Tue, 11 May 2021 13:43:56 +0200
 Subject: [PATCH 1/7] netx4000: Basic architecture support
@@ -104,7 +104,7 @@ Upstream-Status: Pending
  create mode 100644 tools/netx4000/netx4000_cr7_openfirewalls.elf
 
 diff --git a/.gitignore b/.gitignore
-index 002f95de4f..aac3942410 100644
+index 3301481192..9068428eb9 100644
 --- a/.gitignore
 +++ b/.gitignore
 @@ -29,6 +29,8 @@
@@ -117,10 +117,10 @@ index 002f95de4f..aac3942410 100644
  *.su
  *.swp
 diff --git a/Makefile b/Makefile
-index ac65605a26..66d8e93bd1 100644
+index f049d77dca..0107dd888e 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -1002,6 +1002,8 @@ ifeq ($(CONFIG_SPL),)
+@@ -1011,6 +1011,8 @@ ifeq ($(CONFIG_SPL),)
  INPUTS-$(CONFIG_ARCH_MEDIATEK) += u-boot-mtk.bin
  endif
  
@@ -129,7 +129,7 @@ index ac65605a26..66d8e93bd1 100644
  # Add optional build target if defined in board/cpu/soc headers
  ifneq ($(CONFIG_BUILD_TARGET),)
  INPUTS-y += $(CONFIG_BUILD_TARGET:"%"=%)
-@@ -1600,6 +1602,19 @@ u-boot-br.bin: u-boot FORCE
+@@ -1601,6 +1603,19 @@ u-boot-br.bin: u-boot FORCE
  	$(call if_changed,objcopy)
  endif
  
@@ -150,10 +150,10 @@ index ac65605a26..66d8e93bd1 100644
  cmd_ldr = $(LD) $(LDFLAGS_$(@F)) \
  	       $(filter-out FORCE,$^) -o $@
 diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 328e2ddc33..b541c31912 100644
+index d812685c98..58fdd9586f 100644
 --- a/arch/arm/Kconfig
 +++ b/arch/arm/Kconfig
-@@ -834,6 +834,19 @@ config ARCH_LPC32XX
+@@ -835,6 +835,19 @@ config ARCH_LPC32XX
  	select SUPPORT_SPL
  	imply CMD_DM
  
@@ -173,7 +173,7 @@ index 328e2ddc33..b541c31912 100644
  config ARCH_IMX8
  	bool "NXP i.MX8 platform"
  	select ARM64
-@@ -2214,6 +2227,8 @@ source "arch/arm/mach-imx/imxrt/Kconfig"
+@@ -2227,6 +2240,8 @@ source "arch/arm/mach-imx/imxrt/Kconfig"
  
  source "arch/arm/mach-imx/mxs/Kconfig"
  
@@ -195,10 +195,10 @@ index 5ebe0619d3..53bc69e03f 100644
  machine-$(CONFIG_ARCH_NPCM)             += npcm
  machine-$(CONFIG_ARCH_OMAP2PLUS)	+= omap2
 diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
-index 85fd5b1157..4d461a883c 100644
+index 9d28a485be..1fe64dfb98 100644
 --- a/arch/arm/dts/Makefile
 +++ b/arch/arm/dts/Makefile
-@@ -338,6 +338,9 @@ dtb-$(CONFIG_ARCH_MVEBU) +=			\
+@@ -345,6 +345,9 @@ dtb-$(CONFIG_ARCH_MVEBU) +=			\
  	ac5-98dx35xx-atl-x240.dtb
  endif
  
@@ -4219,10 +4219,10 @@ index 0000000000..22b5bda4d1
 +CONFIG_MENU=y
 +CONFIG_CMD_BOOTMENU=y
 diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index e22c8cf291..635c2e9c05 100644
+index af27ceb27d..5a6246dc69 100644
 --- a/drivers/clk/Makefile
 +++ b/drivers/clk/Makefile
-@@ -21,6 +21,7 @@ obj-$(CONFIG_ARCH_ASPEED) += aspeed/
+@@ -22,6 +22,7 @@ obj-$(CONFIG_ARCH_ASPEED) += aspeed/
  obj-$(CONFIG_ARCH_MEDIATEK) += mediatek/
  obj-$(CONFIG_ARCH_MESON) += meson/
  obj-$(CONFIG_ARCH_MTMIPS) += mtmips/
@@ -4406,12 +4406,12 @@ index 0000000000..06d5951e6a
 +	.flags = DM_FLAG_PRE_RELOC,
 +};
 diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index 0ed39a61e4..028bcd6450 100644
+index ebab4d9f2e..06bd75b5d0 100644
 --- a/drivers/net/Kconfig
 +++ b/drivers/net/Kconfig
-@@ -225,6 +225,14 @@ config DWC_ETH_QOS_IMX
- 	  The Synopsys Designware Ethernet QOS IP block with the specific
- 	  configuration used in IMX soc.
+@@ -233,6 +233,14 @@ config DWC_ETH_QOS_ROCKCHIP
+ 	  The Synopsys Designware Ethernet QOS IP block with specific
+ 	  configuration used in Rockchip SoCs.
  
 +config DWC_ETH_QOS_NETX4000
 +	bool "Synopsys DWC Ethernet QOS device support for netX4000"
@@ -4425,10 +4425,10 @@ index 0ed39a61e4..028bcd6450 100644
  	bool "Synopsys DWC Ethernet QOS device support for STM32"
  	depends on DWC_ETH_QOS
 diff --git a/drivers/net/dwc_eth_qos.c b/drivers/net/dwc_eth_qos.c
-index 1e92bd9ca9..bd0025d678 100644
+index a4e3698c60..ebe41c0ed7 100644
 --- a/drivers/net/dwc_eth_qos.c
 +++ b/drivers/net/dwc_eth_qos.c
-@@ -346,6 +346,31 @@ err:
+@@ -347,6 +347,31 @@ err:
  #endif
  }
  
@@ -4460,7 +4460,7 @@ index 1e92bd9ca9..bd0025d678 100644
  static int eqos_stop_clks_tegra186(struct udevice *dev)
  {
  #ifdef CONFIG_CLK
-@@ -380,6 +405,20 @@ static int eqos_stop_clks_stm32(struct udevice *dev)
+@@ -381,6 +406,20 @@ static int eqos_stop_clks_stm32(struct udevice *dev)
  	return 0;
  }
  
@@ -4481,7 +4481,7 @@ index 1e92bd9ca9..bd0025d678 100644
  static int eqos_start_resets_tegra186(struct udevice *dev)
  {
  	struct eqos_priv *eqos = dev_get_priv(dev);
-@@ -503,6 +542,17 @@ static ulong eqos_get_tick_clk_rate_stm32(struct udevice *dev)
+@@ -504,6 +543,17 @@ static ulong eqos_get_tick_clk_rate_stm32(struct udevice *dev)
  #endif
  }
  
@@ -4499,7 +4499,7 @@ index 1e92bd9ca9..bd0025d678 100644
  static int eqos_set_full_duplex(struct udevice *dev)
  {
  	struct eqos_priv *eqos = dev_get_priv(dev);
-@@ -1484,6 +1534,57 @@ err_probe:
+@@ -1478,6 +1528,57 @@ err_probe:
  	return ret;
  }
  
@@ -4557,7 +4557,7 @@ index 1e92bd9ca9..bd0025d678 100644
  static phy_interface_t eqos_get_interface_tegra186(const struct udevice *dev)
  {
  	return PHY_INTERFACE_MODE_MII;
-@@ -1527,6 +1628,23 @@ static int eqos_remove_resources_stm32(struct udevice *dev)
+@@ -1521,6 +1622,23 @@ static int eqos_remove_resources_stm32(struct udevice *dev)
  	return 0;
  }
  
@@ -4581,7 +4581,7 @@ index 1e92bd9ca9..bd0025d678 100644
  static int eqos_probe(struct udevice *dev)
  {
  	struct eqos_priv *eqos = dev_get_priv(dev);
-@@ -1699,6 +1817,35 @@ static const struct eqos_config __maybe_unused eqos_stm32_config = {
+@@ -1693,6 +1811,35 @@ static const struct eqos_config __maybe_unused eqos_stm32_config = {
  	.ops = &eqos_stm32_ops
  };
  
@@ -4617,8 +4617,8 @@ index 1e92bd9ca9..bd0025d678 100644
  static const struct udevice_id eqos_ids[] = {
  #if IS_ENABLED(CONFIG_DWC_ETH_QOS_TEGRA186)
  	{
-@@ -1718,6 +1865,12 @@ static const struct udevice_id eqos_ids[] = {
- 		.data = (ulong)&eqos_imx_config
+@@ -1722,6 +1869,12 @@ static const struct udevice_id eqos_ids[] = {
+ 		.data = (ulong)&eqos_rockchip_config
  	},
  #endif
 +#if IS_ENABLED(CONFIG_DWC_ETH_QOS_NETX4000)
@@ -4627,11 +4627,11 @@ index 1e92bd9ca9..bd0025d678 100644
 +		.data = (ulong)&eqos_netx4000_config
 +	},
 +#endif
- 
  #if IS_ENABLED(CONFIG_DWC_ETH_QOS_QCOM)
  	{
+ 		.compatible = "qcom,qcs404-ethqos",
 diff --git a/drivers/net/phy/Kconfig b/drivers/net/phy/Kconfig
-index 0c3c39a550..2cbc6c274f 100644
+index 3d96938eab..0b6e132684 100644
 --- a/drivers/net/phy/Kconfig
 +++ b/drivers/net/phy/Kconfig
 @@ -6,6 +6,12 @@ config BITBANGMII_MULTI
@@ -4955,10 +4955,10 @@ index 0000000000..181e36b143
 +	.probe = mdio_gpio_bb_probe,
 +};
 diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
-index d80281fd3d..bd54b54137 100644
+index d1db377c13..8608d1beef 100644
 --- a/drivers/pinctrl/pinctrl-single.c
 +++ b/drivers/pinctrl/pinctrl-single.c
-@@ -628,6 +628,7 @@ const struct pinctrl_ops single_pinctrl_ops = {
+@@ -632,6 +632,7 @@ const struct pinctrl_ops single_pinctrl_ops = {
  
  static const struct udevice_id single_pinctrl_match[] = {
  	{ .compatible = "pinctrl-single" },

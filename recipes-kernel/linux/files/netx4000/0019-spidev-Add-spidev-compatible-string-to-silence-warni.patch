@@ -1,23 +1,22 @@
-From be17316764420d791c963b418285793269c18b09 Mon Sep 17 00:00:00 2001
+From 106807a02603dfa6e2536adfa4b6add1ad526711 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Fri, 10 Sep 2021 11:23:55 +0000
 Subject: [PATCH 19/27] spidev: Add "spidev" compatible string to silence
  warning
 
 Upstream-Status: Pending
-
 ---
  drivers/spi/spidev.c | 1 +
  1 file changed, 1 insertion(+)
 
 diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
-index 71c3db60e968..f80602b87d92 100644
+index d13dc15cc191..9ee4b1757efc 100644
 --- a/drivers/spi/spidev.c
 +++ b/drivers/spi/spidev.c
-@@ -726,6 +726,7 @@ static const struct of_device_id spidev_dt_ids[] = {
- 	{ .compatible = "menlo,m53cpld", .data = &spidev_of_check },
- 	{ .compatible = "cisco,spi-petra", .data = &spidev_of_check },
- 	{ .compatible = "micron,spi-authenta", .data = &spidev_of_check },
+@@ -742,6 +742,7 @@ static const struct of_device_id spidev_dt_ids[] = {
+ 	{ .compatible = "semtech,sx1301", .data = &spidev_of_check },
+ 	{ .compatible = "silabs,em3581", .data = &spidev_of_check },
+ 	{ .compatible = "silabs,si3210", .data = &spidev_of_check },
 +	{ .compatible = "spidev" },
  	{},
  };

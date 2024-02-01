@@ -1,11 +1,10 @@
-From 0f71c6259bcff5c5756ee6e48f0308bb4d8d1803 Mon Sep 17 00:00:00 2001
+From c9e9cce36f9d2361ed6aefac8e710518b0a1787d Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Fri, 10 Sep 2021 11:08:57 +0000
 Subject: [PATCH 06/27] rtc: Add RTC driver for Hilscher netX4000 based
  platforms.
 
 Upstream-Status: Pending
-
 ---
  drivers/rtc/Kconfig        |  10 ++
  drivers/rtc/Makefile       |   1 +
@@ -14,10 +13,10 @@ Upstream-Status: Pending
  create mode 100644 drivers/rtc/rtc-netx4000.c
 
 diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index bb63edb507da..9ab97f947313 100644
+index d7502433c78a..c2e05250b87c 100644
 --- a/drivers/rtc/Kconfig
 +++ b/drivers/rtc/Kconfig
-@@ -1339,6 +1339,16 @@ config RTC_DRV_NTXEC
+@@ -1327,6 +1327,16 @@ config RTC_DRV_NTXEC
  	  embedded controller found in certain e-book readers designed by the
  	  original design manufacturer Netronix.
  
@@ -35,10 +34,10 @@ index bb63edb507da..9ab97f947313 100644
  
  config RTC_DRV_ASM9260
 diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index aab22bc63432..6b643a593c71 100644
+index fd209883ee2e..9573e1b9deb7 100644
 --- a/drivers/rtc/Makefile
 +++ b/drivers/rtc/Makefile
-@@ -113,6 +113,7 @@ obj-$(CONFIG_RTC_DRV_MXC)	+= rtc-mxc.o
+@@ -112,6 +112,7 @@ obj-$(CONFIG_RTC_DRV_MXC)	+= rtc-mxc.o
  obj-$(CONFIG_RTC_DRV_MXC_V2)	+= rtc-mxc_v2.o
  obj-$(CONFIG_RTC_DRV_GAMECUBE)	+= rtc-gamecube.o
  obj-$(CONFIG_RTC_DRV_NCT3018Y)	+= rtc-nct3018y.o

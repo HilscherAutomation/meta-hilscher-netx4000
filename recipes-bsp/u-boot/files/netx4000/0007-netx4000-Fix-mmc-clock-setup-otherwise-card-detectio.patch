@@ -1,4 +1,4 @@
-From edae36dabde752e0679fe5ced472a26247aff0fa Mon Sep 17 00:00:00 2001
+From e18cd0cc7517ab1425a7df6f3f077ac48f805211 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Wed, 10 Aug 2022 19:48:02 +0200
 Subject: [PATCH 7/7] netx4000: Fix mmc clock setup, otherwise card detection

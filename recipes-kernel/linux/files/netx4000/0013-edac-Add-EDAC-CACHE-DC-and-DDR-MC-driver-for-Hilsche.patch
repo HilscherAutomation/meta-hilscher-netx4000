@@ -1,11 +1,10 @@
-From ab18ee5ca11082a6f6a251c1333b7d2d40d2969f Mon Sep 17 00:00:00 2001
+From af1cd8d7cb7cb7ed2e26d13698586a9ccf2cd4d5 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:04:49 +0200
 Subject: [PATCH 13/27] edac: Add EDAC CACHE DC and DDR MC driver for Hilscher
  netX4000 based platforms.
 
 Upstream-Status: Pending
-
 ---
  drivers/edac/Kconfig                  |  25 +
  drivers/edac/Makefile                 |   2 +
@@ -16,12 +15,12 @@ Upstream-Status: Pending
  create mode 100644 drivers/edac/edac-ddr-mc-netx4000.c
 
 diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
-index 456602d373b7..bfefd2f70dd5 100644
+index 110e99b86a66..826f153c0b40 100644
 --- a/drivers/edac/Kconfig
 +++ b/drivers/edac/Kconfig
-@@ -541,4 +541,29 @@ config EDAC_DMC520
- 	  Support for error detection and correction on the
- 	  SoCs with ARM DMC-520 DRAM controller.
+@@ -561,4 +561,29 @@ config EDAC_NPCM
+ 	  error detection (in-line ECC in which a section 1/8th of the memory
+ 	  device used to store data is used for ECC storage).
  
 +config EDAC_DDR_MC_NETX4000
 +	tristate "EDAC DDR MC driver for netX4000 based platforms"
@@ -50,13 +49,13 @@ index 456602d373b7..bfefd2f70dd5 100644
 +
  endif # EDAC
 diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
-index 2d1641a27a28..15a413c0e1b9 100644
+index 61945d3113cc..0195173c0aeb 100644
 --- a/drivers/edac/Makefile
 +++ b/drivers/edac/Makefile
-@@ -84,3 +84,5 @@ obj-$(CONFIG_EDAC_QCOM)			+= qcom_edac.o
- obj-$(CONFIG_EDAC_ASPEED)		+= aspeed_edac.o
- obj-$(CONFIG_EDAC_BLUEFIELD)		+= bluefield_edac.o
+@@ -86,3 +86,5 @@ obj-$(CONFIG_EDAC_BLUEFIELD)		+= bluefield_edac.o
  obj-$(CONFIG_EDAC_DMC520)		+= dmc520_edac.o
+ obj-$(CONFIG_EDAC_NPCM)			+= npcm_edac.o
+ obj-$(CONFIG_EDAC_ZYNQMP)		+= zynqmp_edac.o
 +obj-$(CONFIG_EDAC_DDR_MC_NETX4000)	+= edac-ddr-mc-netx4000.o
 +obj-$(CONFIG_EDAC_CACHE_DC_NETX4000)	+= edac-cache-dc-netx4000.o
 diff --git a/drivers/edac/edac-cache-dc-netx4000.c b/drivers/edac/edac-cache-dc-netx4000.c

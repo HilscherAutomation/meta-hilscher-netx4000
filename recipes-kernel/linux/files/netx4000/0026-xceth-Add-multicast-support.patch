@@ -1,4 +1,4 @@
-From 38f040224fb8250c50cc1a78c8c2d54ce5734b17 Mon Sep 17 00:00:00 2001
+From 7564fc657e660fcadd2022db158fe43038213a25 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 13 Feb 2023 10:47:17 +0100
 Subject: [PATCH 26/27] xceth: Add multicast support

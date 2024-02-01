@@ -1,4 +1,4 @@
-From abe6b2fbf919653c9e35c60e432b52cc5d761d18 Mon Sep 17 00:00:00 2001
+From af04cfe35f70df5d67e803a6a884188873e41adc Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Wed, 10 Aug 2022 18:17:33 +0200
 Subject: [PATCH 25/27] Fix Wrong IRQ type for A9 global timer resulting in
@@ -7,7 +7,6 @@ Subject: [PATCH 25/27] Fix Wrong IRQ type for A9 global timer resulting in
  secure or misconfigured
 
 Upstream-Status: Pending
-
 ---
  arch/arm/boot/dts/netx4000/netx4000-common.dtsi | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

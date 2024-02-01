@@ -1,4 +1,4 @@
-From aad70b5b957e26fa600a578aa4c0a5e0e3ea61e3 Mon Sep 17 00:00:00 2001
+From 55e41c09890711aa64bc8956a1eb425b5bc8b9a2 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Wed, 10 Aug 2022 18:15:34 +0200
 Subject: [PATCH 22/27] xceth crashes during load, as the firmware is decoded
@@ -94,10 +94,10 @@ Code: e3520000 1afffffb e12fff1e e1a03000 (e4d30001)
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/net/ethernet/netx4000/netx4000-xc.c b/drivers/net/ethernet/netx4000/netx4000-xc.c
-index 020825d15579..865ca52cfd0c 100644
+index 2feb1eef7a9d..a817b14bf8d0 100644
 --- a/drivers/net/ethernet/netx4000/netx4000-xc.c
 +++ b/drivers/net/ethernet/netx4000/netx4000-xc.c
-@@ -131,7 +131,7 @@ struct fw_info* get_root_node(struct port* p, char* name, struct fw_info* fw_inf
+@@ -130,7 +130,7 @@ struct fw_info* get_root_node(struct port* p, char* name, struct fw_info* fw_inf
  	struct device_node* root = NULL;
  
  	if (0 == (ret = request_firmware(&fw, name, p->dev))) {
@@ -106,7 +106,7 @@ index 020825d15579..865ca52cfd0c 100644
  		if (root == NULL) {
  			dev_err( p->dev, "%s: Failed to interprete firmware!\n", __func__);
  			release_firmware( fw);
-@@ -149,6 +149,7 @@ struct fw_info* get_root_node(struct port* p, char* name, struct fw_info* fw_inf
+@@ -148,6 +148,7 @@ struct fw_info* get_root_node(struct port* p, char* name, struct fw_info* fw_inf
  
  void free_root_node(struct fw_info* fw_info)
  {

@@ -1,4 +1,4 @@
-From 19e792bf183fdcb78c37bd6193f1332ca7c22591 Mon Sep 17 00:00:00 2001
+From e896c278020bc819af48a30ce71dcd3f59f46fd7 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 13 Feb 2023 09:29:16 +0000
 Subject: [PATCH 27/27] xceth: Add support for VLAN tagged frames.

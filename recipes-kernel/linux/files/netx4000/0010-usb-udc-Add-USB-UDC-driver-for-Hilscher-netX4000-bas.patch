@@ -1,25 +1,24 @@
-From 205b43c6df3304a0f0d40bc6f2ce2300bd0738bd Mon Sep 17 00:00:00 2001
+From 3f9c835c67e397033fd308c1a78b39cec6bbf61c Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Mon, 10 May 2021 10:03:46 +0200
 Subject: [PATCH 10/27] usb-udc: Add USB UDC driver for Hilscher netX4000 based
  platforms.
 
 Upstream-Status: Pending
-
 ---
- drivers/usb/gadget/udc/Kconfig        |   11 +
+ drivers/usb/gadget/udc/Kconfig        |   10 +
  drivers/usb/gadget/udc/Makefile       |    1 +
  drivers/usb/gadget/udc/udc-netx4000.c | 1484 +++++++++++++++++++++++++
- 3 files changed, 1496 insertions(+)
+ 3 files changed, 1495 insertions(+)
  create mode 100644 drivers/usb/gadget/udc/udc-netx4000.c
 
 diff --git a/drivers/usb/gadget/udc/Kconfig b/drivers/usb/gadget/udc/Kconfig
-index 5756acb07b8d..8600c1c6a2e2 100644
+index aae1787320d4..9fde7e8d9cf1 100644
 --- a/drivers/usb/gadget/udc/Kconfig
 +++ b/drivers/usb/gadget/udc/Kconfig
-@@ -478,6 +478,17 @@ config USB_ASPEED_UDC
+@@ -465,6 +465,16 @@ source "drivers/usb/gadget/udc/aspeed-vhub/Kconfig"
  
- source "drivers/usb/gadget/udc/aspeed-vhub/Kconfig"
+ source "drivers/usb/gadget/udc/cdns2/Kconfig"
  
 +config USB_GADGET_NETX4000
 +	tristate "USB device controller driver for netX4000 based platforms"
@@ -31,24 +30,24 @@ index 5756acb07b8d..8600c1c6a2e2 100644
 +	  To compile this driver as a module, choose M here:
 +	  the module will be called udc-netx4000.
 +
-+
  #
  # LAST -- dummy/emulated controller
  #
 diff --git a/drivers/usb/gadget/udc/Makefile b/drivers/usb/gadget/udc/Makefile
-index 12f9e4c9eb0c..99c1c7633af6 100644
+index b52f93e9c61d..56ec988d43a8 100644
 --- a/drivers/usb/gadget/udc/Makefile
 +++ b/drivers/usb/gadget/udc/Makefile
-@@ -41,5 +41,6 @@ obj-$(CONFIG_USB_GADGET_XILINX)	+= udc-xilinx.o
+@@ -40,6 +40,7 @@ obj-$(CONFIG_USB_GADGET_XILINX)	+= udc-xilinx.o
  obj-$(CONFIG_USB_SNP_UDC_PLAT) += snps_udc_plat.o
  obj-$(CONFIG_USB_ASPEED_VHUB)	+= aspeed-vhub/
  obj-$(CONFIG_USB_ASPEED_UDC)	+= aspeed_udc.o
 +obj-$(CONFIG_USB_GADGET_NETX4000)	+= udc-netx4000.o
  obj-$(CONFIG_USB_BDC_UDC)	+= bdc/
  obj-$(CONFIG_USB_MAX3420_UDC)	+= max3420_udc.o
+ obj-$(CONFIG_USB_CDNS2_UDC)	+= cdns2/
 diff --git a/drivers/usb/gadget/udc/udc-netx4000.c b/drivers/usb/gadget/udc/udc-netx4000.c
 new file mode 100644
-index 000000000000..6f691a5517cb
+index 000000000000..db8433de6bfe
 --- /dev/null
 +++ b/drivers/usb/gadget/udc/udc-netx4000.c
 @@ -0,0 +1,1484 @@

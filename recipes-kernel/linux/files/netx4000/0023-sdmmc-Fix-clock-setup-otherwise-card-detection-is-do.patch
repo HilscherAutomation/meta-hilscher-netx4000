@@ -1,17 +1,16 @@
-From c5582e56f925cd49e64ce658608df080118b6dcd Mon Sep 17 00:00:00 2001
+From 74ad6a69ddcfe7626c755d1d6583ff0807d6e036 Mon Sep 17 00:00:00 2001
 From: Michael Trensch <mtrensch@hilscher.com>
 Date: Wed, 10 Aug 2022 18:16:18 +0200
 Subject: [PATCH 23/27] sdmmc: Fix clock setup, otherwise card detection is
  done at maximum speed instead of 400 MHz, which may not work on all cards
 
 Upstream-Status: Pending
-
 ---
  drivers/mmc/host/sdmmc-netx4000.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/mmc/host/sdmmc-netx4000.c b/drivers/mmc/host/sdmmc-netx4000.c
-index f44e3a66839c..ec62ef137b85 100644
+index 35697819a96e..62a8cb1a36dc 100644
 --- a/drivers/mmc/host/sdmmc-netx4000.c
 +++ b/drivers/mmc/host/sdmmc-netx4000.c
 @@ -274,7 +274,7 @@ static void netx4000_hsmmc_set_clock(struct netx4000_hsmmc_host *host)
