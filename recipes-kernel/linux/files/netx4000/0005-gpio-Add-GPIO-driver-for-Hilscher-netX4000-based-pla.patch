@@ -208,7 +208,7 @@ index 000000000000..b799aa5d701f
 +}
 +
 +static const struct irq_chip netx4000_gpio_irq_chip = {
-+        .name           = "gpio-rcar",
++        .name           = "gpio-netx4000",
 +        .irq_mask       = netx4000_gpio_irq_mask,
 +        .irq_unmask     = netx4000_gpio_irq_unmask,
 +        .irq_set_type   = netx4000_gpio_irq_set_type,
