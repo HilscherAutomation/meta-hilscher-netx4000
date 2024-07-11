@@ -1,0 +1,34 @@
+From d593431533f34e5a7a5b678a3baf8e72ae8e092d Mon Sep 17 00:00:00 2001
+From: Lukas Funke <lukas.funke@weidmueller.com>
+Date: Thu, 4 Jul 2024 11:38:26 +0200
+Subject: [PATCH 3/4] mdio-xc-netx4000: remove c45 access function
+
+Remove c45 access function because the internal phy only supports
+clause22. Otherwise some internal phy gets accidentally recognized as
+c45 phy which leads to problems during autoneg.
+
+Upstream-Status: Pending
+
+Signed-off-by: Lukas Funke <lukas.funke@weidmueller.com>
+---
+ drivers/net/ethernet/netx4000/mdio-xc-netx4000.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/netx4000/mdio-xc-netx4000.c b/drivers/net/ethernet/netx4000/mdio-xc-netx4000.c
+index df99a6bdeb47..234a829ede21 100644
+--- a/drivers/net/ethernet/netx4000/mdio-xc-netx4000.c
++++ b/drivers/net/ethernet/netx4000/mdio-xc-netx4000.c
+@@ -318,7 +318,9 @@ static int netx4000_mdio_probe(struct platform_device *pdev)
+ 	sprintf((char*)bus->name, "mdio-int%d", counter);
+ 	sprintf(bus->id, "%X", 0x23 + counter);
+ 
+-	//dev->p = bus;
++	/* the internal phy only supports clause 22 and not c45 via v22 transfers*/
++	bus->read_c45 = NULL;
++	bus->write_c45 = NULL;
+ 
+ 	/* Enable clock for global XC logic */
+ 	clock_addr = ioremap(CLOCK_ENABLE, sizeof(clock_addr));
+-- 
+2.30.2
+

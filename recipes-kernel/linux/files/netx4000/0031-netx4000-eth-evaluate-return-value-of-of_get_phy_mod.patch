@@ -1,0 +1,37 @@
+From 9dfee10b1ac42b3ac5e75c21d96b492db97e090f Mon Sep 17 00:00:00 2001
+From: Lukas Funke <lukas.funke@weidmueller.com>
+Date: Thu, 4 Jul 2024 11:43:49 +0200
+Subject: [PATCH 4/4] netx4000-eth: evaluate return value of of_get_phy_mode()
+
+Evaluate return value of of_get_phy_mode() in case the interface
+type cannot be retrieved.
+
+Upstream-Status: Pending
+
+Signed-off-by: Lukas Funke <lukas.funke@weidmueller.com>
+---
+ drivers/net/ethernet/netx4000/netx4000-eth.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/netx4000/netx4000-eth.c b/drivers/net/ethernet/netx4000/netx4000-eth.c
+index 1db92e6a56b4..ebd44e89c89f 100644
+--- a/drivers/net/ethernet/netx4000/netx4000-eth.c
++++ b/drivers/net/ethernet/netx4000/netx4000-eth.c
+@@ -350,7 +350,13 @@ static int netx_eth_open(struct net_device *ndev)
+ 	port_start(priv->port);
+ 
+ 	phy_node = of_parse_phandle(priv->dev->of_node, "phy-handle", 0);
+-	of_get_phy_mode(phy_node, &interface);
++
++	ret = of_get_phy_mode(phy_node, &interface);
++	if (ret) {
++		dev_err(priv->dev, "failed to get phy mode: %d\n", ret);
++		return ret;
++	}
++
+ 	if ((priv->phy = of_phy_connect( ndev, phy_node, netx4000_xceth_update_linkspeed, 0,  interface)) == NULL) {
+ 		dev_err(priv->dev, "%s: Failed to connect to phy\n", __func__);
+ 		ret =-EAGAIN;
+-- 
+2.30.2
+
