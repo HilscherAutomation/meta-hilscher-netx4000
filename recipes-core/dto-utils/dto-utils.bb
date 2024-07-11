@@ -15,7 +15,8 @@ SRC_URI = " \
 
 RDEPENDS:${PN} = "dtc"
 
-S = "${WORKDIR}"
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
 
 do_install () {
 	install -d ${D}${sbindir}
