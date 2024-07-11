@@ -28,7 +28,6 @@ KERNEL_IMAGETYPES = "fitImage"
 
 MACHINE_ESSENTIAL_EXTRA_RRECOMMENDS += " \
 	kernel-modules \
-	libcifx cifxsample \
 	kernel-module-netx4000-xc-stdmac kernel-module-mdio-xc-netx4000 hethmac \
 "
 
