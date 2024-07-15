@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christian Taedcke <christian.taedcke@weidmueller.com>
+Date: Wed, 20 Mar 2024 10:10:45 +0100
+Subject: [PATCH] xceth: Use dev_addr_set() to set mac address
+
+This commit fixes the following kernel message:
+...
+Registering netX4000 Ethernet driver (ret=0)
+netx4000-xceth amba:xceth0 eth0: Current addr:  00 02 a2 68 14 f3 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+netx4000-xceth amba:xceth0 eth0: Expected addr: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 660 at /net/core/dev_addr_lists.c:519 dev_addr_check+0x108/0x12c
+netdevice: eth0: Incorrect netdev->dev_addr
+....
+
+Upstream-Status: Pending
+
+Signed-off-by: Christian Taedcke <christian.taedcke@weidmueller.com>
+
+diff --git a/drivers/net/ethernet/netx4000/netx4000-eth.c b/drivers/net/ethernet/netx4000/netx4000-eth.c
+index 88dce06ec9..1db92e6a56 100644
+--- a/drivers/net/ethernet/netx4000/netx4000-eth.c
++++ b/drivers/net/ethernet/netx4000/netx4000-eth.c
+@@ -438,7 +438,7 @@ static int netx_eth_enable(struct net_device *ndev)
+ 	/* Configure MAC address */
+ 	if (!of_get_mac_address(priv->dev->of_node, mac)) {
+ 		port_set_mac_addr( priv->port, ETH_MAC_ADDRESS_CHASSIS, mac);
+-		memcpy( ndev->dev_addr, mac, 6);
++		dev_addr_set(ndev, mac);
+ 	} else {
+ 		dev_err(priv->dev, "Failed to get mac addr from device-tree!\n");
+ 	}

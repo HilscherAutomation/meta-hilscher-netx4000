@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christian Taedcke <christian.taedcke@weidmueller.com>
+Date: Fri, 9 Feb 2024 15:07:56 +0100
+Subject: [PATCH] arm: fix arch for Hilscher netX4000 SoC
+
+The setting ARCH_MULTI_V7 is no set. This automatically selects CPU_V7
+and HAVE_SMP.
+
+Upstream-Status: Pending
+
+Signed-off-by: Christian Taedcke <christian.taedcke@weidmueller.com>
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 439c484589..c17bbd89cf 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -346,13 +346,12 @@ config ARCH_NETX4000
+ 	select PINCTRL
+ 	select PINMUX
+ 	select GENERIC_PINCONF
+-	select CPU_V7
++	select ARCH_MULTI_V7
+ 	select GENERIC_CLOCKEVENTS
+ 	select ARM_AMBA
+ 	select COMMON_CLK
+ 	select CLKSRC_OF
+ 	select ARM_GLOBAL_TIMER
+-	select HAVE_SMP
+ 	select HAVE_ARM_SCU if SMP
+ 	select HAVE_ARM_TWD if SMP
+ 	select CACHE_L2X0

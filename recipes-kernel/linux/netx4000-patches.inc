@@ -30,4 +30,6 @@ SRC_URI:append:netx4000 = " \
     file://netx4000/0029-gpio-netx4000-apply-checkpatch-recommendations.patch \
     file://netx4000/0030-mdio-xc-netx4000-remove-c45-access-function.patch \
     file://netx4000/0031-netx4000-eth-evaluate-return-value-of-of_get_phy_mod.patch \
+    file://netx4000/0032-arm-fix-arch-for-Hilscher-netX4000-SoC.patch \
+    file://netx4000/0033-xceth-Use-dev_addr_set-to-set-mac-address.patch \
 "
